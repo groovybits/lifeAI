@@ -39,35 +39,25 @@ def main(input_port, output_port):
     segment_number = 1
 
     while True:
-        message = receiver.recv_string()
-        _, text = message.split(":", 1)
+        try:
+            message = receiver.recv_string()
+            _, text = message.split(":", 1)
 
-        inputs = tokenizer(text, return_tensors="pt")
-        inputs['input_ids'] = inputs['input_ids'].long()
+            inputs = tokenizer(text, return_tensors="pt")
+            inputs['input_ids'] = inputs['input_ids'].long()
 
-        output = None
-        with torch.no_grad():
-            output = model(**inputs).waveform
-        waveform_np = output.squeeze().numpy().T
-        audiobuf = io.BytesIO()
-        sf.write(audiobuf, waveform_np, model.config.sampling_rate, format='WAV')
-        audiobuf.seek(0)
+            output = None
+            with torch.no_grad():
+                output = model(**inputs).waveform
+            waveform_np = output.squeeze().numpy().T
+            audiobuf = io.BytesIO()
+            sf.write(audiobuf, waveform_np, model.config.sampling_rate, format='WAV')
+            audiobuf.seek(0)
 
-        if args.output_file:
-            if args.audio_format == "wav":
-                with open(args.output_file, 'wb') as f:
-                    f.write(audiobuf.getvalue())
-                print(f"Audio saved to {args.output_file} as WAV\n")
-            else:
-                with open(args.output_file, 'wb') as f:
-                    f.write(output)
-                print(f"Payload written to {args.output_file}\n")
-        else:
-            payload_hex = output.hex()
-            print(f"Payload (Hex): {textwrap.fill(payload_hex, width=80)}\n")
-
-        sender.send_string(str(segment_number), zmq.SNDMORE)
-        sender.send(audiobuf.getvalue())
+            sender.send_string(str(segment_number), zmq.SNDMORE)
+            sender.send(audiobuf.getvalue())
+        except Exception as e:
+            print("Error in lifeAItts: %s" % str(e))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -75,7 +65,6 @@ if __name__ == "__main__":
     parser.add_argument("--output_port", type=int, required=True, help="Port for sending audio output")
     parser.add_argument("--target_lang", type=str, default="eng", help="Target language")
     parser.add_argument("--source_lang", type=str, default="eng", help="Source language")
-    parser.add_argument("--output_file", type=str, default="", help="Output payloads to a file for analysis")
     parser.add_argument("--audio_format", choices=["wav", "raw"], default="raw", help="Audio format to save as. Choices are 'wav' or 'raw'.")
 
     args = parser.parse_args()

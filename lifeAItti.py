@@ -36,21 +36,8 @@ pipe = StableDiffusionPipeline.from_pretrained(model_id,
                                                 safety_checker = None,
                                                 requires_safety_checker = False)
 
-#images = None
-#pipe.safety_checker = lambda images, clip_input: (images, False)
-
 ## Offload to GPU Metal
 pipe = pipe.to("mps")
-
-def image_to_ascii(image, width):
-    image = image.resize((width, int((image.height/image.width) * width * 0.55)), Image.LANCZOS)
-    image = image.convert('L')  # Convert to grayscale
-
-    pixels = list(image.getdata())
-    ascii_chars = ["@", "#", "S", "%", "?", "*", "+", ";", ":", ",", "."]
-    ascii_image = [ascii_chars[pixel//25] for pixel in pixels]
-    ascii_image = ''.join([''.join(ascii_image[i:i+width]) + '\n' for i in range(0, len(ascii_image), width)])
-    return ascii_image
 
 def main(input_port, output_port):
     context = zmq.Context()
@@ -64,10 +51,11 @@ def main(input_port, output_port):
 
     while True:
         message = receiver.recv_string()
-        _, text = message.split(":", 1)
+        ts, text = message.split(":", 1)
 
         image = pipe(text).images[0]
 
+        print("Text to Image: recieved image #%s" % ts)
         if args.output_file:
             if args.image_format == "pil":
                 image.save(args.output_file)
@@ -76,12 +64,14 @@ def main(input_port, output_port):
                 with open(args.output_file, 'wb') as f:
                     f.write(output)
                 print(f"Payload written to {args.output_file}\n")
-        else:
-            payload_hex = image_to_ascii(image, 80)
-            print(f"Image Payload (Hex):\n{payload_hex}\n")
+
+        # Convert PIL Image to bytes
+        img_byte_arr = io.BytesIO()
+        image.save(img_byte_arr, format='PNG')  # Save it as PNG or JPEG depending on your preference
+        img_byte_arr = img_byte_arr.getvalue()
 
         sender.send_string(str(segment_number), zmq.SNDMORE)
-        sender.send(audiobuf.getvalue())
+        sender.send(img_byte_arr)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

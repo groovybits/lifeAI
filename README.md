@@ -8,8 +8,9 @@
 
 - [ZMQ Text Client](zmqTextClient.py) Send text into ZMQ for modules.
 - [ZMQ TTS Listener](zmqTTSlisten.py) Listen for TTS Audio WAV file output.
-- [Text to Speech](lifeAItts.py)
-- [Text to Image](lifeAIimage.py)
+- [ZMQ TTI Listener](zmqTTIlisten.py) Listen for TTI Image PIL file output.
+- [Text to AI Speech](lifeAItts.py)
+- [Text to AI Image](lifeAItti.py)
 
 ## Installation
 
@@ -32,12 +33,15 @@ pip install -r requirements.txt
 # Running TTS module with
 # ZQM TCP 900 text in TO ZMQ TCP 1000 numpy audio samples out
 ./lifeAItts.py --input_port 900 --output_port 1000
+./lifeAItti.py --input_port 901 --output_port 1001
 #
 # ZMQ listener client
-python zmqTTSclient.py --input_port 1000
+python zmqTTSlisten.py --input_port 1000
+python zmqTTIlisten.py --input_port 1001
 #
 # ZMQ input test (TTS input to lifeAItts.py module)
-python zmqTTStest.py --target_port 900 --message "1:how are you today?"
+python zmqTextClient.py --target_port 900 --message "1:how are you today?"
+python zmqTextClient.py --target_port 901 --message "1:how are you today?"
 ```
 
 ## Chris Kennedy (C) GPL free as in free software
