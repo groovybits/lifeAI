@@ -1,0 +1,11 @@
+transformers
+deepspeed
+sentencepiece
+torch
+protobuf
+zmq
+git+https://github.com/huggingface/transformers.git
+wave
+soundfile
+scipy
+accelerate
