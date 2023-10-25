@@ -1,0 +1,10 @@
+set(TARGET lifeAIllm)
+add_executable(${TARGET} lifeAIllm.cpp)
+target_include_directories(${TARGET} SYSTEM PRIVATE "/usr/local/include")
+
+install(TARGETS ${TARGET} RUNTIME)
+target_link_libraries(${TARGET} PRIVATE common llama ${CMAKE_THREAD_LIBS_INIT} "/usr/local/lib/libzmq.dylib" "/Users/christi/src/llama.cpp/")
+target_compile_features(${TARGET} PRIVATE cxx_std_11)
+if(TARGET BUILD_INFO)
+  add_dependencies(${TARGET} BUILD_INFO)
+endif()
