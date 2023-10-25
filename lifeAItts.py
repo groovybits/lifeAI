@@ -10,23 +10,14 @@
 
 import zmq
 import argparse
-import numpy as np
-from transformers import AutoProcessor, SeamlessM4TModel, VitsModel, AutoTokenizer
+from transformers import VitsModel, AutoTokenizer
 import textwrap
 import torch
-import scipy
 import io
 import soundfile as sf
 
 model = VitsModel.from_pretrained("facebook/mms-tts-eng")
 tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-eng")
-
-# Initialize the model and processor
-#processor = AutoProcessor.from_pretrained("facebook/hf-seamless-m4t-medium")
-#model = SeamlessM4TModel.from_pretrained("facebook/hf-seamless-m4t-medium")
-#text_inputs = processor(text=text, src_lang=args.source_lang, return_tensors="pt")
-#audio_output = model.generate(**text_inputs, tgt_lang=args.target_lang, generate_speech=True)
-#audio_numpy = audio_output[0].cpu().numpy().squeeze().tobytes()
 
 def main(input_port, output_port):
     context = zmq.Context()
