@@ -15,6 +15,15 @@ import textwrap
 import torch
 import io
 import soundfile as sf
+from transformers import logging as trlogging
+import warnings
+import urllib3
+
+warnings.simplefilter(action='ignore', category=Warning)
+warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
+from urllib3.exceptions import NotOpenSSLWarning
+warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
+trlogging.set_verbosity_error()
 
 model = VitsModel.from_pretrained("facebook/mms-tts-eng")
 tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-eng")

@@ -17,14 +17,21 @@ import io
 
 from diffusers import StableDiffusionPipeline
 import torch
+from transformers import logging as trlogging
+import warnings
+import urllib3
 
-
+warnings.simplefilter(action='ignore', category=Warning)
+warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
+from urllib3.exceptions import NotOpenSSLWarning
+warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
+trlogging.set_verbosity_error()
 model = VitsModel.from_pretrained("facebook/mms-tts-eng")
 tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-eng")
 
-
 model_id = "runwayml/stable-diffusion-v1-5"
 pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
+pipe.safety_checker = lambda images, clip_input: (images, False)
 pipe = pipe.to("mps")
 
 def image_to_ascii(image, width):
