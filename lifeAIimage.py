@@ -11,6 +11,7 @@
 import zmq
 import argparse
 from transformers import VitsModel, AutoTokenizer
+from PIL import Image, ImageDraw, ImageFont
 import textwrap
 import io
 
@@ -62,7 +63,7 @@ def main(input_port, output_port):
                 print(f"Payload written to {args.output_file}\n")
         else:
             payload_hex = image_to_ascii(image, 80)
-            print(f"Image Payload (Hex): {payload_hex}\n")
+            print(f"Image Payload (Hex):\n{payload_hex}\n")
 
         sender.send_string(str(segment_number), zmq.SNDMORE)
         sender.send(audiobuf.getvalue())
