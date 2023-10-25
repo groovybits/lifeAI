@@ -4,6 +4,13 @@
 
 - <https://huggingface.co/facebook/mms-tts-eng>
 
+## modules
+
+- [ZMQ Test](zmqTTStest.py)
+- [ZMQ Client](zmqTTSclient.py)
+- [Text to Speech](lifeAItts.py)
+- [Text to Image](lifeAIimage.py)
+
 ## Installation
 
 ```text

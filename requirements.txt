@@ -9,3 +9,4 @@ wave
 soundfile
 scipy
 accelerate
+diffusers
