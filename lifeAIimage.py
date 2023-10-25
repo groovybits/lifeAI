@@ -28,10 +28,18 @@ warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 trlogging.set_verbosity_error()
 model = VitsModel.from_pretrained("facebook/mms-tts-eng")
 tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-eng")
-
 model_id = "runwayml/stable-diffusion-v1-5"
-pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
-pipe.safety_checker = lambda images, clip_input: (images, False)
+
+## Disable NSFW filters
+pipe = StableDiffusionPipeline.from_pretrained(model_id,
+                                                torch_dtype=torch.float16,
+                                                safety_checker = None,
+                                                requires_safety_checker = False)
+
+#images = None
+#pipe.safety_checker = lambda images, clip_input: (images, False)
+
+## Offload to GPU Metal
 pipe = pipe.to("mps")
 
 def image_to_ascii(image, width):
@@ -80,7 +88,7 @@ if __name__ == "__main__":
     parser.add_argument("--input_port", type=int, required=True, help="Port for receiving text input")
     parser.add_argument("--output_port", type=int, required=True, help="Port for sending audio output")
     parser.add_argument("--output_file", type=str, default="", help="Output payloads to a file for analysis")
-    parser.add_argument("--video_format", choices=["pil", "raw"], default="pil", help="Video format to save as. Choices are 'pil' or 'raw'.")
+    parser.add_argument("--image_format", choices=["pil", "raw"], default="pil", help="Image format to save as. Choices are 'pil' or 'raw'.")
 
     args = parser.parse_args()
     main(args.input_port, args.output_port)
