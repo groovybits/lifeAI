@@ -8,17 +8,11 @@
 # as Richard Stallman intended it to be.
 #
 
+import io
 import zmq
 import argparse
 import textwrap
-import wave
-
-def save_as_wav(data, output_file, sample_rate=16000, channels=1, width=2):
-    with wave.open(output_file, 'w') as wav_file:
-        wav_file.setnchannels(channels)
-        wav_file.setsampwidth(width)
-        wav_file.setframerate(sample_rate)
-        wav_file.writeframes(data)
+import soundfile as sf
 
 def main(input_port, output_file=None, audio_format=None):
     context = zmq.Context()
@@ -39,7 +33,11 @@ def main(input_port, output_file=None, audio_format=None):
             # Check if we need to output to a file
             if output_file:
                 if audio_format == "wav":
-                    save_as_wav(payload_bytes, output_file)
+                    #audiobuf = io.BytesIO()
+                    #sf.write(audiobuf, payload_bytes, 16000, format='WAV')
+                    #audiobuf.seek(0)
+                    with open(output_file, 'wb') as f:
+                        f.write(payload_bytes)
                     print(f"Audio saved to {output_file} as WAV")
                 else:
                     with open(output_file, 'wb') as f:
