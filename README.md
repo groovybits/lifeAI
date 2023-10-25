@@ -6,8 +6,8 @@
 
 ## modules
 
-- [ZMQ Test](zmqTTStest.py)
-- [ZMQ Client](zmqTTSclient.py)
+- [ZMQ Text Client](zmqTextClient.py) Send text into ZMQ for modules.
+- [ZMQ TTS Listener](zmqTTSlisten.py) Listen for TTS Audio WAV file output.
 - [Text to Speech](lifeAItts.py)
 - [Text to Image](lifeAIimage.py)
 
