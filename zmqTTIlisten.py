@@ -29,7 +29,9 @@ def image_to_ascii(image, width):
 def main(input_port, output_file=None, audio_format=None):
     context = zmq.Context()
     socket = context.socket(zmq.PULL)
-    socket.connect(f"tcp://localhost:{input_port}")
+    print("connecting to ports in: %s:%d" % (args.input_host, args.input_port))
+    socket.connect(f"tcp://{args.input_host}:{args.input_port}")
+    #socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
     while True:
         try:
@@ -63,7 +65,8 @@ def main(input_port, output_file=None, audio_format=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input_port", type=int, required=True, help="Port for receiving image as PIL numpy arrays")
+    parser.add_argument("--input_port", type=int, required=False, default=3002, help="Port for receiving image as PIL numpy arrays")
+    parser.add_argument("--input_host", type=str, required=False, default="127.0.0.1", help="Host for receiving image as PIL numpy arrays")
     parser.add_argument("--output_file", type=str, help="Path to save the received image")
     parser.add_argument("--image_format", choices=["pil", "raw"], default="pil", help="Image format to save as. Choices are 'pil' or 'raw'.")
     args = parser.parse_args()

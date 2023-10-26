@@ -10,3 +10,4 @@ soundfile
 scipy
 accelerate
 diffusers
+llama-cpp-python

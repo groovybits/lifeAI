@@ -11,21 +11,36 @@
 import zmq
 import argparse
 
-def main(target_port, message):
+def main():
     context = zmq.Context()
 
     # Socket to send messages on
-    socket = context.socket(zmq.PUSH)
-    socket.connect(f"tcp://localhost:{target_port}")
+    tti_socket = context.socket(zmq.PUSH)
+    print("binding TTI to ports in: %s:%d" % (args.tti_output_host, args.tti_output_port))
+    tti_socket.bind(f"tcp://{args.tti_output_host}:{args.tti_output_port}")
 
     # Send the message
-    socket.send_string(message)
+    tti_socket.send_string(args.segment_number, zmq.SNDMORE)
+    tti_socket.send_string(args.message)
+
+    # Socket to send messages on
+    tts_socket = context.socket(zmq.PUSH)
+    print("binding TTS to ports in: %s:%d" % (args.tts_output_host, args.tts_output_port))
+    tts_socket.bind(f"tcp://{args.tts_output_host}:{args.tts_output_port}")
+
+    # Send the message
+    tts_socket.send_string(args.segment_number, zmq.SNDMORE)
+    tts_socket.send_string(args.message)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--target_port", type=int, required=True, help="Port to send message to")
+    parser.add_argument("--tti_output_port", type=int, default=2000, required=False, help="Port to send TTI message to")
+    parser.add_argument("--tti_output_host", type=str, default="127.0.0.1", required=False, help="Host for sending TTI text to.")
+    parser.add_argument("--tts_output_port", type=int, default=3000, required=False, help="Port to send TTS message to")
+    parser.add_argument("--tts_output_host", type=str, default="127.0.0.1", required=False, help="Host for sending TTS text to.")
     parser.add_argument("--message", type=str, required=True, help="Message to be sent")
+    parser.add_argument("--segment_number", type=str, required=True, help="Segment number")
     args = parser.parse_args()
 
-    main(args.target_port, args.message)
+    main()
 

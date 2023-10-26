@@ -31,17 +31,18 @@ tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-eng")
 def main(input_port, output_port):
     context = zmq.Context()
     receiver = context.socket(zmq.PULL)
-    receiver.bind(f"tcp://*:{input_port}")
+    print("connecting to ports in: %s:%d" % (args.input_host, args.input_port))
+    receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
+    #reciever.setsockopt_string(zmq.SUBSCRIBE, "")
 
     sender = context.socket(zmq.PUSH)
-    sender.bind(f"tcp://*:{output_port}")
-
-    segment_number = 1
+    print("binding to ports in: %s:%d" % (args.output_host, args.output_port))
+    sender.bind(f"tcp://{args.output_host}:{args.output_port}")
 
     while True:
         try:
-            message = receiver.recv_string()
-            _, text = message.split(":", 1)
+            segment_number = receiver.recv_string()
+            text = receiver.recv_string()
 
             inputs = tokenizer(text, return_tensors="pt")
             inputs['input_ids'] = inputs['input_ids'].long()
@@ -61,11 +62,13 @@ def main(input_port, output_port):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input_port", type=int, required=True, help="Port for receiving text input")
-    parser.add_argument("--output_port", type=int, required=True, help="Port for sending audio output")
+    parser.add_argument("--input_port", type=int, default=2000, required=False, help="Port for receiving text input")
+    parser.add_argument("--output_port", type=int, default=2001, required=False, help="Port for sending audio output")
     parser.add_argument("--target_lang", type=str, default="eng", help="Target language")
     parser.add_argument("--source_lang", type=str, default="eng", help="Source language")
     parser.add_argument("--audio_format", choices=["wav", "raw"], default="raw", help="Audio format to save as. Choices are 'wav' or 'raw'.")
+    parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Port for receiving text input")
+    parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending audio output")
 
     args = parser.parse_args()
     main(args.input_port, args.output_port)

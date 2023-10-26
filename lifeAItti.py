@@ -42,32 +42,25 @@ pipe = pipe.to("mps")
 def main(input_port, output_port):
     context = zmq.Context()
     receiver = context.socket(zmq.PULL)
-    receiver.bind(f"tcp://*:{input_port}")
+    print("connecting to port in: %s:%d" % (args.input_host, args.input_port))
+    receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
+    #receiver.setsockopt_string(zmq.SUBSCRIBE, "")
 
     sender = context.socket(zmq.PUSH)
-    sender.bind(f"tcp://*:{output_port}")
-
-    segment_number = 1
+    print("binding to port out: %s:%d" % (args.output_host, args.output_port))
+    sender.bind(f"tcp://{args.output_host}:{args.output_port}")
 
     while True:
-        message = receiver.recv_string()
-        ts, text = message.split(":", 1)
+        segment_number = receiver.recv_string()
+        text = receiver.recv_string()
 
         image = pipe(text).images[0]
 
-        print("Text to Image: recieved image #%s" % ts)
-        if args.output_file:
-            if args.image_format == "pil":
-                image.save(args.output_file)
-                print(f"Image saved to {args.output_file} as PIL\n")
-            else:
-                with open(args.output_file, 'wb') as f:
-                    f.write(output)
-                print(f"Payload written to {args.output_file}\n")
+        print("Text to Image: recieved image #%s" % segment_number)
 
         # Convert PIL Image to bytes
         img_byte_arr = io.BytesIO()
-        image.save(img_byte_arr, format='PNG')  # Save it as PNG or JPEG depending on your preference
+        image.save(img_byte_arr, format='JPEG')  # Save it as PNG or JPEG depending on your preference
         img_byte_arr = img_byte_arr.getvalue()
 
         sender.send_string(str(segment_number), zmq.SNDMORE)
@@ -75,10 +68,10 @@ def main(input_port, output_port):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input_port", type=int, required=True, help="Port for receiving text input")
-    parser.add_argument("--output_port", type=int, required=True, help="Port for sending audio output")
-    parser.add_argument("--output_file", type=str, default="", help="Output payloads to a file for analysis")
-    parser.add_argument("--image_format", choices=["pil", "raw"], default="pil", help="Image format to save as. Choices are 'pil' or 'raw'.")
+    parser.add_argument("--input_port", type=int, default=3001, required=False, help="Port for receiving text input")
+    parser.add_argument("--output_port", type=int, default=3002, required=False, help="Port for sending image output")
+    parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Port for receiving text input")
+    parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending image output")
 
     args = parser.parse_args()
     main(args.input_port, args.output_port)

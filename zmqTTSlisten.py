@@ -17,7 +17,9 @@ import soundfile as sf
 def main(input_port, output_file=None, audio_format=None):
     context = zmq.Context()
     socket = context.socket(zmq.PULL)
-    socket.connect(f"tcp://localhost:{input_port}")
+    print("connecting to ports in: %s:%d" % (args.input_host, args.input_port))
+    socket.connect(f"tcp://{args.input_host}:{args.input_port}")
+    #socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
     while True:
         try:
@@ -55,9 +57,10 @@ def main(input_port, output_file=None, audio_format=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input_port", type=int, required=True, help="Port for receiving audio numpy arrays")
+    parser.add_argument("--input_port", type=int, default=2001, required=False, help="Port for receiving audio numpy arrays")
+    parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Host for receiving audio input")
     parser.add_argument("--output_file", type=str, help="Path to save the received audio")
-    parser.add_argument("--audio_format", type=str, choices=["wav", "raw"], default="raw", help="Audio format to save as. Choices are 'wav' or 'raw'. Default is 'raw'.")
+    parser.add_argument("--audio_format", type=str, choices=["wav", "raw"], default="wav", help="Audio format to save as. Choices are 'wav' or 'raw'. Default is 'wav'.")
     args = parser.parse_args()
 
     main(args.input_port, args.output_file, args.audio_format)
