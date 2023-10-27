@@ -24,18 +24,6 @@ warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
 from urllib3.exceptions import NotOpenSSLWarning
 warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 trlogging.set_verbosity_error()
-model = VitsModel.from_pretrained("facebook/mms-tts-eng")
-tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-eng")
-model_id = "runwayml/stable-diffusion-v1-5"
-
-## Disable NSFW filters
-pipe = StableDiffusionPipeline.from_pretrained(model_id,
-                                                torch_dtype=torch.float16,
-                                                safety_checker = None,
-                                                requires_safety_checker = False)
-
-## Offload to GPU Metal
-pipe = pipe.to("mps")
 
 def main():
     context = zmq.Context()
@@ -51,10 +39,15 @@ def main():
     while True:
         try:
             segment_number = receiver.recv_string()
+            id = receiver.recv_string()
+            type = receiver.recv_string()
+            username = receiver.recv_string()
+            source = receiver.recv_string()
+            message = receiver.recv_string()
             prompt = receiver.recv_string()
             text = receiver.recv_string()
 
-            print(f"Text to Image recieved image #%s {prompt}." % segment_number)
+            print(f"Text to Image recieved text #{segment_number}\n - {prompt}.")
 
             image = pipe(prompt).images[0]
 
@@ -64,11 +57,16 @@ def main():
             image = img_byte_arr.getvalue()
 
             sender.send_string(str(segment_number), zmq.SNDMORE)
+            sender.send_string(id, zmq.SNDMORE)
+            sender.send_string(type, zmq.SNDMORE)
+            sender.send_string(username, zmq.SNDMORE)
+            sender.send_string(source, zmq.SNDMORE)
+            sender.send_string(message, zmq.SNDMORE)
             sender.send_string(prompt, zmq.SNDMORE)
             sender.send_string(text, zmq.SNDMORE)
             sender.send(image)
 
-            print(f"Text to Image sent image #%s:\n - {text}" % segment_number)
+            print(f"Text to Image sent image #{segment_number}:\n - {prompt}")
         except Exception as e:
             print("Error in Text to Image: %s" % str(e))
 
@@ -78,9 +76,19 @@ if __name__ == "__main__":
     parser.add_argument("--output_port", type=int, default=3002, required=False, help="Port for sending image output")
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Port for receiving text input")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending image output")
-    parser.add_argument("--width", type=int, default=1024, help="Width of the output image")
-    parser.add_argument("--height", type=int, default=1024, help="Height of the output image")
 
     args = parser.parse_args()
+
+    model = VitsModel.from_pretrained("facebook/mms-tts-eng")
+    tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-eng")
+    model_id = "runwayml/stable-diffusion-v1-5"
+    ## Disable NSFW filters
+    pipe = StableDiffusionPipeline.from_pretrained(model_id,
+                                                    torch_dtype=torch.float16,
+                                                    safety_checker = None,
+                                                    requires_safety_checker = False)
+
+    ## Offload to GPU Metal
+    pipe = pipe.to("mps")
     main()
 

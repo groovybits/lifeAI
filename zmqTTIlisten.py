@@ -14,6 +14,7 @@ import argparse
 import soundfile as sf
 from PIL import Image
 import re
+import os
 
 def image_to_ascii(image):
     image = image.resize((args.width, int((image.height/image.width) * args.width * 0.55)), Image.LANCZOS)
@@ -34,37 +35,39 @@ def main():
     #socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
     while True:
-        try:
-            # Receive the segment number (header) first
-            segment_number = socket.recv_string()
-            image_prompt = socket.recv_string()
-            image_text = socket.recv_string()
+        # Receive the segment number (header) first
+        segment_number = socket.recv_string()
+        id = socket.recv_string()
+        type = socket.recv_string()
+        username = socket.recv_string()
+        source = socket.recv_string()
+        message = socket.recv_string()
+        image_prompt = socket.recv_string()
+        image_text = socket.recv_string()
 
-            # Now, receive the binary audio data
-            image = socket.recv()
+        # Now, receive the binary audio data
+        image = socket.recv()
 
-            # Print the header
-            print(f"Received image segment #{segment_number}")
+        # Print the header
+        print(f"Received image segment #{segment_number}")
 
-            # create an output file using the prompt and segment_number
-            prompt_summary = re.sub(r'[^a-zA-Z0-9]', '', image_prompt)[:50]
-            image_file = f"{args.output_directory}/{segment_number}_{prompt_summary}.png"
-            if args.image_format == "pil":
-                with open(image_file, 'wb') as f:
-                    f.write(image)
-                print(f"Image saved to {image_file} as PIL\n")
-            else:
-                with open(image_file, 'wb') as f:
-                    f.write(image)
-                print(f"Payload written to {image_file}\n")
+        # create an output file using the prompt and segment_number
+        prompt_summary = re.sub(r'[^a-zA-Z0-9]', '', image_prompt)[:50]
+        image_file = f"{args.output_directory}/{source}/{type}/{username}/{id}/{segment_number}_{prompt_summary}.png"
+        os.makedirs(os.path.dirname(image_file), exist_ok=True)
+        if args.image_format == "pil":
+            with open(image_file, 'wb') as f:
+                f.write(image)
+            print(f"Image saved to {image_file} as PIL\n")
+        else:
+            with open(image_file, 'wb') as f:
+                f.write(image)
+            print(f"Payload written to {image_file}\n")
 
-            # Convert the bytes back to a PIL Image object
-            image = Image.open(io.BytesIO(image))
-            payload_hex = image_to_ascii(image)
-            print(f"Image #{segment_number} Payload (Hex):\n{payload_hex}\nImage Prompt: {image_prompt}\nImage Text: {image_text}\n")
-        except Exception as e:
-            print(f"Error: {e}")
-            continue
+        # Convert the bytes back to a PIL Image object
+        image = Image.open(io.BytesIO(image))
+        payload_hex = image_to_ascii(image)
+        print(f"Image #{segment_number} Payload (Hex):\n{payload_hex}\nImage Prompt: {image_prompt}\nImage Text: {image_text}\nMessage: {message}\n")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

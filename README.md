@@ -34,18 +34,39 @@ pip install -r requirements.txt
 ```text
 # Running TTS module with
 # ZQM TCP 900 text in TO ZMQ TCP 1000 numpy audio samples out
-./lifeAIllm.py --chat
+
+# ZMQ input Client to send messages through the pipeline for testing
+python zmqTextClient.py --message "An apple on a laptop." --segment_number 1 --username "User"
+
+# ZMQ Twitch input Client (Coming soon)
+
+# ZMQ News feed Client Mediastack (Coming soon)
+
+# ZMQ Whisper speech to text Client (Coming soon)
+
+# LLM Text track
+./lifeAIllm.py
+
+# TTS Speech audio
 ./lifeAItts.py
+
+# TTI Images for video stream frames
 ./lifeAItti.py
+
+# Prompt Optimizer for image and other media generation
 ./lifeAIpromptOptimization.py
-./lifeAIsubTitleBurnIn.py --use_prompt
+
+# Subtitle Burn In for image subtitles hardsubs
+./lifeAIsubTitleBurnIn.py
+
+# ZMQ listener clients for listening, probing and viewing ascii image output
+## Stored in audio/ and images/ as wav and png files with burn-in with filename
+## metadata inclusion and episode_id, index, prompt string
+python zmqTTSlisten.py
+python zmqTTIlisten.py
+
 #
-# ZMQ listener client
-python zmqTTSlisten.py --output_file audio.wav
-python zmqTTIlisten.py --output_file image.jpg
-#
-# ZMQ input test (TTS/TTI input to lifeAItts.py and lifeAItti modules ZMQ Ports)
-python zmqTextClient.py --message "An apple on a laptop." --segment_number 1
+
 ##
 ```
 

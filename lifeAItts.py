@@ -73,7 +73,14 @@ def main():
     while True:
         try:
             segment_number = receiver.recv_string()
+            id = receiver.recv_string()
+            type = receiver.recv_string()
+            username = receiver.recv_string()
+            source = receiver.recv_string()
+            prompt = receiver.recv_string()
             text = receiver.recv_string()
+
+            print("Text to Speech recieved text #%s: %s" % (segment_number, text))
 
             inputs = tokenizer(clean_text_for_tts(text), return_tensors="pt")
             inputs['input_ids'] = inputs['input_ids'].long()
@@ -88,6 +95,11 @@ def main():
 
             duration = len(waveform_np) / model.config.sampling_rate
             sender.send_string(str(segment_number), zmq.SNDMORE)
+            sender.send_string(id, zmq.SNDMORE)
+            sender.send_string(type, zmq.SNDMORE)
+            sender.send_string(username, zmq.SNDMORE)
+            sender.send_string(source, zmq.SNDMORE)
+            sender.send_string(prompt, zmq.SNDMORE)
             sender.send_string(text, zmq.SNDMORE)
             sender.send_string(str(duration), zmq.SNDMORE)
             sender.send(audiobuf.getvalue())

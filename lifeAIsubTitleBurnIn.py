@@ -109,7 +109,6 @@ def add_text_to_image(image, text):
         print("Adding text to image")
 
         # Maintain aspect ratio and add black bars
-        #desired_ratio = 16 / 9
         width, height = image.size
         desired_ratio = width / height
         current_ratio = width / height
@@ -162,12 +161,26 @@ def add_text_to_image(image, text):
                     return True
             return False
 
-        wrapped_text = textwrap.wrap(text, width=45)  # Adjusted width
+        wrap_width = 30
+        is_wide = False
+        if current_ratio > 512/512:
+            wrap_width = 45
+            is_wide = True
+        wrapped_text = textwrap.wrap(text, width=wrap_width, fix_sentence_endings=False, break_long_words=False, break_on_hyphens=False)  # Adjusted width
         y_pos = height - 40  # Adjusted height from bottom
 
-        font_size = 2
-        font_thickness = 4  # Adjusted for bolder font
-        border_thickness = 15  # Adjusted for bolder border
+        font_size = 1
+        font_thickness = 2  # Adjusted for bolder font
+        border_thickness = 8  # Adjusted for bolder border
+
+        if is_wide:
+            font_size = 2
+            font_thickness = 4
+            border_thickness = 15
+        elif width < 600:  # Assuming smaller images have widths less than 600, adjust if necessary
+            font_size = 1
+            font_thickness = 3
+            border_thickness = 10
 
         for line in reversed(wrapped_text):
             text_width, _ = cv2.getTextSize(line, cv2.FONT_HERSHEY_DUPLEX, font_size, font_thickness)[0]
@@ -197,6 +210,11 @@ def main():
 
     while True:
         segment_number = receiver.recv_string()
+        id = receiver.recv_string()
+        type = receiver.recv_string()
+        username = receiver.recv_string()
+        source = receiver.recv_string()
+        message = receiver.recv_string()
         prompt = receiver.recv_string()
         text = receiver.recv_string()
         image = receiver.recv()
@@ -205,9 +223,6 @@ def main():
         
         ## Convert the bytes back to a PIL Image object
         image = Image.open(io.BytesIO(image))
-
-        if args.round_corners:
-            image = round_corners(image, 50)
 
         if args.use_prompt:
             image = add_text_to_image(image, prompt)
@@ -220,6 +235,11 @@ def main():
         image = img_byte_arr.getvalue()
 
         sender.send_string(str(segment_number), zmq.SNDMORE)
+        sender.send_string(id, zmq.SNDMORE)
+        sender.send_string(type, zmq.SNDMORE)
+        sender.send_string(username, zmq.SNDMORE)
+        sender.send_string(source, zmq.SNDMORE)
+        sender.send_string(message, zmq.SNDMORE)
         sender.send_string(prompt, zmq.SNDMORE)
         sender.send_string(text, zmq.SNDMORE)
         sender.send(image)
@@ -234,8 +254,8 @@ if __name__ == "__main__":
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending image output")
     parser.add_argument("--use_prompt", action="store_true", default=False, help="Burn in the prompt that created the image")
     parser.add_argument("--format", type=str, default="PNG", help="Image format to save as. Choices are 'PNG' or 'JPEG'. Default is 'PNG'.")
-    parser.add_argument("--width", type=int, default=1920, help="Width of the output image")
-    parser.add_argument("--height", type=int, default=1080, help="Height of the output image")
+    parser.add_argument("--width", type=int, default=1024, help="Width of the output image")
+    parser.add_argument("--height", type=int, default=1024, help="Height of the output image")
     parser.add_argument("--round_corners", action="store_true", default=False, help="Round the corners of the image")
 
     args = parser.parse_args()

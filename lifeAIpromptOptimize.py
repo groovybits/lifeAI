@@ -45,13 +45,19 @@ def main():
     while True:
         # Receive a message
         segment_number = receiver.recv_string()
+        id = receiver.recv_string()
+        type = receiver.recv_string()
+        username = receiver.recv_string()
+        source = receiver.recv_string()
+        message = receiver.recv_string()
         text = receiver.recv_string()
+
         print(f"\n---\nPrompt optimizer: received text #{text}\n")
         optimized_prompt = ""
 
         image_prompt_data = None
         prompt = f"{args.prompt}\n\nImageDescription: {text}\nImagePrompt:"
-        print(f"Prompt optimizer: sending prompt to LLM:\n - {prompt}\n")
+        print(f"Prompt optimizer: sending text to LLM:\n - {text}\n")
         try:
             image_prompt_data = llm_image(
                 prompt,
@@ -75,6 +81,11 @@ def main():
 
         # Send the processed message
         sender.send_string(str(segment_number), zmq.SNDMORE)
+        sender.send_string(id, zmq.SNDMORE)
+        sender.send_string(type, zmq.SNDMORE)
+        sender.send_string(username, zmq.SNDMORE)
+        sender.send_string(source, zmq.SNDMORE)
+        sender.send_string(message, zmq.SNDMORE)
         sender.send_string(optimized_prompt, zmq.SNDMORE)
         sender.send_string(text)
 
@@ -82,14 +93,14 @@ def main():
 
 if __name__ == "__main__":
     model = "models/zephyr-7b-alpha.Q2_K.gguf"
-    prompt = "Take the ImageDescription and summarize it into a short 2 sentence description that explains the condensed picture visualized from the ImageDescription to use for image generation."
+    prompt = "Take the ImageDescription and summarize it into a short 2 sentence description of under 200 tokens that explains the condensed picture visualized from the ImageDescription to use for image generation."
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_host", type=str, default="127.0.0.1")
     parser.add_argument("--input_port", type=int, default=2000)
     parser.add_argument("--output_host", type=str, default="127.0.0.1")
     parser.add_argument("--output_port", type=int, default=3001)
     parser.add_argument("--prompt", type=str, default=prompt)
-    parser.add_argument("--maxtokens", type=int, default=100)
+    parser.add_argument("--maxtokens", type=int, default=200)
     parser.add_argument("--context", type=int, default=4096)
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("--gpulayers", type=int, default=0)
