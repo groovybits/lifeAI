@@ -18,7 +18,7 @@ def main():
     # Socket to send messages on
     tti_socket = context.socket(zmq.PUSH)
     print("binding to send message: %s:%d" % (args.output_host, args.output_port))
-    tti_socket.bind(f"tcp://{args.output_host}:{args.output_port}")
+    tti_socket.connect(f"tcp://{args.output_host}:{args.output_port}")
 
     # Send the message
     tti_socket.send_string(args.segment_number, zmq.SNDMORE)

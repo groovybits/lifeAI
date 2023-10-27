@@ -78,7 +78,7 @@ class TwitchStreamer:
                 height=self.height,
                 fps=30,
                 enable_audio=True,
-                verbose=False) as self.videostream:
+                verbose=True) as self.videostream:
             
             last_frame_time = time.time()
             first_frame = False

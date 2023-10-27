@@ -257,7 +257,6 @@ def main():
     finally:
         loop.close()
    
-
 if __name__ == "__main__":
     default_id = uuid.uuid4().hex[:8]
 
@@ -271,6 +270,6 @@ if __name__ == "__main__":
     # Socket to send messages on
     tti_socket = context.socket(zmq.PUSH)
     print("binding to send message: %s:%d" % (args.output_host, args.output_port))
-    tti_socket.bind(f"tcp://{args.output_host}:{args.output_port}")
+    tti_socket.connect(f"tcp://{args.output_host}:{args.output_port}")
 
     main()

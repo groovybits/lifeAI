@@ -66,7 +66,7 @@ def main():
     receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
     receiver.setsockopt_string(zmq.SUBSCRIBE, "")
 
-    sender = context.socket(zmq.PUSH)
+    sender = context.socket(zmq.PUB)
     print("binded to ZMQ out: %s:%d" % (args.output_host, args.output_port))
     sender.bind(f"tcp://{args.output_host}:{args.output_port}")
 

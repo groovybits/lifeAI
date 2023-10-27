@@ -248,7 +248,7 @@ if __name__ == "__main__":
     # Set up the subscriber
     receiver = zmq_context.socket(zmq.PULL)
     print(f"connected to ZMQ in {args.input_host}:{args.input_port}")
-    receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
+    receiver.bind(f"tcp://{args.input_host}:{args.input_port}")
     #receiver.setsockopt_string(zmq.SUBSCRIBE, "")
 
     # Set up the publisher
