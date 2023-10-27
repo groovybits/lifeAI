@@ -1,8 +1,10 @@
 # Life AI - Bring your words to life using AI
 
-## This uses Facebook mms-tts-eng a model that is multilingual for TTS
+## This uses the following models from huggingface
 
-- <https://huggingface.co/facebook/mms-tts-eng>
+- <https://huggingface.co/facebook/mms-tts-eng> Facebook mms-tts-eng a model that is multilingual for TTS
+- <https://huggingface.co/TheBloke/zephyr-7B-alpha-GGUF> A 7B parameter GPT-like model fine-tuned on a mix of publicly available, synthetic datasets.
+- <https://huggingface.co/runwayml/stable-diffusion-v1-5> Stable Diffusion 1.5
 
 ## modules
 
@@ -32,9 +34,6 @@ pip install -r requirements.txt
 ## Running lifeAI
 
 ```text
-# Running TTS module with
-# ZQM TCP 900 text in TO ZMQ TCP 1000 numpy audio samples out
-
 # ZMQ input Client to send messages through the pipeline for testing
 python zmqTextClient.py --message "An apple on a laptop." --segment_number 1 --username "User"
 
@@ -64,8 +63,6 @@ python zmqTextClient.py --message "An apple on a laptop." --segment_number 1 --u
 ## metadata inclusion and episode_id, index, prompt string
 python zmqTTSlisten.py
 python zmqTTIlisten.py
-
-#
 
 ##
 ```
