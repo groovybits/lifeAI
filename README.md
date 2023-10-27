@@ -8,7 +8,8 @@
 
 ## modules
 
-- [ZMQ Text Client](zmqTextClient.py) Send text into lifeAI TTS and TTI processing.
+- [ZMQ Text Client](zmqTextClient.py) Send text into lifeAI for simulation seeding.
+- [ZMQ Twitch Client](zmqTwitchClient.py) Twitch chat sent to lifeAI for responses.
 - [ZMQ TTS Listener](zmqTTSlisten.py) Listen for TTS Audio WAV file output.
 - [ZMQ TTI Listener](zmqTTIlisten.py) Listen for TTI Image PIL file output.
 - [Text to AI Speech](lifeAItts.py)   Facebook MMS-TTS Text to Speech Conversion.
@@ -29,6 +30,12 @@ pip install --upgrade pip
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Python Twitch Stream
+git clone https://github.com/317070/python-twitch-stream.git
+cd python-twitch-stream
+pip install .
+
 ```
 
 ## Running lifeAI

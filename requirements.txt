@@ -15,3 +15,5 @@ pygame
 opencv-python
 inflect
 uuid
+python-dotenv
+twitchio
