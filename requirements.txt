@@ -13,3 +13,4 @@ diffusers
 llama-cpp-python
 pygame
 opencv-python
+inflect

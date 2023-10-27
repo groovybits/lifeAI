@@ -17,6 +17,8 @@ import soundfile as sf
 from transformers import logging as trlogging
 import warnings
 import urllib3
+import inflect
+import re
 
 warnings.simplefilter(action='ignore', category=Warning)
 warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
@@ -26,6 +28,36 @@ trlogging.set_verbosity_error()
 
 model = VitsModel.from_pretrained("facebook/mms-tts-eng")
 tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-eng")
+
+def convert_numbers_to_words(text):
+    p = inflect.engine()
+
+    def num_to_words(match):
+        number = match.group()
+        if '.' in number:
+            parts = number.split('.')
+            words = f"{p.number_to_words(parts[0])} point {p.number_to_words(parts[1])}"
+        else:
+            words = p.number_to_words(number)
+        return words
+
+    text_with_words = re.sub(r'\b\d+(\.\d+)?\b', num_to_words, text)
+    return text_with_words
+
+def clean_text_for_tts(text):
+    # Convert numbers to words
+    p = inflect.engine()
+    text = re.sub(r'\b\d+(\.\d+)?\b', lambda match: p.number_to_words(match.group()), text)
+
+    convert_numbers_to_words(text)
+
+    # Add a pause after punctuation
+    text = text.replace('.', '. ')
+    text = text.replace(',', ', ')
+    text = text.replace('?', '? ')
+    text = text.replace('!', '! ')
+
+    return text
 
 def main():
     context = zmq.Context()
@@ -43,7 +75,7 @@ def main():
             segment_number = receiver.recv_string()
             text = receiver.recv_string()
 
-            inputs = tokenizer(text, return_tensors="pt")
+            inputs = tokenizer(clean_text_for_tts(text), return_tensors="pt")
             inputs['input_ids'] = inputs['input_ids'].long()
 
             output = None

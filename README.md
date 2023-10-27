@@ -34,6 +34,7 @@ pip install -r requirements.txt
 ```text
 # Running TTS module with
 # ZQM TCP 900 text in TO ZMQ TCP 1000 numpy audio samples out
+./lifeAIllm.py --chat
 ./lifeAItts.py
 ./lifeAItti.py
 ./lifeAIpromptOptimization.py
