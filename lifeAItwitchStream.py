@@ -44,6 +44,8 @@ def draw_default_frame():
     cv2.putText(default_img, text, (x_centered, y_centered), font, font_scale, color, font_thickness, lineType=cv2.LINE_AA)
 
     default_img = Image.fromarray(cv2.cvtColor(default_img, cv2.COLOR_BGR2RGB))
+
+    print(f"Created default image type #{type(default_img)}")
     return default_img
 
     return None
@@ -82,7 +84,7 @@ class TwitchStreamer:
             
             last_frame_time = time.time()
             first_frame = False
-            default_image = draw_default_frame()
+            default_image = None #draw_default_frame()
             limage = default_image
 
             while not self.stop_event.is_set():
@@ -115,9 +117,16 @@ class TwitchStreamer:
                 #image = np.array(image)
                 #image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
                 #assert image.shape == (args.width, args.height, 3), f"Unexpected shape: {image.shape}"
-                #print(f"Sending converted image type to video #{type(image)}")
-                image = np.array(image)
-                self.videostream.send_video_frame(image)
+                #image = np.array(image)
+                # PIL to NumPy
+                #image = np.asarray(image)  
+                # Scale values to 0-255 
+                #image = image * 255 
+        
+                if image is not None and image.size > 0:
+                    image = cv2.cvtColor(image, cv2.COLOR_RGB2YUV_I420) 
+                    print(f"\n---\nSending converted image type to video #{type(image)}")
+                    self.videostream.send_video_frame(image)
 
                 ## Send Audio
                 if audio is not None:
@@ -133,8 +142,8 @@ class TwitchStreamer:
                 
                         last_frame_time = time.time()
                         first_frame = False
-                        default_image = draw_default_frame()
-                        limage = default_image
+                        #default_image = draw_default_frame()
+                        #limage = default_image
 
                         while not self.stop_event.is_set():
                             image = None
@@ -166,9 +175,15 @@ class TwitchStreamer:
                             #image = cv2.cvtColor(image, cv2.COLOR_BGR2YUV_I420)
                             #image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
                             #assert image.shape == (args.width, args.height, 3), f"Unexpected shape: {image.shape}"
-                            image = np.array(image)
-                             #print(f"Sending converted image type to video #{type(image)}")
-                            self.videostream.send_video_frame(image)
+                            #image = np.array(image)
+                            # PIL to NumPy
+                            #image = np.asarray(image)  
+                            # Scale values to 0-255 
+                            #image = image * 255 
+                            if image is not None and image.size > 0:
+                                image = cv2.cvtColor(image, cv2.COLOR_RGB2YUV_I420)
+                                print(f"\n---\nSending converted image type to video #{type(image)}")
+                                self.videostream.send_video_frame(image)
 
                             ## Send Audio
                             if audio is not None:
@@ -204,16 +219,16 @@ def main():
             image = image_socket.recv()
 
             # Convert to PIL Image
-            image = Image.open(io.BytesIO(image))
+            #image = Image.open(io.BytesIO(image))
 
             # Convert PIL to numpy array  
-            image = np.asarray(image)
+            #image = np.asarray(image)
 
             # Convert RGB to BGR
-            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            #image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
             print(f"\n===\nReceived image type #{type(image)}\n")
-            if image:
+            if image and image.size() > 0:
                 # Convert the bytes back to a PIL Image object
                 #image = Image.open(io.BytesIO(image))
                 #image = np.array(image)
