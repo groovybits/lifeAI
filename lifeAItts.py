@@ -60,16 +60,6 @@ def clean_text_for_tts(text):
     return text
 
 def main():
-    context = zmq.Context()
-    receiver = context.socket(zmq.SUB)
-    print("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
-    receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
-    receiver.setsockopt_string(zmq.SUBSCRIBE, "")
-
-    sender = context.socket(zmq.PUB)
-    print("binded to ZMQ out: %s:%d" % (args.output_host, args.output_port))
-    sender.bind(f"tcp://{args.output_host}:{args.output_port}")
-
     while True:
         try:
             segment_number = receiver.recv_string()
@@ -119,5 +109,16 @@ if __name__ == "__main__":
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending audio output")
 
     args = parser.parse_args()
+
+    context = zmq.Context()
+    receiver = context.socket(zmq.SUB)
+    print("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
+    receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
+    receiver.setsockopt_string(zmq.SUBSCRIBE, "")
+
+    sender = context.socket(zmq.PUB)
+    print("binded to ZMQ out: %s:%d" % (args.output_host, args.output_port))
+    sender.bind(f"tcp://{args.output_host}:{args.output_port}")
+
     main()
 

@@ -28,12 +28,6 @@ def image_to_ascii(image):
 
 
 def main():
-    context = zmq.Context()
-    socket = context.socket(zmq.PULL)
-    print("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
-    socket.connect(f"tcp://{args.input_host}:{args.input_port}")
-    #socket.setsockopt_string(zmq.SUBSCRIBE, "")
-
     while True:
         # Receive the segment number (header) first
         segment_number = socket.recv_string()
@@ -77,6 +71,12 @@ if __name__ == "__main__":
     parser.add_argument("--image_format", choices=["pil", "raw"], default="pil", help="Image format to save as. Choices are 'pil' or 'raw'.")
     parser.add_argument("--width", type=int, default=80, help="Width of the output image")
     args = parser.parse_args()
+
+    context = zmq.Context()
+    socket = context.socket(zmq.SUB)
+    print("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
+    socket.connect(f"tcp://{args.input_host}:{args.input_port}")
+    socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
     main()
 

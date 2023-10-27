@@ -26,16 +26,6 @@ warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 trlogging.set_verbosity_error()
 
 def main():
-    context = zmq.Context()
-    receiver = context.socket(zmq.PULL)
-    print("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
-    receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
-    #receiver.setsockopt_string(zmq.SUBSCRIBE, "")
-
-    sender = context.socket(zmq.PUSH)
-    print("binded to ZMQ out: %s:%d" % (args.output_host, args.output_port))
-    sender.bind(f"tcp://{args.output_host}:{args.output_port}")
-
     while True:
         try:
             segment_number = receiver.recv_string()
@@ -90,5 +80,16 @@ if __name__ == "__main__":
 
     ## Offload to GPU Metal
     pipe = pipe.to("mps")
+
+    context = zmq.Context()
+    receiver = context.socket(zmq.PULL)
+    print("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
+    receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
+    #receiver.setsockopt_string(zmq.SUBSCRIBE, "")
+
+    sender = context.socket(zmq.PUSH)
+    print("binded to ZMQ out: %s:%d" % (args.output_host, args.output_port))
+    sender.bind(f"tcp://{args.output_host}:{args.output_port}")
+
     main()
 

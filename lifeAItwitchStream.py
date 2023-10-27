@@ -258,15 +258,15 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     context = zmq.Context()
-    image_socket = context.socket(zmq.PULL)
+    image_socket = context.socket(zmq.SUB)
     print("connected to ZMQ Images in: %s:%d" % (args.image_input_host, args.image_input_port))
     image_socket.connect(f"tcp://{args.image_input_host}:{args.image_input_port}")
-    #image_socket.setsockopt_string(zmq.SUBSCRIBE, "")
+    image_socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
-    audio_socket = context.socket(zmq.PULL)
+    audio_socket = context.socket(zmq.SUB)
     print("connected to ZMQ Audio in: %s:%d" % (args.audio_input_host, args.audio_input_port))
     audio_socket.connect(f"tcp://{args.audio_input_host}:{args.audio_input_port}")
-    #image_socket.setsockopt_string(zmq.SUBSCRIBE, "")
+    image_socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
     exit_program = False
     main()

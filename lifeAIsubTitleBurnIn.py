@@ -151,16 +151,6 @@ def add_text_to_image(image, text):
     return image  # returning the modified image
 
 def main():
-    context = zmq.Context()
-    receiver = context.socket(zmq.PULL)
-    print("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
-    receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
-    #receiver.setsockopt_string(zmq.SUBSCRIBE, "")
-
-    sender = context.socket(zmq.PUB)
-    print("binded to ZMQ out: %s:%d" % (args.output_host, args.output_port))
-    sender.bind(f"tcp://{args.output_host}:{args.output_port}")
-
     while True:
         segment_number = receiver.recv_string()
         id = receiver.recv_string()
@@ -211,5 +201,16 @@ if __name__ == "__main__":
     parser.add_argument("--height", type=int, default=1024, help="Height of the output image")
 
     args = parser.parse_args()
+
+    context = zmq.Context()
+    receiver = context.socket(zmq.PULL)
+    print("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
+    receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
+    #receiver.setsockopt_string(zmq.SUBSCRIBE, "")
+
+    sender = context.socket(zmq.PUB)
+    print("binded to ZMQ out: %s:%d" % (args.output_host, args.output_port))
+    sender.bind(f"tcp://{args.output_host}:{args.output_port}")
+
     main()
 

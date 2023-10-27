@@ -31,12 +31,6 @@ def play_audio(audio_samples):
             pygame.time.Clock().tick(10)
 
 def main():
-    context = zmq.Context()
-    socket = context.socket(zmq.PULL)
-    print("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
-    socket.connect(f"tcp://{args.input_host}:{args.input_port}")
-    #socket.setsockopt_string(zmq.SUBSCRIBE, "")
-
     while True:
         try:
             # Receive the segment number (header) first
@@ -91,6 +85,12 @@ if __name__ == "__main__":
     parser.add_argument("--show_hex", action="store_true", help="Show the hex representation of the audio payload")
     parser.add_argument("--audio_format", type=str, choices=["wav", "raw"], default="wav", help="Audio format to save as. Choices are 'wav' or 'raw'. Default is 'wav'.")
     args = parser.parse_args()
+
+    context = zmq.Context()
+    socket = context.socket(zmq.SUB)
+    print("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
+    socket.connect(f"tcp://{args.input_host}:{args.input_port}")
+    socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
     main()
 

@@ -25,23 +25,6 @@ warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 trlogging.set_verbosity_error()
 
 def main():
-    context = zmq.Context()
-
-    # Set up the subscriber
-    receiver = context.socket(zmq.SUB)
-    print(f"connected to ZMQ in {args.input_host}:{args.input_port}")
-    receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
-    receiver.setsockopt_string(zmq.SUBSCRIBE, "")
-
-    # Set up the publisher
-    sender = context.socket(zmq.PUSH)
-    print(f"binded to ZMQ out {args.output_host}:{args.output_port}")
-    sender.bind(f"tcp://{args.output_host}:{args.output_port}")
-
-    # LLM Model for image prompt generation
-    llm_image = Llama(model_path=args.model,
-                      n_ctx=args.context, verbose=args.debug, n_gpu_layers=args.gpulayers)
-
     while True:
         # Receive a message
         segment_number = receiver.recv_string()
@@ -108,5 +91,23 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--debug", action="store_true", default=False)
 
     args = parser.parse_args()
+
+    context = zmq.Context()
+
+    # Set up the subscriber
+    receiver = context.socket(zmq.SUB)
+    print(f"connected to ZMQ in {args.input_host}:{args.input_port}")
+    receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
+    receiver.setsockopt_string(zmq.SUBSCRIBE, "")
+
+    # Set up the publisher
+    sender = context.socket(zmq.PUSH)
+    print(f"binded to ZMQ out {args.output_host}:{args.output_port}")
+    sender.bind(f"tcp://{args.output_host}:{args.output_port}")
+
+    # LLM Model for image prompt generation
+    llm_image = Llama(model_path=args.model,
+                      n_ctx=args.context, verbose=args.debug, n_gpu_layers=args.gpulayers)
+
     main()
 
