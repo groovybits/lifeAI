@@ -62,22 +62,35 @@ def run_llm(message, user_messages, id, type, username, source):
             continue
 
         token = delta['content']
-        accumulator.append(token)
-        token_count += len(token)
         print(token, end='', flush=True)
 
         if not args.spacebreaks:
+            accumulator.append(token)
+            token_count += len(token)
             if accumulator.count('\n') >= args.sentence_count or (token_count >= args.tokens_per_line and ('.' or '!' or '?') in token):
                 send_lines(accumulator)
                 accumulator = []
                 token_count = 0
-        elif token_count >= args.tokens_per_line and ' ' in token:
-            # Split on the last space in the token
-            split_index = token.rfind(' ')
-            accumulator.append(token[:split_index])  # Add the first part of the token
-            send_lines(accumulator)
-            accumulator = [token[split_index + 1:]]  # Start accumulator with the second part of the token
-            token_count = len(accumulator[0])  # Update the token_count
+        elif token_count >= args.tokens_per_line:
+            if ' ' in token:
+                # Split on the last space in the token
+                split_index = token.rfind(' ')
+                pre_split = token[:split_index]
+                post_split = token[split_index + 1:]
+
+                accumulator.append(pre_split)  # Add the first part to the accumulator
+                send_lines(accumulator)
+                accumulator = [post_split]  # Start the new accumulator with the second part
+                token_count = len(post_split)  # Update the token_count
+            else:
+                send_lines(accumulator)
+                accumulator = []
+                token_count = 0
+                accumulator.append(token)
+                token_count += len(token)
+        else:
+            accumulator.append(token)
+            token_count += len(token)
 
     # Send any remaining tokens in accumulator
     if accumulator:
