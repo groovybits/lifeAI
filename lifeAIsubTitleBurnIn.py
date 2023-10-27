@@ -23,53 +23,6 @@ warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
 from urllib3.exceptions import NotOpenSSLWarning
 warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 
-def round_corners(image: Image, radius: int) -> Image:
-    """
-    Round the corners of a PIL Image.
-    Args:
-        image: The original image.
-        radius: The radius of the rounded corners.
-    Returns:
-        The modified image with rounded corners.
-    """
-    # Create a mask of the same size as the original image
-    mask = Image.new("L", image.size, 0)
-
-    # Draw a white rounded rectangle on the mask
-    draw = ImageDraw.Draw(mask)
-    draw.rounded_rectangle([0, 0, *image.size], fill=255, radius=radius)
-
-    # Use the mask to create the rounded corner effect
-    result = Image.composite(image, Image.new(image.mode, image.size, "white"), mask)
-
-    return result
-
-def draw_default_frame():
-    try:
-        # Create a black image
-        default_img = np.zeros((args.width, args.height, 3), dtype=np.uint8)
-
-        # Text settings
-        text = "The Groovy AI Bot"
-        font_scale = 2
-        font_thickness = 4
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        color = (255, 255, 255)  # White color
-
-        # Calculate text size to center the text
-        (text_width, text_height), _ = cv2.getTextSize(text, font, font_scale, font_thickness)
-        x_centered = (default_img.size[1] - text_width) // 2
-        y_centered = (default_img.size[0] + text_height) // 2
-
-        # Draw the text onto the image
-        cv2.putText(default_img, text, (x_centered, y_centered), font, font_scale, color, font_thickness, lineType=cv2.LINE_AA)
-
-        default_img = Image.fromarray(cv2.cvtColor(default_img, cv2.COLOR_BGR2RGB))
-        return default_img
-    except Exception as e:
-        print("Error in draw_default_frame exeption: %s" % str(e))
-
-    return None
 
 ## Japanese writing on images
 def draw_japanese_text_on_image(image_np, text, position, font_path, font_size):
@@ -256,7 +209,6 @@ if __name__ == "__main__":
     parser.add_argument("--format", type=str, default="PNG", help="Image format to save as. Choices are 'PNG' or 'JPEG'. Default is 'PNG'.")
     parser.add_argument("--width", type=int, default=1024, help="Width of the output image")
     parser.add_argument("--height", type=int, default=1024, help="Height of the output image")
-    parser.add_argument("--round_corners", action="store_true", default=False, help="Round the corners of the image")
 
     args = parser.parse_args()
     main()

@@ -17,3 +17,4 @@ inflect
 uuid
 python-dotenv
 twitchio
+pydub
