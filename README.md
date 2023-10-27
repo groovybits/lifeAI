@@ -12,6 +12,7 @@
 - [Text to AI Speech](lifeAItts.py)   Facebook MMS-TTS Text to Speech Conversion.
 - [Text to AI Image](lifeAItti.py)    Stable Diffusion Text to Image Generation.
 - [Prompt Optimizer](lifeAIpromptOptimizer.py) Optimize prompt or turn text into a prompt.
+- [Subtitle Burner](lifeAIsubTitleBurnIn.py) Burn-In subtitles in Anime style white/black bold.
 
 ## Installation
 
@@ -36,6 +37,7 @@ pip install -r requirements.txt
 ./lifeAItts.py
 ./lifeAItti.py
 ./lifeAIpromptOptimization.py
+./lifeAIsubTitleBurnIn.py --use_prompt
 #
 # ZMQ listener client
 python zmqTTSlisten.py --output_file audio.wav
@@ -43,6 +45,7 @@ python zmqTTIlisten.py --output_file image.jpg
 #
 # ZMQ input test (TTS/TTI input to lifeAItts.py and lifeAItti modules ZMQ Ports)
 python zmqTextClient.py --message "An apple on a laptop." --segment_number 1
+##
 ```
 
 ## Chris Kennedy (C) GPL free as in free software

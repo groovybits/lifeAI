@@ -11,8 +11,6 @@
 import zmq
 import argparse
 from transformers import VitsModel, AutoTokenizer
-from PIL import Image, ImageDraw, ImageFont
-import textwrap
 import io
 
 from diffusers import StableDiffusionPipeline
@@ -39,32 +37,40 @@ pipe = StableDiffusionPipeline.from_pretrained(model_id,
 ## Offload to GPU Metal
 pipe = pipe.to("mps")
 
-def main(input_port, output_port):
+def main():
     context = zmq.Context()
     receiver = context.socket(zmq.PULL)
-    print("connecting to port in: %s:%d" % (args.input_host, args.input_port))
+    print("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
     receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
     #receiver.setsockopt_string(zmq.SUBSCRIBE, "")
 
     sender = context.socket(zmq.PUSH)
-    print("binding to port out: %s:%d" % (args.output_host, args.output_port))
+    print("binded to ZMQ out: %s:%d" % (args.output_host, args.output_port))
     sender.bind(f"tcp://{args.output_host}:{args.output_port}")
 
     while True:
-        segment_number = receiver.recv_string()
-        text = receiver.recv_string()
+        try:
+            segment_number = receiver.recv_string()
+            prompt = receiver.recv_string()
+            text = receiver.recv_string()
 
-        image = pipe(text).images[0]
+            print(f"Text to Image recieved image #%s {prompt}." % segment_number)
 
-        print("Text to Image: recieved image #%s" % segment_number)
+            image = pipe(prompt).images[0]
 
-        # Convert PIL Image to bytes
-        img_byte_arr = io.BytesIO()
-        image.save(img_byte_arr, format='JPEG')  # Save it as PNG or JPEG depending on your preference
-        img_byte_arr = img_byte_arr.getvalue()
+            # Convert PIL Image to bytes
+            img_byte_arr = io.BytesIO()
+            image.save(img_byte_arr, format='PNG')  # Save it as PNG or JPEG depending on your preference
+            image = img_byte_arr.getvalue()
 
-        sender.send_string(str(segment_number), zmq.SNDMORE)
-        sender.send(img_byte_arr)
+            sender.send_string(str(segment_number), zmq.SNDMORE)
+            sender.send_string(prompt, zmq.SNDMORE)
+            sender.send_string(text, zmq.SNDMORE)
+            sender.send(image)
+
+            print(f"Text to Image sent image #%s:\n - {text}" % segment_number)
+        except Exception as e:
+            print("Error in Text to Image: %s" % str(e))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -72,7 +78,9 @@ if __name__ == "__main__":
     parser.add_argument("--output_port", type=int, default=3002, required=False, help="Port for sending image output")
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Port for receiving text input")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending image output")
+    parser.add_argument("--width", type=int, default=1024, help="Width of the output image")
+    parser.add_argument("--height", type=int, default=1024, help="Height of the output image")
 
     args = parser.parse_args()
-    main(args.input_port, args.output_port)
+    main()
 

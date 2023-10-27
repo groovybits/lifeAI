@@ -11,3 +11,5 @@ scipy
 accelerate
 diffusers
 llama-cpp-python
+pygame
+opencv-python
