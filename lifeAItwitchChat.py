@@ -120,7 +120,7 @@ class AiTwitchBot(commands.Cog):
             db_conn.close()
 
             # Formulate the question and append it to history
-            formatted_question = f"twitchchat user {name} said {question}"
+            formatted_question = f"twitchchat user {name} asked {question}"
             history.append(ChatCompletionMessage(role="user", content=formatted_question))
 
             # Send the message

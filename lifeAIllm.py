@@ -109,11 +109,11 @@ def run_llm(message, user_messages, id, type, username, source):
     
     return results
 
-def create_prompt(username, question):
+def create_prompt(username, question, user_context = ""):
     ## Context inclusion if we have vectorDB results
     prompt_context = ""
-    if context != "":
-        prompt_context = "Context:%s\n" % context
+    if user_context != "":
+        prompt_context = "Context:%s\n" % user_context
 
     ## Prompt parts
     instructions = "Answer questions from users in a twitch chatroom, be kind and helpful."
@@ -137,9 +137,7 @@ def main():
     messages = [
         ChatCompletionMessage(
             role="system",
-            content="You are %s who is %s." % (
-                args.ai_name,
-                args.systemprompt),
+            content=create_prompt(args.ai_name, args.systemprompt)
         ),
     ]
 
@@ -174,7 +172,7 @@ def main():
 
             history.append(ChatCompletionMessage(
                 role="user",
-                content="%s" % prompt,
+                content="Personality: You are %s who is %s\n\n%s" % (args.ai_name, args.personality, args.promptcompletion.replace('{user_question}', message).replace('{context}', "")),
             ))
 
             response = run_llm(message, history, id, type, username, source)
@@ -194,7 +192,8 @@ def main():
                 max_tokens=args.maxtokens,
                 temperature=args.temperature,
                 stream=False,
-                stop=["Response:"]
+                stop=["Response:"],
+                
             )
 
             # Confirm we have a proper output
@@ -233,14 +232,14 @@ if __name__ == "__main__":
     parser.add_argument("--ai_name", type=str, default="GAIB")
     parser.add_argument("--systemprompt", type=str, default="The Groovy AI Bot that is here to help you find enlightenment and learn about technology of the future.")
     parser.add_argument("-e", "--episode", action="store_true", default=False, help="Episode mode, Output an TV Episode format script.")
-    parser.add_argument("-pc", "--promptcompletion", type=str, default="\nQuestion: {user_question}\n{context}Answer:",
+    parser.add_argument("-pc", "--promptcompletion", type=str, default="\nMessage: {user_question}\n{context}\nResponse:",
                         help="Prompt completion like...\n\nQuestion: {user_question}\nAnswer:")
     parser.add_argument("-re", "--roleenforcer",
                         type=str, default="\nAnswer the question asked by {user}. Stay in the role of {assistant}, give your thoughts and opinions as asked.\n",
                         help="Role enforcer statement with {user} and {assistant} template names replaced by the actual ones in use.")
     parser.add_argument("-p", "--personality", type=str, default="friendly helpful compassionate boddisatvva guru.", help="Personality of the AI, choices are 'friendly' or 'mean'.")
     parser.add_argument("-analysis", "--analysis", action="store_true", default=False, help="Instruction mode, no history and focused on solving problems.")
-    parser.add_argument("-sts", "--stoptokens", type=str, default="Question:,Human:,Plotline:",
+    parser.add_argument("-sts", "--stoptokens", type=str, default="Question:,Human:,Plotline:,Message:",
         help="Stop tokens to use, do not change unless you know what you are doing!")
     parser.add_argument("-sb", "--spacebreaks", action="store_true", default=False, help="Space break between chunks sent to image/audio, split at space characters.")
     parser.add_argument("-tp", "--characters_per_line", type=int, default=100, help="Minimum umber of characters per line.")
