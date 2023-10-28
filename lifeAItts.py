@@ -30,7 +30,8 @@ model = VitsModel.from_pretrained("facebook/mms-tts-eng")
 tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-eng")
 
 def clean_text_for_tts(text):
-    # Convert numbers to words
+    p = inflect.engine()
+
     def num_to_words(match):
         number = match.group()
         try:
@@ -48,6 +49,7 @@ def clean_text_for_tts(text):
     text = text.replace('!', '! ')
 
     return text
+
 
 def main():
     while True:

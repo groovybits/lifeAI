@@ -64,8 +64,7 @@ def main():
         print(f"Received image segment #{segment_number}")
 
         # create an output file using the prompt and segment_number
-        prompt_summary = re.sub(r'[^a-zA-Z0-9]', '', image_prompt)[:50]
-        image_file = f"{args.output_directory}/{source}/{type}/{username}/{id}/{segment_number}_{prompt_summary}.png"
+        image_file = f"{args.output_directory}/{id}/{segment_number}.png"
         os.makedirs(os.path.dirname(image_file), exist_ok=True)
         if args.image_format == "pil":
             with open(image_file, 'wb') as f:
