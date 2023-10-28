@@ -19,11 +19,13 @@ from transformers import logging as trlogging
 import warnings
 import urllib3
 
+"""
 warnings.simplefilter(action='ignore', category=Warning)
 warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
 from urllib3.exceptions import NotOpenSSLWarning
 warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 trlogging.set_verbosity_error()
+"""
 
 def main():
     while True:

@@ -20,11 +20,13 @@ import urllib3
 from transformers import pipeline
 import scipy
 
+"""
 warnings.simplefilter(action='ignore', category=Warning)
 warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
 from urllib3.exceptions import NotOpenSSLWarning
 warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 trlogging.set_verbosity_error()
+"""
 
 def main():
     while True:
@@ -36,7 +38,7 @@ def main():
         prompt = receiver.recv_string()
         text = receiver.recv_string()
 
-        print("Text to Music recieved text #%s: %s" % (segment_number, text))
+        print("\n---\nText to Music recieved text #%s: %s" % (segment_number, text))
 
         inputs = processor(
             text=[text],
@@ -45,7 +47,6 @@ def main():
         )
 
         audio_values = model.generate(**inputs, max_new_tokens=256)
-
         audio_values = audio_values.numpy().reshape(-1)
 
         audiobuf = io.BytesIO()
@@ -63,7 +64,7 @@ def main():
         sender.send_string(str(duration), zmq.SNDMORE)
         sender.send(audiobuf.getvalue())
         
-        print("Text to Music: sent audio #%s" % segment_number)
+        print("\nText to Music: sent audio #%s" % segment_number)
     
 
 if __name__ == "__main__":
@@ -96,6 +97,7 @@ if __name__ == "__main__":
 
     processor = AutoProcessor.from_pretrained("facebook/musicgen-large")
     model = MusicgenForConditionalGeneration.from_pretrained("facebook/musicgen-large")
+    #model = model.to("mps")
 
     main()
 
