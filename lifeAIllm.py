@@ -232,6 +232,7 @@ if __name__ == "__main__":
     parser.add_argument("-sb", "--spacebreaks", action="store_true", default=False, help="Space break between chunks sent to image/audio, split at space characters.")
     parser.add_argument("-tp", "--tokens_per_line", type=int, default=60, help="Number of tokens per line.")
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
+    parser.add_argument("-ag", "--autogenerate", action="store_true", default=False, help="Carry on long conversations, remove stop tokens.")
     args = parser.parse_args()
 
     ## setup episode mode
@@ -246,6 +247,9 @@ if __name__ == "__main__":
     # LLM Model for image prompt generation
     llm_image = Llama(model_path=args.model,
                       n_ctx=args.context, verbose=args.debug, n_gpu_layers=args.gpulayers)
+
+    if args.autogenerate:
+        args.stoptokens = []
     
     zmq_context = zmq.Context()
 
