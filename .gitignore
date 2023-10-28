@@ -1,5 +1,8 @@
 lifeAI/
-images/*.jpg
 tts/*.wav
 .env
-
+music/*
+audio/*
+db/*
+models/*
+images/*

@@ -63,42 +63,43 @@ def clean_text_for_tts(text):
 
 def main():
     while True:
+        segment_number = receiver.recv_string()
+        id = receiver.recv_string()
+        type = receiver.recv_string()
+        username = receiver.recv_string()
+        source = receiver.recv_string()
+        prompt = receiver.recv_string()
+        text = receiver.recv_string()
+
+        print("Text to Speech recieved text #%s: %s" % (segment_number, text))
+
+        inputs = tokenizer(clean_text_for_tts(text), return_tensors="pt")
+        inputs['input_ids'] = inputs['input_ids'].long()
+
+        output = None
+        with torch.no_grad():
+            output = model(**inputs).waveform
         try:
-            segment_number = receiver.recv_string()
-            id = receiver.recv_string()
-            type = receiver.recv_string()
-            username = receiver.recv_string()
-            source = receiver.recv_string()
-            prompt = receiver.recv_string()
-            text = receiver.recv_string()
-
-            print("Text to Speech recieved text #%s: %s" % (segment_number, text))
-
-            inputs = tokenizer(clean_text_for_tts(text), return_tensors="pt")
-            inputs['input_ids'] = inputs['input_ids'].long()
-
-            output = None
-            with torch.no_grad():
-                output = model(**inputs).waveform
             waveform_np = output.squeeze().numpy().T
-            audiobuf = io.BytesIO()
-            sf.write(audiobuf, waveform_np, model.config.sampling_rate, format='WAV')
-            audiobuf.seek(0)
-
-            duration = len(waveform_np) / model.config.sampling_rate
-            sender.send_string(str(segment_number), zmq.SNDMORE)
-            sender.send_string(id, zmq.SNDMORE)
-            sender.send_string(type, zmq.SNDMORE)
-            sender.send_string(username, zmq.SNDMORE)
-            sender.send_string(source, zmq.SNDMORE)
-            sender.send_string(prompt, zmq.SNDMORE)
-            sender.send_string(text, zmq.SNDMORE)
-            sender.send_string(str(duration), zmq.SNDMORE)
-            sender.send(audiobuf.getvalue())
-            
-            print("Text to Speech: sent audio #%s" % segment_number)
         except Exception as e:
-            print("Error in lifeAItts: %s" % str(e))
+            print(f"Exception: ERROR STT error with output.squeeze().numpy().T on audio: {text}")
+            continue
+        audiobuf = io.BytesIO()
+        sf.write(audiobuf, waveform_np, model.config.sampling_rate, format='WAV')
+        audiobuf.seek(0)
+
+        duration = len(waveform_np) / model.config.sampling_rate
+        sender.send_string(str(segment_number), zmq.SNDMORE)
+        sender.send_string(id, zmq.SNDMORE)
+        sender.send_string(type, zmq.SNDMORE)
+        sender.send_string(username, zmq.SNDMORE)
+        sender.send_string(source, zmq.SNDMORE)
+        sender.send_string(prompt, zmq.SNDMORE)
+        sender.send_string(text, zmq.SNDMORE)
+        sender.send_string(str(duration), zmq.SNDMORE)
+        sender.send(audiobuf.getvalue())
+        
+        print("Text to Speech: sent audio #%s" % segment_number)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
