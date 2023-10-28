@@ -65,6 +65,8 @@ def run_llm(message, user_messages, id, type, username, source):
     for item in output:
         delta = item["choices"][0]['delta']
 
+        print(f"--- run_llm(): item: {json.dumps(item, indent=2)}")
+
         if 'content' not in delta:
             print(f"--- Skipping LLM response token lack of content: {delta}")
             continue
