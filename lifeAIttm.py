@@ -10,23 +10,18 @@
 
 import zmq
 import argparse
-import torch
 import io
 import soundfile as sf
 from transformers import logging as trlogging
 from transformers import AutoProcessor, MusicgenForConditionalGeneration
 import warnings
 import urllib3
-from transformers import pipeline
-import scipy
 
-"""
 warnings.simplefilter(action='ignore', category=Warning)
 warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
 from urllib3.exceptions import NotOpenSSLWarning
 warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 trlogging.set_verbosity_error()
-"""
 
 def main():
     while True:

@@ -20,38 +20,26 @@ import urllib3
 import inflect
 import re
 
-"""
 warnings.simplefilter(action='ignore', category=Warning)
 warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
 from urllib3.exceptions import NotOpenSSLWarning
 warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 trlogging.set_verbosity_error()
-"""
 
 model = VitsModel.from_pretrained("facebook/mms-tts-eng")
 tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-eng")
 
-def convert_numbers_to_words(text):
-    p = inflect.engine()
-
-    def num_to_words(match):
-        number = match.group()
-        if '.' in number:
-            parts = number.split('.')
-            words = f"{p.number_to_words(parts[0])} point {p.number_to_words(parts[1])}"
-        else:
-            words = p.number_to_words(number)
-        return words
-
-    text_with_words = re.sub(r'\b\d+(\.\d+)?\b', num_to_words, text)
-    return text_with_words
-
 def clean_text_for_tts(text):
     # Convert numbers to words
-    p = inflect.engine()
-    text = re.sub(r'\b\d+(\.\d+)?\b', lambda match: p.number_to_words(match.group()), text)
+    def num_to_words(match):
+        number = match.group()
+        try:
+            words = p.number_to_words(number)
+        except inflect.NumOutOfRangeError:
+            words = "[number too large]"
+        return words
 
-    convert_numbers_to_words(text)
+    text = re.sub(r'\b\d+(\.\d+)?\b', num_to_words, text)
 
     # Add a pause after punctuation
     text = text.replace('.', '. ')

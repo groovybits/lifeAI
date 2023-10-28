@@ -18,13 +18,11 @@ import urllib3
 
 from llama_cpp import Llama, ChatCompletionMessage
 
-"""
 warnings.simplefilter(action='ignore', category=Warning)
 warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
 from urllib3.exceptions import NotOpenSSLWarning
 warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 trlogging.set_verbosity_error()
-"""
 
 def run_llm(message, user_messages, id, type, username, source):
     segment_number = 0
@@ -45,6 +43,7 @@ def run_llm(message, user_messages, id, type, username, source):
     def send_lines(lines_to_send):
         nonlocal results, segment_number
         combined_lines = "".join([line for line in lines_to_send if line.strip()])
+        
         if combined_lines:
             results += combined_lines
             sender.send_string(str(segment_number), zmq.SNDMORE)
