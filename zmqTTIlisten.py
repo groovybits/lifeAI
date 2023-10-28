@@ -31,7 +31,6 @@ def render(image):
     cv2.imshow('GAIB The Groovy AI Bot', image)
 
     k = cv2.waitKey(10)
-    logger.info("Got keystroke command in image: %d" % k)
     if k == ord('f'):
         cv2.setWindowProperty('GAIB The Groovy AI Bot', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
     elif k == ord('m'):
