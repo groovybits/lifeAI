@@ -138,7 +138,14 @@ def create_prompt(username, question):
     return prompt
 
 def main():
-    messages = []
+    messages = [
+        ChatCompletionMessage(
+            role="system",
+            content="You are %s who is %s." % (
+                args.ai_name,
+                args.systemprompt),
+        ),
+    ]
 
     while True:
         # Receive a message
@@ -148,6 +155,7 @@ def main():
         username = receiver.recv_string()
         source = receiver.recv_string()
         message = receiver.recv_string()
+        history = messages
         
         print(f"\n---\nLLM: received message id {id} number #{segment_number} from {username} of type {type} source {source} with question {message}")
         response = ""
@@ -159,15 +167,15 @@ def main():
         llm_output = None
         response = None
         if not args.analysis:
-            history = [
-                ChatCompletionMessage(
-                    role="system",
-                    content="You are %s who is %s." % (
-                        args.ai_name,
-                        args.systemprompt),
-                ),
-            ]
-            history.extend(ChatCompletionMessage(role=m['role'], content=m['content']) for m in messages)
+            # Calculate the total length of all messages in history
+            total_length = sum([len(msg['content']) for msg in history])
+            # keep history within context size
+            while total_length > (args.context/2)+len(prompt):
+                # Remove the oldest message after the system prompt
+                if len(history) > 2:
+                    total_length -= len(history[1]['content'])
+                    del history[1]
+
             history.append(ChatCompletionMessage(
                 role="user",
                 content="%s" % prompt,
@@ -239,7 +247,7 @@ if __name__ == "__main__":
     parser.add_argument("-sts", "--stoptokens", type=str, default="Question:,Human:,Plotline:",
         help="Stop tokens to use, do not change unless you know what you are doing!")
     parser.add_argument("-sb", "--spacebreaks", action="store_true", default=False, help="Space break between chunks sent to image/audio, split at space characters.")
-    parser.add_argument("-tp", "--characters_per_line", type=int, default=120, help="Minimum umber of characters per line.")
+    parser.add_argument("-tp", "--characters_per_line", type=int, default=25, help="Minimum umber of characters per line.")
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
     parser.add_argument("-ag", "--autogenerate", action="store_true", default=False, help="Carry on long conversations, remove stop tokens.")
     args = parser.parse_args()
