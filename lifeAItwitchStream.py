@@ -77,7 +77,7 @@ def main():
                             height=args.height,
                             fps=args.fps,
                             enable_audio=True,
-                            verbose=True) as videostream:
+                            verbose=args.debug) as videostream:
             
             last_image_time = time.time()
             last_audio_time = time.time()
@@ -195,6 +195,9 @@ if __name__ == "__main__":
     parser.add_argument("--height", type=int, default=1080, help="Height of the output image")
     parser.add_argument("--fps", type=float, default=30.0, help="FPS of the output video")
     parser.add_argument("--samplerate", type=int, default=16000, help="Sample rate of the output audio")
+    parser.add_argument("-d", "--debug", action="store_true", default=False, help="Debug in a verbose manner.")
+    parser.add_argument("-a", "--audio", action="store_true", default=False, help="Enable audio streaming, off by default.")
+
     args = parser.parse_args()
 
     context = zmq.Context()

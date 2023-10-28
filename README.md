@@ -78,17 +78,17 @@ pip install .
 # Music generation
 ./lifeAIpromptOptimize.py --input_port 2000 --output_port 4001 --qprompt MusicDescription --aprompt MusicPrompt --topic 'music generation'
 ./lifeAIttm.py
-./zmqTTSlisten.py --input_port 4002 --save_file
+./zmqTTMlisten.py --save_file
 
 # Muxer and Frame Sync frontend (TODO)
-./lifeAIframeSynt.py (times all the streams for RTMP audio and video sync with everything timed together)
+./lifeAIframeSync.py (times all the streams for RTMP audio and video sync with everything timed together)
 
 # ZMQ listener clients for listening, probing and viewing ascii image output
 ## Stored in audio/ and images/ as wav and png files with burn-in with filename
 ## metadata inclusion and episode_id, index, prompt string
-python zmqTTSlisten.py
-python zmqTTMlisten.py
-python zmqTTIlisten.py
+./zmqTTSlisten.py
+./zmqTTMlisten.py
+./zmqTTIlisten.py
 
 # Twitch RTMP direct stream without desktop OBS/capture overhead
 ./lifeAItwitchServe.py
