@@ -17,6 +17,7 @@ import warnings
 import urllib3
 import numpy as np
 import textwrap
+import nltk  # Import nltk for sentence tokenization
 
 warnings.simplefilter(action='ignore', category=Warning)
 warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
@@ -150,6 +151,21 @@ def add_text_to_image(image, text):
 
     return image  # returning the modified image
 
+# Function to group the text into subtitle groups
+def get_subtitle_groups(text):
+    sentences = nltk.sent_tokenize(text)  # Split text into sentences
+    groups = []
+    group = []
+    for sentence in sentences:
+        if len(group) < args.maxlines:  # Limit of 3 lines per group
+            group.append(sentence)
+        else:
+            groups.append(group)
+            group = [sentence]
+    if group:  # Don't forget the last group
+        groups.append(group)
+    return groups
+
 def main():
     while True:
         segment_number = receiver.recv_string()
@@ -167,25 +183,30 @@ def main():
         ## Convert the bytes back to a PIL Image object
         image = Image.open(io.BytesIO(image))
 
+        subtitle_groups = None
         if args.use_prompt:
-            image = add_text_to_image(image, prompt)
+            subtitle_groups = get_subtitle_groups(prompt)
         else:
-            image = add_text_to_image(image, text)
+            subtitle_groups = get_subtitle_groups(text)  # Get the subtitle groups
+        
+        for subtitle_group in subtitle_groups:
+            subtitle_text = '\n'.join(subtitle_group)  # Join the group into a single string with newline separators
+            subtitle_image = add_text_to_image(image.copy(), subtitle_text)  # Burn the subtitles into a copy of the image
 
-        # Convert PIL Image
-        img_byte_arr = io.BytesIO()
-        image.save(img_byte_arr, format=args.format)  # Save it as PNG or JPEG depending on your preference
-        image = img_byte_arr.getvalue()
+            # Convert PIL Image
+            img_byte_arr = io.BytesIO()
+            subtitle_image.save(img_byte_arr, format=args.format)  # Save it as PNG or JPEG depending on your preference
+            subtitle_image = img_byte_arr.getvalue()
 
-        sender.send_string(str(segment_number), zmq.SNDMORE)
-        sender.send_string(id, zmq.SNDMORE)
-        sender.send_string(type, zmq.SNDMORE)
-        sender.send_string(username, zmq.SNDMORE)
-        sender.send_string(source, zmq.SNDMORE)
-        sender.send_string(message, zmq.SNDMORE)
-        sender.send_string(prompt, zmq.SNDMORE)
-        sender.send_string(text, zmq.SNDMORE)
-        sender.send(image)
+            sender.send_string(str(segment_number), zmq.SNDMORE)
+            sender.send_string(id, zmq.SNDMORE)
+            sender.send_string(type, zmq.SNDMORE)
+            sender.send_string(username, zmq.SNDMORE)
+            sender.send_string(source, zmq.SNDMORE)
+            sender.send_string(message, zmq.SNDMORE)
+            sender.send_string(prompt, zmq.SNDMORE)
+            sender.send_string(subtitle_text, zmq.SNDMORE)
+            sender.send(subtitle_image)
 
         print("Subtitle Burn-In: sent image #%s" % segment_number)
       
@@ -199,6 +220,7 @@ if __name__ == "__main__":
     parser.add_argument("--format", type=str, default="PNG", help="Image format to save as. Choices are 'PNG' or 'JPEG'. Default is 'PNG'.")
     parser.add_argument("--width", type=int, default=1024, help="Width of the output image")
     parser.add_argument("--height", type=int, default=1024, help="Height of the output image")
+    parser.add_argument("--maxlines", type=int, default=3, help="Maximum number of lines per subtitle group")
 
     args = parser.parse_args()
 
