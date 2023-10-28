@@ -101,7 +101,7 @@ if __name__ == "__main__":
     receiver.setsockopt_string(zmq.SUBSCRIBE, "")
 
     # Set up the publisher
-    sender = context.socket(zmq.PUSH)
+    sender = context.socket(zmq.PUB)
     print(f"binded to ZMQ out {args.output_host}:{args.output_port}")
     sender.bind(f"tcp://{args.output_host}:{args.output_port}")
 

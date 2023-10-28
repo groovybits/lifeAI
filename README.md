@@ -13,6 +13,7 @@
 - [ZMQ TTS Listener](zmqTTSlisten.py) Listen for TTS Audio WAV file output.
 - [ZMQ TTI Listener](zmqTTIlisten.py) Listen for TTI Image PIL file output.
 - [Text to AI Speech](lifeAItts.py)   Facebook MMS-TTS Text to Speech Conversion.
+- [Text to AI Music](lifeAIttm.py)    Facebook Music Generation.
 - [Text to AI Image](lifeAItti.py)    Stable Diffusion Text to Image Generation.
 - [Prompt Optimizer](lifeAIpromptOptimizer.py) Optimize prompt or turn text into a prompt.
 - [Subtitle Burner](lifeAIsubTitleBurnIn.py) Burn-In subtitles in Anime style white/black bold.
