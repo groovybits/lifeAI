@@ -59,6 +59,27 @@ def run_llm(message, user_messages, id, type, username, source):
         stop=args.stoptokens.split(',') if args.stoptokens else []  # use split() result if stoptokens is not empty
     )
 
+    """
+        "object": "chat.completion.chunk",
+        "choices": [
+            {
+            "index": 0,
+            "delta": {
+                "content": "room"
+            },
+            "finish_reason": null
+            }
+        ]
+
+         "choices": [
+            {
+            "index": 0,
+            "delta": {},
+            "finish_reason": "stop"
+            }
+        ]
+    """
+
     accumulator = []
     token_count = 0
     total_tokens = 0
@@ -68,6 +89,9 @@ def run_llm(message, user_messages, id, type, username, source):
         print(f"--- run_llm(): item: {json.dumps(item, indent=2)}")
 
         if 'content' not in delta:
+            if 'finish_reason' in item["choices"][0] and item["choices"][0]['finish_reason'] == "stop":
+                print(f"--- run_llm(): LLM response token stop: {delta}")
+                break
             print(f"--- Skipping LLM response token lack of content: {delta}")
             continue
 
