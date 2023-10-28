@@ -54,6 +54,7 @@ def run_llm(message, user_messages, id, type, username, source):
             sender.send_string(combined_lines)
             segment_number += 1
 
+    total_tokens = 0
     for item in output:
         delta = item["choices"][0]['delta']
 
@@ -63,6 +64,7 @@ def run_llm(message, user_messages, id, type, username, source):
 
         token = delta['content']
         print(token, end='', flush=True)
+        total_tokens += 1
 
         if not args.spacebreaks:
             accumulator.append(token)
@@ -96,7 +98,7 @@ def run_llm(message, user_messages, id, type, username, source):
     if accumulator:
         send_lines(accumulator)
 
-    print(f"\n--- run_llm(): finished generating text with {token_count} tokens and {segment_number} segments.")
+    print(f"\n--- run_llm(): finished generating text with {total_tokens} tokens and {segment_number + 1} segments.")
     
     return results
 
@@ -208,20 +210,20 @@ if __name__ == "__main__":
     parser.add_argument("--output_port", type=int, default=2000)
     parser.add_argument("--prompt", type=str, default=prompt)
     parser.add_argument("--maxtokens", type=int, default=0)
-    parser.add_argument("--context", type=int, default=512)
-    parser.add_argument("--temperature", type=float, default=0.2)
+    parser.add_argument("--context", type=int, default=32768)
+    parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("--gpulayers", type=int, default=0)
     parser.add_argument("--model", type=str, default=model)
     parser.add_argument("-d", "--debug", action="store_true", default=False)
-    parser.add_argument("--ai_name", type=str, default="LLM")
-    parser.add_argument("--systemprompt", type=str, default="a language model")
+    parser.add_argument("--ai_name", type=str, default="GAIB")
+    parser.add_argument("--systemprompt", type=str, default="The Groovy AI Bot that is here to help you find enlightenment and learn about technology of the future.")
     parser.add_argument("-e", "--episode", action="store_true", default=False, help="Episode mode, Output an TV Episode format script.")
     parser.add_argument("-pc", "--promptcompletion", type=str, default="\nQuestion: {user_question}\n{context}Answer:",
                         help="Prompt completion like...\n\nQuestion: {user_question}\nAnswer:")
     parser.add_argument("-re", "--roleenforcer",
                         type=str, default="\nAnswer the question asked by {user}. Stay in the role of {assistant}, give your thoughts and opinions as asked.\n",
                         help="Role enforcer statement with {user} and {assistant} template names replaced by the actual ones in use.")
-    parser.add_argument("-p", "--personality", type=str, default="friendly", help="Personality of the AI, choices are 'friendly' or 'mean'.")
+    parser.add_argument("-p", "--personality", type=str, default="friendly helpful compassionate boddisatvva guru.", help="Personality of the AI, choices are 'friendly' or 'mean'.")
     parser.add_argument("-analysis", "--analysis", action="store_true", default=False, help="Instruction mode, no history and focused on solving problems.")
     parser.add_argument("-sts", "--stoptokens", type=str, default="Question:,Human:,Plotline:",
         help="Stop tokens to use, do not change unless you know what you are doing!")
