@@ -41,7 +41,7 @@ def main():
         optimized_prompt = ""
 
         image_prompt_data = None
-        full_prompt = f"{args.prompt}\n\n{args.qprompt}: {text}\n{args.aprompt}:"
+        full_prompt = f"{prompt}\n\n{args.qprompt}: {text}\n{args.aprompt}:"
         print(f"Prompt optimizer: sending text to LLM:\n - {text}\n")
         try:
             image_prompt_data = llm_image(
