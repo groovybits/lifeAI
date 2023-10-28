@@ -16,6 +16,7 @@ That’s the goal, you’ll see I am listing the parts as I build them, sort of 
 ## modules
 
 - [ZMQ Text Client](zmqTextClient.py) Send text into lifeAI for simulation seeding.
+- [ZMQ News Client](lifeAInewsCast.py) Send news feeds into lifeAI for simulation seeding.
 - [ZMQ Twitch Chat](lifeAItwitchChat.py) Twitch Chat sent to lifeAI for responses.
 - [ZMQ Twitch Stream](lifeAITwitchStream.py) Twitch RTMP directly stream and avoid desktop capture.
 - [ZMQ TTS Listener](zmqTTSlisten.py) Listen for TTS Audio WAV file output.
