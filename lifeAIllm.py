@@ -43,6 +43,11 @@ def run_llm(message, user_messages, id, type, username, source):
     def send_lines(lines_to_send):
         nonlocal results, segment_number
         combined_lines = "".join([line for line in lines_to_send if line.strip()])
+
+        ## Clean any binary data or dangerious characters etc without breaking all the unicode, languages and emojis or general usage of text
+        combined_lines = combined_lines.encode('ascii', 'ignore').decode('ascii')
+        ## remove <|> role <|> tags and [\NNN] and other tags from the LLM and not part of the text
+
         
         if combined_lines:
             results += combined_lines
@@ -70,11 +75,11 @@ def run_llm(message, user_messages, id, type, username, source):
         if not args.spacebreaks:
             accumulator.append(token)
             token_count += len(token)
-            if accumulator.count('\n') >= args.sentence_count or (token_count >= args.tokens_per_line and ('.' or '!' or '?') in token):
+            if len(accumulator) > args.characters_per_line and (accumulator.count('\n') >= args.sentence_count or (token_count >= args.characters_per_line and ('.' or '!' or '?') in token)):
                 send_lines(accumulator)
                 accumulator = []
                 token_count = 0
-        elif token_count >= args.tokens_per_line:
+        elif token_count >= args.characters_per_line:
             if ' ' in token:
                 # Split on the last space in the token
                 split_index = token.rfind(' ')
@@ -229,7 +234,7 @@ if __name__ == "__main__":
     parser.add_argument("-sts", "--stoptokens", type=str, default="Question:,Human:,Plotline:",
         help="Stop tokens to use, do not change unless you know what you are doing!")
     parser.add_argument("-sb", "--spacebreaks", action="store_true", default=False, help="Space break between chunks sent to image/audio, split at space characters.")
-    parser.add_argument("-tp", "--tokens_per_line", type=int, default=60, help="Number of tokens per line.")
+    parser.add_argument("-tp", "--characters_per_line", type=int, default=120, help="Minimum umber of characters per line.")
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
     parser.add_argument("-ag", "--autogenerate", action="store_true", default=False, help="Carry on long conversations, remove stop tokens.")
     args = parser.parse_args()
