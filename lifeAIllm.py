@@ -86,13 +86,12 @@ def run_llm(message, user_messages, id, type, username, source):
     for item in output:
         delta = item["choices"][0]['delta']
 
-        print(f"--- run_llm(): item: {json.dumps(item, indent=2)}")
-
+        #print(f"--- run_llm(): item: {json.dumps(item, indent=2)}")
         if 'content' not in delta:
             if 'finish_reason' in item["choices"][0] and item["choices"][0]['finish_reason'] == "stop":
-                print(f"--- run_llm(): LLM response token stop: {delta}")
+                print(f"--- run_llm(): LLM response token stop: {item}")
                 break
-            print(f"--- Skipping LLM response token lack of content: {delta}")
+            print(f"--- Skipping LLM response token lack of content: {item}")
             continue
 
         token = delta['content']
