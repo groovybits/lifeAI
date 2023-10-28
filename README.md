@@ -11,6 +11,7 @@ That’s the goal, you’ll see I am listing the parts as I build them, sort of 
 - <https://huggingface.co/facebook/mms-tts-eng> Facebook mms-tts-eng a model that is multilingual for TTS
 - <https://huggingface.co/TheBloke/zephyr-7B-alpha-GGUF> A 7B parameter GPT-like model fine-tuned on a mix of publicly available, synthetic datasets.
 - <https://huggingface.co/runwayml/stable-diffusion-v1-5> Stable Diffusion 1.5
+- <https://huggingface.co/facebook/musicgen-small> Facebook MusicGen Music generation model
 
 ## modules
 
