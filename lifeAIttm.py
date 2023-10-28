@@ -44,7 +44,6 @@ def main():
             text=[text],
             padding=True,
             return_tensors="pt",
-            duration=args.duration,
         )
 
         audio_values = model.generate(**inputs, max_new_tokens=256)
@@ -78,6 +77,8 @@ if __name__ == "__main__":
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Port for receiving text input")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending audio output")
     parser.add_argument("--duration", type=int, default=10, help="Duration of the audio in seconds")
+    parser.add_argument("--model", type=str, required=False, default="facebook/musicgen-medium", help="Text to music model to use")
+    parser.add_argument("--gpu", type=str, default="cpu", required=False, help="GPU type, cpu, cuda or mps")
 
     args = parser.parse_args()
 
@@ -92,14 +93,14 @@ if __name__ == "__main__":
     sender.bind(f"tcp://{args.output_host}:{args.output_port}")
 
     """
-    synthesiser = pipeline("text-to-audio", "facebook/musicgen-small")
+    synthesiser = pipeline("text-to-audio", args.model)
     music = synthesiser("lo-fi music with a soothing melody", forward_params={"do_sample": True})
     scipy.io.wavfile.write("musicgen_out.wav", rate=music["sampling_rate"], music=audio["audio"])
     """
 
-    processor = AutoProcessor.from_pretrained("facebook/musicgen-large")
-    model = MusicgenForConditionalGeneration.from_pretrained("facebook/musicgen-large")
-    #model = model.to("mps")
+    processor = AutoProcessor.from_pretrained(args.model)
+    model = MusicgenForConditionalGeneration.from_pretrained(args.model)
+    model = model.to(args.gpu)
 
     main()
 

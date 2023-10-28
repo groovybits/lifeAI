@@ -203,10 +203,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     context = zmq.Context()
-    receiver = context.socket(zmq.PULL)
+    receiver = context.socket(zmq.SUB)
     print("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
     receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
-    #receiver.setsockopt_string(zmq.SUBSCRIBE, "")
+    receiver.setsockopt_string(zmq.SUBSCRIBE, "")
 
     sender = context.socket(zmq.PUB)
     print("binded to ZMQ out: %s:%d" % (args.output_host, args.output_port))
