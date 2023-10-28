@@ -24,6 +24,28 @@ from urllib3.exceptions import NotOpenSSLWarning
 warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 trlogging.set_verbosity_error()
 
+def clean_text(text):
+    cleaned_text = text.encode('ascii', 'ignore').decode('ascii')
+    return cleaned_text
+
+def prepare_send_data(segment_number, id, type, username, source, message, combined_lines):
+    data = [str(segment_number), id, type, username, source, message, combined_lines]
+    return data
+
+def send_data(data):
+    for item in data[:-1]:
+        sender.send_string(item, zmq.SNDMORE)
+    sender.send_string(data[-1])
+
+def decide_and_send(accumulator, segment_number, id, type, username, source, message):
+    combined_lines = "".join([line for line in accumulator if line.strip()])
+    combined_lines = clean_text(combined_lines)
+    if combined_lines:
+        data = prepare_send_data(segment_number, id, type, username, source, message, combined_lines)
+        send_data(data)
+        return True  # Indicates that data was sent
+    return False  # Indicates that no data was sent
+
 def run_llm(message, user_messages, id, type, username, source):
     segment_number = 0
     results = ""
@@ -39,26 +61,6 @@ def run_llm(message, user_messages, id, type, username, source):
 
     accumulator = []
     token_count = 0
-
-    def send_lines(lines_to_send):
-        nonlocal results, segment_number
-        combined_lines = "".join([line for line in lines_to_send if line.strip()])
-
-        ## Clean any binary data or dangerious characters etc without breaking all the unicode, languages and emojis or general usage of text
-        combined_lines = combined_lines.encode('ascii', 'ignore').decode('ascii')
-        ## remove <|> role <|> tags and [\NNN] and other tags from the LLM and not part of the text
-        
-        if combined_lines:
-            results += combined_lines
-            sender.send_string(str(segment_number), zmq.SNDMORE)
-            sender.send_string(id, zmq.SNDMORE)
-            sender.send_string(type, zmq.SNDMORE)
-            sender.send_string(username, zmq.SNDMORE)
-            sender.send_string(source, zmq.SNDMORE)
-            sender.send_string(message, zmq.SNDMORE)
-            sender.send_string(combined_lines)
-            segment_number += 1
-
     total_tokens = 0
     for item in output:
         delta = item["choices"][0]['delta']
@@ -75,7 +77,8 @@ def run_llm(message, user_messages, id, type, username, source):
             accumulator.append(token)
             token_count += len(token)
             if len(accumulator) > args.characters_per_line and (accumulator.count('\n') >= args.sentence_count or (token_count >= args.characters_per_line and ('.' or '!' or '?') in token)):
-                send_lines(accumulator)
+                if decide_and_send(accumulator, segment_number, id, type, username, source, message):
+                    segment_number += 1
                 accumulator = []
                 token_count = 0
         elif token_count >= args.characters_per_line:
@@ -86,11 +89,13 @@ def run_llm(message, user_messages, id, type, username, source):
                 post_split = token[split_index + 1:]
 
                 accumulator.append(pre_split)  # Add the first part to the accumulator
-                send_lines(accumulator)
+                if decide_and_send(accumulator, segment_number, id, type, username, source, message):
+                    segment_number += 1
                 accumulator = [post_split]  # Start the new accumulator with the second part
                 token_count = len(post_split)  # Update the token_count
             else:
-                send_lines(accumulator)
+                if decide_and_send(accumulator, segment_number, id, type, username, source, message):
+                    segment_number += 1
                 accumulator = []
                 token_count = 0
                 accumulator.append(token)
@@ -101,7 +106,8 @@ def run_llm(message, user_messages, id, type, username, source):
 
     # Send any remaining tokens in accumulator
     if accumulator:
-        send_lines(accumulator)
+        if decide_and_send(accumulator, segment_number, id, type, username, source, message):
+            segment_number += 1
 
     print(f"\n--- run_llm(): finished generating text with {total_tokens} tokens and {segment_number + 1} segments.")
     
