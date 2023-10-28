@@ -1,4 +1,5 @@
 lifeAI/
 images/*.jpg
 tts/*.wav
+.env
 
