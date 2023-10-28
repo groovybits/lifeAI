@@ -82,9 +82,9 @@ def run_llm(message, user_messages, id, type, username, source):
                 accumulator = []
                 token_count = 0
         elif token_count >= args.characters_per_line:
-            if ' ' in token:
-                # Split on the last space in the token
-                split_index = token.rfind(' ')
+            if ('\n') in token and accumulator.count('\n') >= args.sentence_count:
+                # Split on the new line only in the token
+                split_index = token.rfind('\n')
                 pre_split = token[:split_index]
                 post_split = token[split_index + 1:]
 
@@ -94,10 +94,6 @@ def run_llm(message, user_messages, id, type, username, source):
                 accumulator = [post_split]  # Start the new accumulator with the second part
                 token_count = len(post_split)  # Update the token_count
             else:
-                if decide_and_send(accumulator, segment_number, id, type, username, source, message):
-                    segment_number += 1
-                accumulator = []
-                token_count = 0
                 accumulator.append(token)
                 token_count += len(token)
         else:
