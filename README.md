@@ -50,9 +50,9 @@ pip install .
 
 ```text
 # ZMQ input Client to send messages through the pipeline for testing
-python zmqTextClient.py --message "An apple on a laptop." --segment_number 1 --username "User"
+./zmqTextClient.py --message "An apple on a laptop." --segment_number 1 --username "User"
 
-# ZMQ Twitch input Client (Coming soon)
+# ZMQ Twitch input Client
 ./lifeAItwitchClient.py
 
 # ZMQ News feed Client Mediastack (Coming soon)
@@ -79,6 +79,9 @@ python zmqTextClient.py --message "An apple on a laptop." --segment_number 1 --u
 ./lifeAIttm.py
 ./zmqTTSlisten.py --input_port 4002 --save_file
 
+# Muxer and Frame Sync frontend (TODO)
+./lifeAIframeSynt.py (times all the streams for RTMP audio and video sync with everything timed together)
+
 # ZMQ listener clients for listening, probing and viewing ascii image output
 ## Stored in audio/ and images/ as wav and png files with burn-in with filename
 ## metadata inclusion and episode_id, index, prompt string
@@ -88,7 +91,9 @@ python zmqTTIlisten.py
 # Twitch RTMP direct stream without desktop OBS/capture overhead
 ./lifeAItwitchServe.py
 
+# YouTube direct stream (TODO)
+
 ##
 ```
 
-## Chris Kennedy (C) GPL free as in free software
+## Chris Kennedy (C) 2023 GPL free as in free software, use at your own risk. Do not believe anything the LLM generates without your own validation. We are not responsible for how you use this software.
