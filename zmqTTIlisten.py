@@ -16,6 +16,7 @@ from PIL import Image
 import re
 import os
 import cv2
+import numpy as np
 
 def image_to_ascii(image):
     image = image.resize((args.width, int((image.height/image.width) * args.width * 0.55)), Image.LANCZOS)
@@ -28,7 +29,13 @@ def image_to_ascii(image):
     return ascii_image
 
 def render(image):
-    cv2.imshow('GAIB The Groovy AI Bot', image)
+    # Convert PIL Image to NumPy array
+    image_np = np.array(image)
+
+    # Convert RGB to BGR (OpenCV uses BGR format)
+    image_bgr = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+
+    cv2.imshow('GAIB The Groovy AI Bot', image_bgr)
 
     k = cv2.waitKey(10)
     if k == ord('f'):
