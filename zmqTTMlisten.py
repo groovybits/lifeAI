@@ -8,6 +8,7 @@
 # as Richard Stallman intended it to be.
 #
 
+import time
 import io
 import zmq
 import argparse
@@ -17,6 +18,48 @@ import pygame
 import re
 import os
 import sys
+import threading
+from pydub import AudioSegment
+
+def get_audio_duration(audio_samples):
+    audio_segment = AudioSegment.from_file(io.BytesIO(audio_samples), format="wav")
+    duration_ms = len(audio_segment)  # Duration in milliseconds
+    duration_s = duration_ms / 1000.0  # Convert to seconds
+    return duration_s
+
+class BackgroundMusic(threading.Thread):
+    def __init__(self):
+        super().__init__()
+        self.audio_buffer = None
+        self.running = True
+        self.lock = threading.Lock()  # Lock to synchronize access to audio_buffer
+
+    def run(self):
+        while self.running:
+            with self.lock:
+                if self.audio_buffer:
+                    self.play_audio(self.audio_buffer)
+                    self.audio_buffer = None  # Reset audio_buffer to prevent replaying the same buffer
+            pygame.time.Clock().tick(10)  # Limit the while loop to 10 iterations per second
+
+    def play_audio(self, audio_samples):
+        pygame.mixer.init(frequency=16000, size=-16, channels=1, buffer=1024)
+        pygame.init()
+
+        audiobuf = io.BytesIO(audio_samples)
+        if audiobuf:
+            pygame.mixer.music.load(audiobuf)
+            pygame.mixer.music.play()
+            while pygame.mixer.music.get_busy():
+                pygame.time.Clock().tick(10)
+
+    def change_track(self, audio_buffer):
+        with self.lock:
+            self.audio_buffer = audio_buffer
+
+    def stop(self):
+        self.running = False
+        pygame.mixer.music.stop()
 
 def play_audio(audio_samples):
     pygame.mixer.init(frequency=16000, size=-16, channels=1, buffer=1024)
@@ -31,6 +74,11 @@ def play_audio(audio_samples):
             pygame.time.Clock().tick(10)
 
 def main():
+    # Instantiate and start the background music thread
+    bg_music = BackgroundMusic()
+    bg_music.start()
+
+    audio_samples = None
     while True:
         try:
             # Receive the segment number (header) first
@@ -68,7 +116,10 @@ def main():
                 payload_hex = audio_samples.hex()
                 print(f"Payload (Hex): {textwrap.fill(payload_hex, width=80)}\n")
 
-            play_audio(audio_samples)
+            # Signal thread to play new audio, sleep for duration so we don't interupt it
+            bg_music.change_track(audio_samples)
+            duration = get_audio_duration(audio_samples)
+            time.sleep(duration)
 
             print(f"Audio #{segment_number} of {duration} duration recieved.\nAudio Text: {audio_text}\nMessage: {message}\n")
 

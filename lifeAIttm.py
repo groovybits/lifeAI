@@ -79,6 +79,7 @@ if __name__ == "__main__":
     parser.add_argument("--duration", type=int, default=10, help="Duration of the audio in seconds")
     parser.add_argument("--model", type=str, required=False, default="facebook/musicgen-small", help="Text to music model to use")
     parser.add_argument("--gpu", type=str, default="cpu", required=False, help="GPU type, cpu, cuda or mps")
+    parser.add_argument("--seconds", type=int, default=30, required=False, help="Seconds to create, default is 30")
 
     args = parser.parse_args()
 
@@ -100,7 +101,15 @@ if __name__ == "__main__":
 
     processor = AutoProcessor.from_pretrained(args.model)
     model = MusicgenForConditionalGeneration.from_pretrained(args.model)
-    model = model.to(args.gpu)
+    """
+    model.set_generation_params(
+        use_sampling=True,
+        top_k=250,
+        duration=args.duration
+    )
+    """
+
+    #model = model.to(args.gpu)
 
     main()
 

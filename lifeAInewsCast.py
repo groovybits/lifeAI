@@ -44,12 +44,6 @@ def get_news(offset=0, keywords="ai anime buddhism cats", categories="technology
     return data.decode('utf-8')
 
 def main():
-    context = zmq.Context()
-
-    # Socket to send messages on
-    tti_socket = context.socket(zmq.PUSH)
-    print("binding to send message: %s:%d" % (args.output_host, args.output_port))
-    tti_socket.connect(f"tcp://{args.output_host}:{args.output_port}")
 
     """
             MediaStack API https://mediastack.com/documentation#example_api_response
@@ -135,6 +129,13 @@ if __name__ == "__main__":
     parser.add_argument("--prompt", type=str, required=False, default="News Story:")
                         help="Prompt to give context as a newstory feed")
     args = parser.parse_args()
+
+    context = zmq.Context()
+
+    # Socket to send messages on
+    tti_socket = context.socket(zmq.PUSH)
+    print("connect to send message: %s:%d" % (args.output_host, args.output_port))
+    tti_socket.connect(f"tcp://{args.output_host}:{args.output_port}")
 
     main()
 
