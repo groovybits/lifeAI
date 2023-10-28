@@ -132,7 +132,7 @@ if __name__ == "__main__":
     parser.add_argument("--username", type=str, required=False, default="NewsAnchor", help="Username of sender")
     parser.add_argument("--keywords", type=str, required=False, default="ai anime buddhism cats", help="Keywords for news stories")
     parser.add_argument("--categories", type=str, required=False, default="technology,science,entertainment", help="News stories categories")
-    parser.add_argument("--prompt", type=str, required=False, default="This is a news story that you will talk about as a comedian and make jokes relating to your general personality and interests. Make i funny keep it focused on compassion and love with joy and humor, appreciation for what is good in life.",
+    parser.add_argument("--prompt", type=str, required=False, default="News Story:")
                         help="Prompt to give context as a newstory feed")
     args = parser.parse_args()
 
