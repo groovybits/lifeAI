@@ -77,9 +77,9 @@ def main():
         inputs['input_ids'] = inputs['input_ids'].long()
 
         output = None
-        with torch.no_grad():
-            output = model(**inputs).waveform
         try:
+            with torch.no_grad():
+                output = model(**inputs).waveform
             waveform_np = output.squeeze().numpy().T
         except Exception as e:
             print(f"Exception: ERROR STT error with output.squeeze().numpy().T on audio: {text}")

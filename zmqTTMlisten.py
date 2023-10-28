@@ -30,6 +30,8 @@ def get_audio_duration(audio_samples):
 class BackgroundMusic(threading.Thread):
     def __init__(self):
         super().__init__()
+        pygame.mixer.init(frequency=16000, size=-16, channels=1, buffer=1024)
+        pygame.init()
         self.audio_buffer = None
         self.running = True
         self.lock = threading.Lock()  # Lock to synchronize access to audio_buffer
@@ -40,21 +42,17 @@ class BackgroundMusic(threading.Thread):
                 if self.audio_buffer:
                     self.play_audio(self.audio_buffer)
                     self.audio_buffer = None  # Reset audio_buffer to prevent replaying the same buffer
-            pygame.time.Clock().tick(1)  # Limit the while loop to 10 iterations per second
+            pygame.time.Clock().tick(1)  # Limit the while loop to 1 iteration per second
 
     def play_audio(self, audio_samples):
-        pygame.mixer.init(frequency=16000, size=-16, channels=1, buffer=1024)
-        pygame.init()
-
         audiobuf = io.BytesIO(audio_samples)
         if audiobuf:
             pygame.mixer.music.load(audiobuf)
-            pygame.mixer.music.play()
-            while pygame.mixer.music.get_busy():
-                pygame.time.Clock().tick(1)
+            pygame.mixer.music.play(-1)  # -1 instructs Pygame to loop the audio indefinitely
 
     def change_track(self, audio_buffer):
         with self.lock:
+            pygame.mixer.music.stop()  # Stop the currently playing audio
             self.audio_buffer = audio_buffer
 
     def stop(self):
@@ -86,8 +84,7 @@ def main():
 
             # Check if we need to output to a file
             if args.save_file:
-                prompt_summary = re.sub(r'[^a-zA-Z0-9]', '', audio_text)[:50]
-                audio_file = f"{args.output_directory}/{source}/{type}/{username}/{id}/{segment_number}_{prompt_summary}.wav"
+                audio_file = f"{args.output_directory}/{source}/{type}/{username}/{id}/{segment_number}.wav"
                 ## create directory recrusively for the file if it doesn't exist
                 os.makedirs(os.path.dirname(audio_file), exist_ok=True)
                 if args.audio_format == "wav":
