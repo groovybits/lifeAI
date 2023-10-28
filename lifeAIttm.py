@@ -77,7 +77,7 @@ if __name__ == "__main__":
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Port for receiving text input")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending audio output")
     parser.add_argument("--duration", type=int, default=10, help="Duration of the audio in seconds")
-    parser.add_argument("--model", type=str, required=False, default="facebook/musicgen-medium", help="Text to music model to use")
+    parser.add_argument("--model", type=str, required=False, default="facebook/musicgen-small", help="Text to music model to use")
     parser.add_argument("--gpu", type=str, default="cpu", required=False, help="GPU type, cpu, cuda or mps")
 
     args = parser.parse_args()
