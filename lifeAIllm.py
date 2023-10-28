@@ -47,7 +47,6 @@ def run_llm(message, user_messages, id, type, username, source):
         ## Clean any binary data or dangerious characters etc without breaking all the unicode, languages and emojis or general usage of text
         combined_lines = combined_lines.encode('ascii', 'ignore').decode('ascii')
         ## remove <|> role <|> tags and [\NNN] and other tags from the LLM and not part of the text
-
         
         if combined_lines:
             results += combined_lines

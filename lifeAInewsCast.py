@@ -16,6 +16,7 @@ import os
 from dotenv import load_dotenv
 import time
 import json
+import re
 
 load_dotenv()
 
@@ -42,6 +43,15 @@ def get_news(offset=0, keywords="ai anime buddhism cats", categories="technology
     print(f"Got back {data[:120]} from Media Stack")
 
     return data.decode('utf-8')
+
+def clean_text(text):
+    # This regular expression pattern will match any character that is NOT a lowercase or uppercase letter or a space.
+    pattern = re.compile(r'[^a-zA-Z\s1-9\.,\?!\-]')
+    # re.sub will replace these characters with an empty string, effectively removing them.
+    cleaned_text = re.sub(pattern, '', text)
+    # truncate to 800 characters max
+    cleaned_text = cleaned_text[:800]
+    return cleaned_text
 
 def main():
 
@@ -90,7 +100,7 @@ def main():
                     description = ""
                     title = ""
                     if 'description' in story and story['description'] != None:
-                        description =  story['description']
+                        description =  clean_text(story['description'])
                     if 'author' in story and story['author'] != None:
                         username = story['author'].replace(' ','_')
                     if 'title' in story and story['title'] != None:
@@ -100,6 +110,9 @@ def main():
                         print(f"Empty news story! Skipping... {json.dumps(news_json)}")
                         continue
 
+                    #scrub description very well for any odd characters or non speaking words
+                    
+
                     message = f"{args.prompt}\n\n{username} reported that {title}:\n\nStory: {description}"
                     print(f"Sending message {message}")
 
@@ -107,7 +120,7 @@ def main():
                     tti_socket.send_string(str(segment_number), zmq.SNDMORE)
                     tti_socket.send_string(message_id, zmq.SNDMORE)
                     tti_socket.send_string("news", zmq.SNDMORE)
-                    tti_socket.send_string(username, zmq.SNDMORE)
+                    tti_socket.send_string(args.username, zmq.SNDMORE)
                     tti_socket.send_string("MediaStackNews", zmq.SNDMORE)
                     tti_socket.send_string(message)
                 else:
