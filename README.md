@@ -18,6 +18,7 @@ That’s the goal, you’ll see I am listing the parts as I build them, sort of 
 - [ZMQ Twitch Client](lifeAITwitchClient.py) Twitch chat sent to lifeAI for responses.
 - [ZMQ Twitch Stream](lifeAITwitchStream.py) Twitch RTMP directly stream and avoid desktop capture.
 - [ZMQ TTS Listener](zmqTTSlisten.py) Listen for TTS Audio WAV file output.
+- [ZMQ TTM Listener](zmqTTMlisten.py) Listen for TTM Audio WAV file output.
 - [ZMQ TTI Listener](zmqTTIlisten.py) Listen for TTI Image PIL file output.
 - [Text to AI Speech](lifeAItts.py)   Facebook MMS-TTS Text to Speech Conversion.
 - [Text to AI Music](lifeAIttm.py)    Facebook Music Generation.
@@ -86,6 +87,7 @@ pip install .
 ## Stored in audio/ and images/ as wav and png files with burn-in with filename
 ## metadata inclusion and episode_id, index, prompt string
 python zmqTTSlisten.py
+python zmqTTMlisten.py
 python zmqTTIlisten.py
 
 # Twitch RTMP direct stream without desktop OBS/capture overhead
