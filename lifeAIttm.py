@@ -44,6 +44,7 @@ def main():
             text=[text],
             padding=True,
             return_tensors="pt",
+            duration=args.duration,
         )
 
         audio_values = model.generate(**inputs, max_new_tokens=256)
@@ -76,6 +77,7 @@ if __name__ == "__main__":
     parser.add_argument("--audio_format", choices=["wav", "raw"], default="raw", help="Audio format to save as. Choices are 'wav' or 'raw'.")
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Port for receiving text input")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending audio output")
+    parser.add_argument("--duration", type=int, default=10, help="Duration of the audio in seconds")
 
     args = parser.parse_args()
 

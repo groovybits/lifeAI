@@ -41,15 +41,15 @@ def main():
         optimized_prompt = ""
 
         image_prompt_data = None
-        prompt = f"{args.prompt}\n\nImageDescription: {text}\nImagePrompt:"
+        full_prompt = f"{args.prompt}\n\n{args.qprompt}: {text}\n{args.aprompt}:"
         print(f"Prompt optimizer: sending text to LLM:\n - {text}\n")
         try:
             image_prompt_data = llm_image(
-                prompt,
+                full_prompt,
                 max_tokens=args.maxtokens,
                 temperature=args.temperature,
                 stream=False,
-                stop=["ImageDescription:"]
+                stop=[f"{args.qprompt}:"]
             )
 
             # Confirm we have an image prompt
@@ -78,21 +78,28 @@ def main():
 
 if __name__ == "__main__":
     model = "models/zephyr-7b-alpha.Q2_K.gguf"
-    prompt = "Take the ImageDescription and summarize it into a short 2 sentence description of under 200 tokens that explains the condensed picture visualized from the ImageDescription to use for image generation."
+    prompt = "Take the {qprompt} and summarize it into a short 2 sentence description of under 200 tokens for {topic} from the {aprompt}."
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_host", type=str, default="127.0.0.1")
     parser.add_argument("--input_port", type=int, default=2000)
     parser.add_argument("--output_host", type=str, default="127.0.0.1")
     parser.add_argument("--output_port", type=int, default=3001)
-    parser.add_argument("--prompt", type=str, default=prompt)
+    parser.add_argument("--topic", type=str, default="image generation", 
+                        help="Topic to use for image generation, default 'image generation'")
     parser.add_argument("--maxtokens", type=int, default=200)
-    parser.add_argument("--context", type=int, default=4096)
-    parser.add_argument("--temperature", type=float, default=0.8)
+    parser.add_argument("--context", type=int, default=1024)
+    parser.add_argument("--temperature", type=float, default=0.4)
     parser.add_argument("--gpulayers", type=int, default=0)
     parser.add_argument("--model", type=str, default=model)
     parser.add_argument("-d", "--debug", action="store_true", default=False)
+    parser.add_argument("--qprompt", type=str, default="ImageDescription", 
+                        help="Prompt to use for image generation, default ImageDescription")
+    parser.add_argument("--aprompt", type=str, default="ImagePrompt", 
+                        help="Prompt to use for image generation, default ImagePrompt")
 
     args = parser.parse_args()
+
+    prompt = prompt.format(qprompt=args.qprompt, aprompt=args.aprompt, topic=args.topic)
 
     context = zmq.Context()
 

@@ -1,5 +1,11 @@
 # Life AI - Bring your words to life using AI
 
+Mudular python processes using zeromq to communicate between them. This allows mutiple chat models together and mixing of them into a mixer and out to twitch or where ever with ffmpeg/rtmp or anything ffmpeg can do. the nice part is using ffmpeg and packing audio/video into rtmp directly without OBS, and avoid all the overhead of need to decode it locally for broadcasting/streaming 😉.
+
+Can build out endless prompt injection sources, news/twitch/voice-whisper listener/commandline/javascript web interface (that could have the video stream back and shared like youtube).
+
+That’s the goal, you’ll see I am listing the parts as I build them, sort of have the core with llm/tts/stableDiffusion done + image subtitle burn in and prompt groomer for image gen, and generic for music usage (adding music tomorrow). twitch should be easy, I am parting out the parts of the consciousChat <https://github.com/groovybits/consciousChat> that seems more of a poc and experiment, nice, but this will remove the overhead and monolith design. It started to become too much to deal with putting it all into one app and threading everything. now each of these modules/programs are easy to understand for anyone and bypass python threading limitaitons.
+
 ## This uses the following models from huggingface
 
 - <https://huggingface.co/facebook/mms-tts-eng> Facebook mms-tts-eng a model that is multilingual for TTS
@@ -9,7 +15,8 @@
 ## modules
 
 - [ZMQ Text Client](zmqTextClient.py) Send text into lifeAI for simulation seeding.
-- [ZMQ Twitch Client](zmqTwitchClient.py) Twitch chat sent to lifeAI for responses.
+- [ZMQ Twitch Client](lifeAITwitchClient.py) Twitch chat sent to lifeAI for responses.
+- [ZMQ Twitch Stream](lifeAITwitchStream.py) Twitch RTMP directly stream and avoid desktop capture.
 - [ZMQ TTS Listener](zmqTTSlisten.py) Listen for TTS Audio WAV file output.
 - [ZMQ TTI Listener](zmqTTIlisten.py) Listen for TTI Image PIL file output.
 - [Text to AI Speech](lifeAItts.py)   Facebook MMS-TTS Text to Speech Conversion.
@@ -46,6 +53,7 @@ pip install .
 python zmqTextClient.py --message "An apple on a laptop." --segment_number 1 --username "User"
 
 # ZMQ Twitch input Client (Coming soon)
+./lifeAItwitchClient.py
 
 # ZMQ News feed Client Mediastack (Coming soon)
 
@@ -66,11 +74,19 @@ python zmqTextClient.py --message "An apple on a laptop." --segment_number 1 --u
 # Subtitle Burn In for image subtitles hardsubs
 ./lifeAIsubTitleBurnIn.py
 
+# Music generation
+./lifeAIpromptOptimize.py --input_port 2000 --output_port 4001 --qprompt MusicDescription --aprompt MusicPrompt --topic 'music generation'
+./lifeAIttm.py
+./zmqTTSlisten.py --input_port 4002 --save_file
+
 # ZMQ listener clients for listening, probing and viewing ascii image output
 ## Stored in audio/ and images/ as wav and png files with burn-in with filename
 ## metadata inclusion and episode_id, index, prompt string
 python zmqTTSlisten.py
 python zmqTTIlisten.py
+
+# Twitch RTMP direct stream without desktop OBS/capture overhead
+./lifeAItwitchServe.py
 
 ##
 ```
