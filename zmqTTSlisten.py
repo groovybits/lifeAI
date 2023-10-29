@@ -39,7 +39,7 @@ def main():
             mediatype = socket.recv_string()
             username = socket.recv_string()
             source = socket.recv_string()
-            message = socket.recv_string()
+            prompt = socket.recv_string()
             audio_text = socket.recv_string()
             duration = socket.recv_string()
 

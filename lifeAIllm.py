@@ -169,13 +169,13 @@ def main():
     while True:
         # Receive a message
         segment_number = receiver.recv_string()
-        id = receiver.recv_string()
-        type = receiver.recv_string()
+        mediaid = receiver.recv_string()
+        mediatype = receiver.recv_string()
         username = receiver.recv_string()
         source = receiver.recv_string()
         message = receiver.recv_string()
         
-        print(f"\n---\nLLM: received message id {id} number #{segment_number} from {username} of type {type} source {source} with question\n---\n{message}\n---\n.")
+        print(f"\n---\nLLM: received message id {mediaid} number #{segment_number} from {username} of type {mediatype} source {source} with question\n---\n{message}\n---\n.")
         response = ""
 
         prompt = create_prompt(username, message)
@@ -200,7 +200,7 @@ def main():
                                     args.promptcompletion.replace('{user_question}', message).replace('{context}', "")),
             ))
 
-            response = run_llm(message, messages, id, type, username, source)
+            response = run_llm(message, messages, mediaid, mediatype, username, source)
 
             messages.append(ChatCompletionMessage(
                 role="assistant",
@@ -225,8 +225,8 @@ def main():
                 response = message
 
             sender.send_string(str(segment_number), zmq.SNDMORE)
-            sender.send_string(id, zmq.SNDMORE)
-            sender.send_string(type, zmq.SNDMORE)
+            sender.send_string(mediaid, zmq.SNDMORE)
+            sender.send_string(mediatype, zmq.SNDMORE)
             sender.send_string(username, zmq.SNDMORE)
             sender.send_string(source, zmq.SNDMORE)
             sender.send_string(message, zmq.SNDMORE)

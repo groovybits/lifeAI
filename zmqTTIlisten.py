@@ -53,7 +53,6 @@ def main():
         mediatype = socket.recv_string()
         username = socket.recv_string()
         source = socket.recv_string()
-        message = socket.recv_string()
         image_prompt = socket.recv_string()
         image_text = socket.recv_string()
 

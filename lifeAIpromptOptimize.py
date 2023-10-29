@@ -69,8 +69,7 @@ def main():
         sender.send_string(username, zmq.SNDMORE)
         sender.send_string(source, zmq.SNDMORE)
         sender.send_string(message, zmq.SNDMORE)
-        sender.send_string(optimized_prompt, zmq.SNDMORE)
-        sender.send_string(text)
+        sender.send_string(optimized_prompt)
 
         print(f"\nPrompt optimizer: sent optimized prompt:\n - {optimized_prompt}\n")
 

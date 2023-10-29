@@ -32,13 +32,12 @@ def main():
         type = receiver.recv_string()
         username = receiver.recv_string()
         source = receiver.recv_string()
-        message = receiver.recv_string()
         prompt = receiver.recv_string()
         text = receiver.recv_string()
 
-        print(f"Text to Image recieved text #{segment_number}\n - {prompt}.")
+        print(f"Text to Image recieved text #{segment_number}\n - {text}.")
 
-        image = pipe(prompt).images[0]
+        image = pipe(text).images[0]
 
         # Convert PIL Image to bytes
         img_byte_arr = io.BytesIO()
@@ -50,12 +49,11 @@ def main():
         sender.send_string(type, zmq.SNDMORE)
         sender.send_string(username, zmq.SNDMORE)
         sender.send_string(source, zmq.SNDMORE)
-        sender.send_string(message, zmq.SNDMORE)
         sender.send_string(prompt, zmq.SNDMORE)
         sender.send_string(text, zmq.SNDMORE)
         sender.send(image)
 
-        print(f"Text to Image sent image #{segment_number}:\n - {prompt}")
+        print(f"Text to Image sent image #{segment_number}:\n - {text}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
