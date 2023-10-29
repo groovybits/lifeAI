@@ -161,7 +161,7 @@ def main():
         text = receiver.recv_string()
         image = receiver.recv()
 
-        print(f"Subtitle Burn-In: recieved image #{segment_number}" % segment_number)
+        print(f"Subtitle Burn-In: recieved image #{segment_number}")
         
         ## Convert the bytes back to a PIL Image object
         image = Image.open(io.BytesIO(image))
