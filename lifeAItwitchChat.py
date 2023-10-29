@@ -18,6 +18,7 @@ from llama_cpp import ChatCompletionMessage
 import uuid
 import argparse
 import zmq
+import json
 
 load_dotenv()
 
@@ -25,7 +26,7 @@ current_personality = ""
 current_name = ""
 chat_db = "db/chat.db"
 
-personalities = []
+personalities = {}
 
 ## Twitch chat responses
 class AiTwitchBot(commands.Cog):
@@ -36,6 +37,7 @@ class AiTwitchBot(commands.Cog):
         self.bot = bot
         self.ai_name = current_name
         self.ai_personality = current_personality
+        personalities[self.ai_name] = self.ai_personality
 
     ## Channel entrance for our bot
     async def event_ready(self):
@@ -51,13 +53,14 @@ class AiTwitchBot(commands.Cog):
     async def event_message(self, message):
         'Runs every time a message is sent in chat.'
         try:
-            print(f"--- {message.author.name} asked {self.ai_name} the question: {message.content}")
             if message.author.name.lower() == os.environ['BOT_NICK'].lower():
                 return
 
+            # Ignore our own messages
             if message.echo:
                 return
 
+            print(f"--- Received message from {message.author.name}: {message.content}")
             await self.bot.handle_commands(message)
         except Exception as e:
             print("Error in event_message twitch bot: %s" % str(e))
@@ -67,23 +70,27 @@ class AiTwitchBot(commands.Cog):
         try:
             question = ctx.message.content.replace(f"!message ", '')
             name = ctx.message.author.name
-            default_ainame = self.ai_name
+            ainame = self.ai_name
+            aipersonality = self.ai_personality
 
             # Remove unwanted characters
             translation_table = str.maketrans('', '', ':,')
             cleaned_question = question.translate(translation_table)
 
             # Split the cleaned question into words and get the first word
-            ainame = cleaned_question.split()[0] if cleaned_question else None
+            ainame_request = cleaned_question.split()[0] if cleaned_question else None
+            aipersonality = self.ai_personality
 
             # Check our list of personalities
-            if ainame not in personalities:
-                print(f"--- {name} asked for {default_ainame} but it doesn't exist, using default.")
-                ainame = default_ainame
+            if ainame_request not in personalities:
+                print(f"--- {name} asked for {ainame_request} but it doesn't exist, using default.")
+                ctx.send(f"{name} the personality you have chosen is not in the list of personalities, please choose a personality that is in the list of personalities {json.dumps(personalities)}. You can create them using !name <name> <personality>.")
+            else:
+                ainame = ainame_request
+                aipersonality = personalities[ainame]
+                print(f"--- {name} set personality to {ainame} with personality {aipersonality}.")
 
             print(f"--- {name} asked {ainame} the question: {question}")
-
-            await ctx.send(f"Thank you for the question {name}")
 
             # Connect to the database
             db_conn = sqlite3.connect(chat_db)
@@ -119,19 +126,23 @@ class AiTwitchBot(commands.Cog):
 
             db_conn.close()
 
-            # Formulate the question and append it to history
-            formatted_question = f"twitchchat user {name} asked {question}"
-            history.append(ChatCompletionMessage(role="user", content=formatted_question))
-
             # Send the message
-            tti_socket.send_string("0", zmq.SNDMORE)
-            tti_socket.send_string(ctx.message.id, zmq.SNDMORE)
-            tti_socket.send_string("chat", zmq.SNDMORE)
-            tti_socket.send_string(name, zmq.SNDMORE)
-            tti_socket.send_string("Twitch", zmq.SNDMORE)
-            tti_socket.send_string(formatted_question)
+            client_request = {
+                "segment_number": "0",
+                "mediaid": ctx.message.id,
+                "mediatype": "chat",
+                "username": name,
+                "source": "Twitch",
+                "message": question,
+                "aipersonality": aipersonality,
+                "ainame": ainame,
+                "history": history,
+            }
+            socket.send_json(client_request)
 
-            print("twitch", name, formatted_question, history, ainame, self.ai_personality)
+            await ctx.send(f"{ainame}: Thank you for the question {name}, I will try to answer it after I finish my current answer.")
+
+            print(f"twitch client sent message:\n{client_request}\n")
         except Exception as e:
             print("Error in chat_request twitch bot: %s" % str(e))
 
@@ -140,20 +151,16 @@ class AiTwitchBot(commands.Cog):
     async def personality(self, ctx: commands.Context):
         try:
             personality = ctx.message.content.replace('!personality','')
-            pattern = re.compile(r'^[a-zA-Z0-9 ,.!?;:()\'\"-]*$')
-            print(f"--- Got personality switch from twitch: %s" % personality)
-            # vett the personality asked for to make sure it is less than 100 characters and alphanumeric, else tell the chat user it is not the right format
-            if len(personality) > 500:
-                print(f"{ctx.message.author.name} tried to alter the personality to {personality} yet is too long.")
-                await ctx.send(f"{ctx.message.author.name} the personality you have chosen is too long, please choose a personality that is 100 characters or less")
-                return
-            if not pattern.match(personality):
-                print(f"{ctx.message.author.name} tried to alter the personality to {personality} yet is not alphanumeric.")
-                await ctx.send(f"{ctx.message.author.name} the personality you have chosen is not alphanumeric, please choose a personality that is alphanumeric")
+            print(f"--- Got personality switch to personality: %s" % personality)
+            if personality not in personalities:
+                print(f"{ctx.message.author.name} tried to alter the personality to {personality} yet is not in the list of personalities.")
+                await ctx.send(f"{ctx.message.author.name} the personality you have chosen is not in the list of personalities, please choose a personality that is in the list of personalities {json.dumps(personalities)}")
                 return
             await ctx.send(f"{ctx.message.author.name} switched personality to {personality}")
             # set our personality to the content
-            self.ai_personality = personality
+            self.ai_personality = personalities[personality]
+            self.ai_name = personality
+
         except Exception as e:
             print("Error in personality command twitch bot: %s" % str(e))
 
@@ -168,13 +175,19 @@ class AiTwitchBot(commands.Cog):
             # get the prompt from the content
             prompt = content.replace('!music','')
             # send the prompt to the llm
-            # Send the message
-            tti_socket.send_string("0", zmq.SNDMORE)
-            tti_socket.send_string(ctx.message.id, zmq.SNDMORE)
-            tti_socket.send_string("music", zmq.SNDMORE)
-            tti_socket.send_string(name, zmq.SNDMORE)
-            tti_socket.send_string("Twitch", zmq.SNDMORE)
-            tti_socket.send_string(prompt)
+            client_request = {
+                "segment_number": "0",
+                "mediaid": ctx.message.id,
+                "mediatype": "chat",
+                "username": name,
+                "source": "Twitch",
+                "message": prompt,
+                "aipersonality": "You are a musician and will compose an amazing piece of music for us.",
+                "ainame": "MusicGen",
+            }
+            socket.send_json(client_request)
+
+            print(f"twitch client sent music request: {client_request} ")
         except Exception as e:
             print("Error in music command twitch bot: %s" % str(e))
 
@@ -201,12 +214,19 @@ class AiTwitchBot(commands.Cog):
             prompt = content.replace('!image','')
 
             # Send the message
-            tti_socket.send_string("0", zmq.SNDMORE)
-            tti_socket.send_string(ctx.message.id, zmq.SNDMORE)
-            tti_socket.send_string("image", zmq.SNDMORE)
-            tti_socket.send_string(name, zmq.SNDMORE)
-            tti_socket.send_string("Twitch", zmq.SNDMORE)
-            tti_socket.send_string(prompt)
+            client_request = {
+                "segment_number": "0",
+                "mediaid": ctx.message.id,
+                "mediatype": "chat",
+                "username": name,
+                "source": "Twitch",
+                "message": prompt,
+                "aipersonality": "You are a digital artist and phtographer, you will compose an amazing piece of art or take an amazing photo image for us.",
+                "ainame": "ImageGen",
+            }
+            socket.send_json(client_request)
+
+            print(f"twitch client sent image request: {client_request} ")
 
         except Exception as e:
             print("Error in image command twitch bot: %s" % str(e))
@@ -215,23 +235,27 @@ class AiTwitchBot(commands.Cog):
     @commands.command(name="name")
     async def name(self, ctx: commands.Context):
         try:
+            # format is "!name <name> <personality>"
             name = ctx.message.content.replace('!name','').strip().replace(' ', '_')
-            pattern = re.compile(r'^[a-zA-Z0-9 ,.!?;:()\'\"-]*$')
-            print(f"--- Got name switch from twitch: %s" % name)
+            name, personality = name.split(' ', 1)
+            namepattern = re.compile(r'^[a-zA-Z0-9]*$')
+            personalitypattern = re.compile(r'^[a-zA-Z0-9 ,.]*$')
+            print(f"--- Got name switch from {ctx.author} for ai name: %s" % name)
             # confirm name has no spaces and is 12 or less characters and alphanumeric, else tell the chat user it is not the right format
-            if len(name) > 32:
-                print(f"{ctx.message.author.name} tried to alter the name to {name} yet is too long.")
+            if len(name) > 32 or ' ' in name or len(personality) > 200:
+                print(f"{ctx.message.author.name} tried to alter the name to {name} yet is too long or has spaces.")
                 await ctx.send(f"{ctx.message.author.name} the name you have chosen is too long, please choose a name that is 12 characters or less")
                 return
-            if not pattern.match(name):
+            if not namepattern.match(name) or not personalitypattern.match(personality):
                 print(f"{ctx.message.author.name} tried to alter the name to {name} yet is not alphanumeric.")
                 await ctx.send(f"{ctx.message.author.name} the name you have chosen is not alphanumeric, please choose a name that is alphanumeric")
                 return
-            await ctx.send(f"{ctx.message.author.name} switched name to {name}")
+            await ctx.send(f"{ctx.message.author.name} created name {name}")
             # set our name to the content
             self.ai_name = name
             # add to the personalities known
-            personalities.append(name)
+            if name not in personalities:
+                personalities[name] = personality
         except Exception as e:
             print("Error in name command twitch bot: %s" % str(e))
 
@@ -263,13 +287,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--output_port", type=int, default=1500, required=False, help="Port to send message to")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Host for sending message to.")
+    parser.add_argument("--ai_name", type=str, required=False, default="Buddha", help="Name of the bot")
+    parser.add_argument("--ai_personality", type=str,
+                        required=False, 
+                        default="Helpful wise boddisattva helping twitch chat users with their suffering and joy with equinimity and compassion.", 
+                        help="Personality of the bot")
     args = parser.parse_args()
 
     context = zmq.Context()
 
     # Socket to send messages on
-    tti_socket = context.socket(zmq.PUSH)
+    socket = context.socket(zmq.PUSH)
     print("connect to send message: %s:%d" % (args.output_host, args.output_port))
-    tti_socket.connect(f"tcp://{args.output_host}:{args.output_port}")
+    socket.connect(f"tcp://{args.output_host}:{args.output_port}")
 
     main()

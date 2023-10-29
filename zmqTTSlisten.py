@@ -33,20 +33,28 @@ def play_audio(audio_samples):
 def main():
     while True:
         try:
-            # Receive the segment number (header) first
-            segment_number = socket.recv_string()
-            mediaid = socket.recv_string()
-            mediatype = socket.recv_string()
-            username = socket.recv_string()
-            source = socket.recv_string()
-            message = socket.recv_string()
-            audio_text = socket.recv_string()
-            duration = socket.recv_string()
-
+            """ From LLM Source
+            header_message = {
+            "segment_number": segment_number,
+            "mediaid": mediaid,
+            "mediatype": mediatype,
+            "username": username,
+            "source": source,
+            "message": message,
+            "text": text,
+            "duration": duration,
+            }
+            audio_blob = io.BytesIO()
+            """
+            header_message = socket.recv_json()
+            # get variable from header message
+            segment_number = header_message['segment_number']
+            mediaid = header_message['mediaid']
+           
             # Now, receive the binary audio data
             audio_samples = socket.recv()
 
-            print(f"Received audio segment {mediaid} {mediatype} #{segment_number} of {duration} duration by {username} from {source}:\nText: {audio_text}\nOriginal Question: {message}\n")
+            print(f"Received audio segment {header_message}\n")
 
             # Check if we need to output to a file
             if args.save_file:

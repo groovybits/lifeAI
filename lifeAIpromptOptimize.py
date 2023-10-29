@@ -26,16 +26,22 @@ trlogging.set_verbosity_error()
 
 def main():
     while True:
+        """ From LLM Source
+          header_message = {
+            "segment_number": segment_number,
+            "mediaid": mediaid,
+            "mediatype": mediatype,
+            "username": username,
+            "source": source,
+            "message": message,
+            "text": "",
+        }
+        """
         # Receive a message
-        segment_number = receiver.recv_string()
-        mediaid = receiver.recv_string()
-        mediatype = receiver.recv_string()
-        username = receiver.recv_string()
-        source = receiver.recv_string()
-        message = receiver.recv_string()
-        text = receiver.recv_string()
+        header_message = receiver.recv_json()
+        text = header_message["text"]
 
-        print(f"\n---\nPrompt optimizer received {mediaid} {mediatype} from {username} on {source} #{segment_number}\nText: {text}\n")
+        print(f"\n---\nPrompt optimizer received {header_message}\n")
         optimized_prompt = ""
 
         image_prompt_data = None
@@ -57,22 +63,19 @@ def main():
 
             if not optimized_prompt.strip():
                 print(f"\nError! Image prompt generation failed, using original prompt:\n - {json.dumps(image_prompt_data)}")
-                optimized_prompt = text
+                optimized_prompt = None
         except Exception as e:
             print(f"\nError! Image prompt generation llm didn't get any result:\n{str(e)}")
-            optimized_prompt = text
+            optimized_prompt = None
+
+        # Add optimized prompt
+        if optimized_prompt:
+            header_message["optimized_text"] = optimized_prompt
 
         # Send the processed message
-        sender.send_string(str(segment_number), zmq.SNDMORE)
-        sender.send_string(mediaid, zmq.SNDMORE)
-        sender.send_string(mediatype, zmq.SNDMORE)
-        sender.send_string(username, zmq.SNDMORE)
-        sender.send_string(source, zmq.SNDMORE)
-        sender.send_string(message, zmq.SNDMORE)
-        sender.send_string(text, zmq.SNDMORE)
-        sender.send_string(optimized_prompt)
+        sender.send_json(header_message)
 
-        print(f"\nPrompt optimizer generated optimized prompt:\n - {optimized_prompt}\n")
+        print(f"\nPrompt optimizer generated optimized text:\n - {text}\nprompt:\n - {optimized_prompt}\n")
 
 if __name__ == "__main__":
     model = "models/zephyr-7b-alpha.Q2_K.gguf"

@@ -16,17 +16,27 @@ def main():
     context = zmq.Context()
 
     # Socket to send messages on
-    tti_socket = context.socket(zmq.PUSH)
+    socket = context.socket(zmq.PUSH)
     print("binding to send message: %s:%d" % (args.output_host, args.output_port))
-    tti_socket.connect(f"tcp://{args.output_host}:{args.output_port}")
+    socket.connect(f"tcp://{args.output_host}:{args.output_port}")
+
+    history = []
+    aipersonality = args.ai_personality
+    ainame = args.ai_name
 
     # Send the message
-    tti_socket.send_string(args.segment_number, zmq.SNDMORE)
-    tti_socket.send_string(args.id, zmq.SNDMORE)
-    tti_socket.send_string(args.type, zmq.SNDMORE)
-    tti_socket.send_string(args.username, zmq.SNDMORE)
-    tti_socket.send_string(args.source, zmq.SNDMORE)
-    tti_socket.send_string(args.message)
+    client_request = {
+        "segment_number": args.segment_number,
+        "mediaid": args.id,
+        "mediatype": args.type,
+        "username": args.username,
+        "source": args.source,
+        "message": args.message,
+        "aipersonality": aipersonality,
+        "ainame": ainame,
+        "history": history,
+    }
+    socket.send_json(client_request)
 
     print("Message sent")
 
@@ -42,6 +52,8 @@ if __name__ == "__main__":
     parser.add_argument("--type", type=str, required=False, default="chat", help="Type of message")
     parser.add_argument("--username", type=str, required=False, default="anonymous", help="Username of sender")
     parser.add_argument("--source", type=str, required=False, default="lifeAI", help="Source of message")
+    parser.add_argument("--ai_personality", type=str, required=False, default="I am GAIB the AI Bot of Life AI, I am helpful and approach the chat with love, compassion, equinimity, joy and courage.", help="AI personality")
+    parser.add_argument("--ai_name", type=str, required=False, default="GAIB", help="AI name")
     args = parser.parse_args()
 
     main()

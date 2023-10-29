@@ -27,16 +27,30 @@ trlogging.set_verbosity_error()
 
 def main():
     while True:
-        segment_number = receiver.recv_string()
-        id = receiver.recv_string()
-        type = receiver.recv_string()
-        username = receiver.recv_string()
-        source = receiver.recv_string()
-        message = receiver.recv_string()
-        text = receiver.recv_string()
-        optimized_prompt = receiver.recv_string()
+        """ 
+          header_message = {
+            "segment_number": segment_number,
+            "mediaid": mediaid,
+            "mediatype": mediatype,
+            "username": username,
+            "source": source,
+            "message": message,
+            "text": text,
+            "optimized_text": optimized_text,
+        }"""
+        # Receive a message
+        header_message = receiver.recv_json()
 
-        print(f"Text to Image recieved optimized prompt #{segment_number}\n - {optimized_prompt}.")
+        # get variables from header
+        segment_number = header_message["segment_number"]
+        optimized_prompt = ""
+        if "optimized_text" in header_message:
+            optimized_prompt = header_message["optimized_text"]
+        else:
+            optimized_prompt = header_message["text"]
+            print(f"TTI: No optimized text, using original text.")
+
+        print(f"Text to Image recieved optimized prompt:\n{header_message}.")
 
         image = pipe(optimized_prompt).images[0]
 
@@ -45,14 +59,7 @@ def main():
         image.save(img_byte_arr, format='PNG')  # Save it as PNG or JPEG depending on your preference
         image = img_byte_arr.getvalue()
 
-        sender.send_string(str(segment_number), zmq.SNDMORE)
-        sender.send_string(id, zmq.SNDMORE)
-        sender.send_string(type, zmq.SNDMORE)
-        sender.send_string(username, zmq.SNDMORE)
-        sender.send_string(source, zmq.SNDMORE)
-        sender.send_string(message, zmq.SNDMORE)
-        sender.send_string(text, zmq.SNDMORE)
-        sender.send_string(optimized_prompt, zmq.SNDMORE)
+        sender.send_json(header_message, zmq.SNDMORE)
         sender.send(image)
 
         print(f"Text to Image sent image #{segment_number}:\n - {optimized_prompt}")

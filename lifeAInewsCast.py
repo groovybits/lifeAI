@@ -95,7 +95,7 @@ def main():
             for story in news_json['data']:
                 print(f"Story: {story}")
                 if 'description' in story:
-                    message_id = uuid.uuid4().hex[:8]
+                    mediaid = uuid.uuid4().hex[:8]
                     username = args.username
                     description = ""
                     title = ""
@@ -113,16 +113,22 @@ def main():
                     #scrub description very well for any odd characters or non speaking words
                     
 
-                    message = f"{args.prompt}{username} reported that {title}:\n{description}\n\n"
+                    message = f"{args.prompt}{username} reported \"{title}\" - {description}\n\n"
                     print(f"Sending message {message}")
 
                     # Send the message
-                    tti_socket.send_string(str(segment_number), zmq.SNDMORE)
-                    tti_socket.send_string(message_id, zmq.SNDMORE)
-                    tti_socket.send_string("news", zmq.SNDMORE)
-                    tti_socket.send_string(args.username, zmq.SNDMORE)
-                    tti_socket.send_string("MediaStackNews", zmq.SNDMORE)
-                    tti_socket.send_string(message)
+                    client_request = {
+                        "segment_number": segment_number,
+                        "mediaid": mediaid,
+                        "mediatype": "news",
+                        "username": username,
+                        "source": "lifeAI",
+                        "message": message,
+                        "aipersonality": args.aipersonality,
+                        "ainame": args.ainame,
+                        "history": [],
+                    }
+                    socket.send_json(client_request)
                 else:
                     print("News: Found an empty story! %s" % json.dumps(story))
 
@@ -139,16 +145,18 @@ if __name__ == "__main__":
     parser.add_argument("--username", type=str, required=False, default="NewsAnchor", help="Username of sender")
     parser.add_argument("--keywords", type=str, required=False, default="ai anime buddhism cats", help="Keywords for news stories")
     parser.add_argument("--categories", type=str, required=False, default="technology,science,entertainment", help="News stories categories")
-    parser.add_argument("--prompt", type=str, required=False, default="Please use the following news story as context for the question...",
+    parser.add_argument("--prompt", type=str, required=False, default="News Story just in... ",
                         help="Prompt to give context as a newstory feed")
+    parser.add_argument("--aipersonality", type=str, required=False, default="I am GAIB the AI Bot of Life AI, I am sending an interesting news article for analysis.", help="AI personality")
+    parser.add_argument("--ainame", type=str, required=False, default="GAIB", help="AI name")
     args = parser.parse_args()
 
     context = zmq.Context()
 
     # Socket to send messages on
-    tti_socket = context.socket(zmq.PUSH)
+    socket = context.socket(zmq.PUSH)
     print("connect to send message: %s:%d" % (args.output_host, args.output_port))
-    tti_socket.connect(f"tcp://{args.output_host}:{args.output_port}")
+    socket.connect(f"tcp://{args.output_host}:{args.output_port}")
 
     main()
 

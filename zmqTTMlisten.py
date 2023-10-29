@@ -68,21 +68,27 @@ def main():
     audio_samples = None
     while True:
         try:
-            # Receive the segment number (header) first
-            segment_number = socket.recv_string()
-            mediaid = socket.recv_string()
-            mediatype = socket.recv_string()
-            username = socket.recv_string()
-            source = socket.recv_string()
-            message = socket.recv_string()
-            text = socket.recv_string()
-            optimized_prompt = socket.recv_string()
-            duration = socket.recv_string()
+            header_message = socket.recv_json()
+            """
+             header_message = {
+            "segment_number": segment_number,
+            "mediaid": mediaid,
+            "mediatype": mediatype,
+            "username": username,
+            "source": source,
+            "message": message,
+            "text": "",
+            }      
+            """
+            # fill out the variables from the header
+            segment_number = header_message["segment_number"]
+            mediaid = header_message["mediaid"]
+            duration = header_message["duration"]
 
             # Now, receive the binary audio data
             audio_samples = socket.recv()
 
-            print(f"Received music segment {mediaid} {mediatype} #{segment_number} of {duration} duration by {username} from {source}:\nMusic Prompt: {optimized_prompt}\nOriginal Prompt: {text}\nOriginal Question: {message}\n")
+            print(f"Received music segment mediaid: {header_message}\n")
 
             # Check if we need to output to a file
             if args.save_file:

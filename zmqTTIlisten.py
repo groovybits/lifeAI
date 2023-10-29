@@ -47,21 +47,31 @@ def render(image):
 
 def main():
     while True:
-        # Receive the segment number (header) first
-        segment_number = socket.recv_string()
-        mediaid = socket.recv_string()
-        mediatype = socket.recv_string()
-        username = socket.recv_string()
-        source = socket.recv_string()
-        message = socket.recv_string()
-        text = socket.recv_string()
-        optimized_prompt = socket.recv_string()
+        header_message = socket.recv_json()
+        """ 
+          header_message = {
+            "segment_number": segment_number,
+            "mediaid": mediaid,
+            "mediatype": mediatype,
+            "username": username,
+            "source": source,
+            "message": message,
+            "text": text,
+            "optimized_text": optimized_text,
+        }"""
+        # fill in variables from header
+
+        segment_number = header_message["segment_number"]
+        mediaid = header_message["mediaid"]
+        message = header_message["message"]
+        text = header_message["text"]
+        optimized_prompt = header_message["optimized_text"]
 
         # Now, receive the binary audio data
         image = socket.recv()
 
         # Print the header
-        print(f"Received image segment {mediaid} {mediatype} #{segment_number} of {mediatype} type from {username} in {source}:\n - {optimized_prompt}\n")
+        print(f"Received image segment {header_message}\n")
 
         # create an output file using the prompt and segment_number
         image_file = f"{args.output_directory}/{mediaid}/{segment_number}.png"

@@ -152,22 +152,37 @@ def add_text_to_image(image, text):
 
 def main():
     while True:
-        segment_number = receiver.recv_string()
-        id = receiver.recv_string()
-        type = receiver.recv_string()
-        username = receiver.recv_string()
-        source = receiver.recv_string()
-        prompt = receiver.recv_string()
-        text = receiver.recv_string()
+        header_message = receiver.recv_json()
+        """ 
+          header_message = {
+            "segment_number": segment_number,
+            "mediaid": mediaid,
+            "mediatype": mediatype,
+            "username": username,
+            "source": source,
+            "message": message,
+            "text": text,
+            "optimized_text": optimized_text,
+        }"""
+        # fill out variables from header_message
+        segment_number = header_message["segment_number"]
+        text = header_message["text"]
+        optimized_prompt = ""
+        if "optimized_text" in header_message:
+            optimized_prompt = header_message["optimized_text"]
+        elif not args.use_prompt:
+            print(f"Subtitle Burn-In: No optimized text, using original text.")
         image = receiver.recv()
 
-        print(f"Subtitle Burn-In: recieved image #{segment_number}")
+        print(f"Subtitle Burn-In: recieved image {header_message}")
+
+        # check if we have optimized text
         
         ## Convert the bytes back to a PIL Image object
         image = Image.open(io.BytesIO(image))
 
-        if args.use_prompt:            
-            image = add_text_to_image(image, prompt)
+        if args.use_prompt and optimized_prompt.strip():            
+            image = add_text_to_image(image, optimized_prompt)
         else:
             image = add_text_to_image(image, text)
         
@@ -176,13 +191,7 @@ def main():
         image.save(img_byte_arr, format=args.format)  # Save it as PNG or JPEG depending on your preference
         image = img_byte_arr.getvalue()
 
-        sender.send_string(str(segment_number), zmq.SNDMORE)
-        sender.send_string(id, zmq.SNDMORE)
-        sender.send_string(type, zmq.SNDMORE)
-        sender.send_string(username, zmq.SNDMORE)
-        sender.send_string(source, zmq.SNDMORE)
-        sender.send_string(prompt, zmq.SNDMORE)
-        sender.send_string(text, zmq.SNDMORE)
+        sender.send_json(header_message, zmq.SNDMORE)
         sender.send(image)
 
         print("Subtitle Burn-In: sent image #%s" % segment_number)

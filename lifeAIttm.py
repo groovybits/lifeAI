@@ -25,16 +25,28 @@ trlogging.set_verbosity_error()
 
 def main():
     while True:
-        segment_number = receiver.recv_string()
-        mediaid = receiver.recv_string()
-        mediatype = receiver.recv_string()
-        username = receiver.recv_string()
-        source = receiver.recv_string()
-        message = receiver.recv_string()
-        text = receiver.recv_string()
-        optimized_prompt = receiver.recv_string()
+        header_message = receiver.recv_json()
+        """
+        # Send the processed message
+        header_message = {
+        "segment_number": segment_number,
+        "mediaid": mediaid,
+        "mediatype": mediatype,
+        "username": username,
+        "source": source,
+        "message": message,
+        "text": "",
+        }      
+        """
+        # fill in the variables form the header_message
+        optimized_prompt = ""
+        if "optimized_prompt" in header_message:
+            optimized_prompt = header_message["optimized_prompt"]
+        else:
+            optimized_prompt = header_message["text"]
+            print(f"TTM: No optimized prompt, using original text.")
 
-        print("\n---\nText to Music recieved text #%s: %s" % (segment_number, optimized_prompt))
+        print(f"Text to Music Recieved:\n{header_message}")
 
         inputs = processor(
             text=[optimized_prompt],
@@ -50,18 +62,11 @@ def main():
         audiobuf.seek(0)
 
         duration = len(audio_values) / model.config.sampling_rate
-        sender.send_string(str(segment_number), zmq.SNDMORE)
-        sender.send_string(mediaid, zmq.SNDMORE)
-        sender.send_string(mediatype, zmq.SNDMORE)
-        sender.send_string(username, zmq.SNDMORE)
-        sender.send_string(source, zmq.SNDMORE)
-        sender.send_string(message, zmq.SNDMORE)
-        sender.send_string(text, zmq.SNDMORE)
-        sender.send_string(optimized_prompt, zmq.SNDMORE)
-        sender.send_string(str(duration), zmq.SNDMORE)
+        header_message["duration"] = duration
+        sender.send_json(header_message, zmq.SNDMORE)
         sender.send(audiobuf.getvalue())
         
-        print("\nText to Music: sent audio #%s" % segment_number)
+        print(f"Text to Music Sent:\n{header_message}")
     
 
 if __name__ == "__main__":

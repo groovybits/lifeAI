@@ -98,14 +98,18 @@ def main():
                 ## serve the video frame
                 if videostream.get_video_frame_buffer_state() < args.fps:
                     # Receive the segment number (header) first
-                    segment_number = image_socket.recv_string()
-                    id = image_socket.recv_string()
-                    type = image_socket.recv_string()
-                    username = image_socket.recv_string()
-                    source = image_socket.recv_string()
-                    message = image_socket.recv_string()
-                    image_prompt = image_socket.recv_string()
-                    image_text = image_socket.recv_string()
+                    """ 
+                    header_message = {
+                        "segment_number": segment_number,
+                        "mediaid": mediaid,
+                        "mediatype": mediatype,
+                        "username": username,
+                        "source": source,
+                        "message": message,
+                        "text": text,
+                        "optimized_text": optimized_text,
+                    }"""
+                    header_message = image_socket.recv_string()
                     image = image_socket.recv()
 
                     if image:
@@ -141,13 +145,18 @@ def main():
                 last_audio_time = time.time()
                 if videostream.get_audio_buffer_state() < args.fps:
                     ## find audio in audio queue
-                    aid = audio_socket.recv_string()
-                    atype = audio_socket.recv_string()
-                    ausername = audio_socket.recv_string()
-                    asource = audio_socket.recv_string()
-                    amessage = audio_socket.recv_string()
-                    audio_text = audio_socket.recv_string()
-                    duration = audio_socket.recv_string()
+                    """ 
+                    header_message = {
+                        "segment_number": segment_number,
+                        "mediaid": mediaid,
+                        "mediatype": mediatype,
+                        "username": username,
+                        "source": source,
+                        "message": message,
+                        "text": text,
+                        "optimized_text": optimized_text,
+                    }"""
+                    header_message = audio_socket.recv_string()
                     audio = audio_socket.recv()
 
                     if audio:

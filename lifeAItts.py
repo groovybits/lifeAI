@@ -50,15 +50,21 @@ def clean_text_for_tts(text):
 
 def main():
     while True:
-        segment_number = receiver.recv_string()
-        mediaid = receiver.recv_string()
-        mediatype = receiver.recv_string()
-        username = receiver.recv_string()
-        source = receiver.recv_string()
-        message = receiver.recv_string()
-        text = receiver.recv_string()
+        header_message = receiver.recv_json()
+        """
+          header_message = {
+            "segment_number": segment_number,
+            "mediaid": mediaid,
+            "mediatype": mediatype,
+            "username": username,
+            "source": source,
+            "message": message,
+            "text": "",
+        }"""
+        segment_number = header_message["segment_number"]
+        text = header_message["text"]
 
-        print("Text to Speech recieved text #%s: %s" % (segment_number, text))
+        print("Text to Speech recieved request:\n%s" % header_message)
 
         inputs = tokenizer(clean_text_for_tts(text), return_tensors="pt")
         inputs['input_ids'] = inputs['input_ids'].long()
@@ -76,17 +82,15 @@ def main():
         audiobuf.seek(0)
 
         duration = len(waveform_np) / model.config.sampling_rate
-        sender.send_string(str(segment_number), zmq.SNDMORE)
-        sender.send_string(mediaid, zmq.SNDMORE)
-        sender.send_string(mediatype, zmq.SNDMORE)
-        sender.send_string(username, zmq.SNDMORE)
-        sender.send_string(source, zmq.SNDMORE)
-        sender.send_string(message, zmq.SNDMORE)
-        sender.send_string(text, zmq.SNDMORE)
-        sender.send_string(str(duration), zmq.SNDMORE)
+
+        # fill in the header
+        header_message["duration"] = duration
+
+        # send the header and the audio
+        sender.send_json(header_message, zmq.SNDMORE)
         sender.send(audiobuf.getvalue())
         
-        print("Text to Speech: sent audio #%s" % segment_number)
+        print(f"Text to Speech: sent audio #{segment_number}\n{header_message}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
