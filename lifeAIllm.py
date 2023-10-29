@@ -174,38 +174,32 @@ def main():
         username = receiver.recv_string()
         source = receiver.recv_string()
         message = receiver.recv_string()
-        history = messages
         
-        print(f"\n---\nLLM: received message id {id} number #{segment_number} from {username} of type {type} source {source} with question {message}")
+        print(f"\n---\nLLM: received message id {id} number #{segment_number} from {username} of type {type} source {source} with question\n---\n{message}\n---\n.")
         response = ""
 
         prompt = create_prompt(username, message)
 
-        print(f"LLM: sending prompt to LLM:\n - {prompt}\n")
+        #print(f"LLM: sending prompt to LLM:\n - {prompt}\n")
 
         llm_output = None
         response = None
         if not args.analysis:
             # Calculate the total length of all messages in history
-            total_length = sum([len(msg['content']) for msg in history])
+            total_length = sum([len(msg['content']) for msg in messages])
             # keep history within context size
             while total_length > (args.context/2)+len(prompt):
                 # Remove the oldest message after the system prompt
-                if len(history) > 2:
-                    total_length -= len(history[1]['content'])
-                    del history[1]
-
-            history.append(ChatCompletionMessage(
-                role="user",
-                content="Personality: You are %s who is %s\n\n%s" % (args.ai_name, args.personality, args.promptcompletion.replace('{user_question}', message).replace('{context}', "")),
-            ))
-
-            response = run_llm(message, history, id, type, username, source)
+                if len(messages) > 2:
+                    total_length -= len(messages[1]['content'])
+                    del messages[1]
 
             messages.append(ChatCompletionMessage(
                 role="user",
-                content=message,
+                content="%s" % (args.promptcompletion.replace('{user_question}', message).replace('{context}', "")),
             ))
+
+            response = run_llm(message, messages, id, type, username, source)
 
             messages.append(ChatCompletionMessage(
                 role="assistant",
@@ -213,11 +207,11 @@ def main():
             ))
         else:
             llm_output = llm_image(
-                f"{prompt}\n\Message: {message}\Response:",
+                f"{prompt}\n\Question: {message}\Answer:",
                 max_tokens=args.maxtokens,
                 temperature=args.temperature,
                 stream=False,
-                stop=["Response:"],
+                stop=["Answer:"],
                 
             )
 
@@ -226,7 +220,7 @@ def main():
                 response = llm_output["choices"][0]['text']
 
             if not response.strip():
-                print(f"\nLLM: Reverting to original message, got back empty response\n - {json.dumps(llm_output)}")
+                print(f"\nLLM: Reverting to original message, got back empty answer\n - {json.dumps(llm_output)}")
                 response = message
 
             sender.send_string(str(segment_number), zmq.SNDMORE)
@@ -257,7 +251,7 @@ if __name__ == "__main__":
     parser.add_argument("--ai_name", type=str, default="GAIB")
     parser.add_argument("--systemprompt", type=str, default="The Groovy AI Bot that is here to help you find enlightenment and learn about technology of the future.")
     parser.add_argument("-e", "--episode", action="store_true", default=False, help="Episode mode, Output an TV Episode format script.")
-    parser.add_argument("-pc", "--promptcompletion", type=str, default="\nMessage: {user_question}\n{context}\nResponse:",
+    parser.add_argument("-pc", "--promptcompletion", type=str, default="\nQuestion: {user_question}\n{context}\nAnswer:",
                         help="Prompt completion like...\n\nQuestion: {user_question}\nAnswer:")
     parser.add_argument("-re", "--roleenforcer",
                         type=str, default="\nAnswer the question asked by {user}. Stay in the role of {assistant}, give your thoughts and opinions as asked.\n",
