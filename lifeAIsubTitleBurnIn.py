@@ -19,6 +19,9 @@ import numpy as np
 import textwrap
 import nltk  # Import nltk for sentence tokenization
 
+# Download the Punkt tokenizer models (only needed once)
+nltk.download('punkt')
+
 warnings.simplefilter(action='ignore', category=Warning)
 warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
 from urllib3.exceptions import NotOpenSSLWarning
