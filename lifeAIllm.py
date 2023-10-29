@@ -56,7 +56,7 @@ def run_llm(message, user_messages, id, type, username, source):
         max_tokens=args.maxtokens,
         temperature=args.temperature,
         stream=True
-        #stop=args.stoptokens.split(',') if args.stoptokens else []  # use split() result if stoptokens is not empty
+        stop=args.stoptokens.split(',') if args.stoptokens else []  # use split() result if stoptokens is not empty
     )
 
     """
@@ -259,7 +259,7 @@ if __name__ == "__main__":
                         help="Role enforcer statement with {user} and {assistant} template names replaced by the actual ones in use.")
     parser.add_argument("-p", "--personality", type=str, default="friendly helpful compassionate boddisatvva guru.", help="Personality of the AI, choices are 'friendly' or 'mean'.")
     parser.add_argument("-analysis", "--analysis", action="store_true", default=False, help="Instruction mode, no history and focused on solving problems.")
-    parser.add_argument("-sts", "--stoptokens", type=str, default="Question:",
+    parser.add_argument("-sts", "--stoptokens", type=str, default="Question:,Answer:,Context:,[/INST]",
         help="Stop tokens to use, do not change unless you know what you are doing!")
     parser.add_argument("-pb", "--periodbreak", action="store_true", default=False, help="Break between chunks sent to image/audio, split at periods.")
     parser.add_argument("-tp", "--characters_per_line", type=int, default=45, help="Minimum umber of characters per line.")
