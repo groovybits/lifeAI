@@ -17,12 +17,31 @@ import warnings
 import urllib3
 
 from llama_cpp import Llama, ChatCompletionMessage
+import nltk  # Import nltk for sentence tokenization
+
+# Download the Punkt tokenizer models (only needed once)
+nltk.download('punkt')
 
 warnings.simplefilter(action='ignore', category=Warning)
 warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
 from urllib3.exceptions import NotOpenSSLWarning
 warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 trlogging.set_verbosity_error()
+
+# Function to group the text into subtitle groups
+def get_subtitle_groups(text):
+    sentences = nltk.sent_tokenize(text)  # Split text into sentences
+    groups = []
+    group = []
+    for sentence in sentences:
+        if len(group) < args.maxlines:  # Limit of 3 lines per group
+            group.append(sentence)
+        else:
+            groups.append(group)
+            group = [sentence]
+    if group:  # Don't forget the last group
+        groups.append(group)
+    return groups
 
 def clean_text(text):
     cleaned_text = text.encode('ascii', 'ignore').decode('ascii')
@@ -89,39 +108,36 @@ def run_llm(message, user_messages, id, type, username, source):
         #print(f"--- run_llm(): item: {json.dumps(item, indent=2)}")
         if 'content' not in delta:
             if 'finish_reason' in item["choices"][0] and item["choices"][0]['finish_reason'] == "stop":
-                print(f"--- run_llm(): LLM response token stop: {item}")
+                print(f"--- run_llm(): LLM response token stop: {json.dumps(item)}")
                 break
-            print(f"--- Skipping LLM response token lack of content: {item}")
+            print(f"--- Skipping LLM response token lack of content: {json.dumps(item)}")
             continue
 
         token = delta['content']
         print(token, end='', flush=True)
         total_tokens += 1
 
-        if not args.periodbreak:
-            accumulator.append(token)
-            token_count += len(token)
-            if len(accumulator) > args.characters_per_line and (accumulator.count('\n') >= args.sentence_count or (token_count >= args.characters_per_line and ('.' or '!' or '?') in token)):
-                if decide_and_send(accumulator, segment_number, id, type, username, source, message):
-                    segment_number += 1
-                accumulator = []
-                token_count = 0
-        elif token_count >= args.characters_per_line:
-            if ('.') in token and accumulator.count('.') >= args.sentence_count:
-                # Split on the new line only in the token
-                split_index = token.rfind('.')
-                pre_split = token[:split_index]
-                post_split = token[split_index + 1:]
+        # gathered enough tokens to send
+        if token_count > args.characters_per_line and any(punct in token for punct in ['.', '!', '?', '\n']):
+            split_index = token.rfind('.')
+            pre_split = token[:split_index]
+            post_split = token[split_index + 1:]
 
-                accumulator.append(pre_split)  # Add the first part to the accumulator
-                if decide_and_send(accumulator, segment_number, id, type, username, source, message):
+            accumulator.append(pre_split) 
+            # use nltk to split into sentences, send sets of args.sentence_count sentences
+            groups = get_subtitle_groups(" ".join(accumulator))
+            for group in groups:
+                combined_lines = "\n".join(group)
+                combined_lines = clean_text(combined_lines)
+                if combined_lines:
+                    data = prepare_send_data(segment_number, id, type, username, source, message, combined_lines)
+                    send_data(data)
                     segment_number += 1
-                accumulator = [post_split]  # Start the new accumulator with the second part
-                token_count = len(post_split)  # Update the token_count
-            else:
-                accumulator.append(token)
-                token_count += len(token)
+
+            accumulator = [post_split]  # Start the new accumulator with the second part
+            token_count = len(post_split)  # Update the token_count
         else:
+            # accumulate tokens
             accumulator.append(token)
             token_count += len(token)
 
@@ -261,7 +277,6 @@ if __name__ == "__main__":
     parser.add_argument("-analysis", "--analysis", action="store_true", default=False, help="Instruction mode, no history and focused on solving problems.")
     parser.add_argument("-sts", "--stoptokens", type=str, default="Question:,Answer:,Context:,[/INST]",
         help="Stop tokens to use, do not change unless you know what you are doing!")
-    parser.add_argument("-pb", "--periodbreak", action="store_true", default=False, help="Break between chunks sent to image/audio, split at periods.")
     parser.add_argument("-tp", "--characters_per_line", type=int, default=45, help="Minimum umber of characters per line.")
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
     parser.add_argument("-ag", "--autogenerate", action="store_true", default=False, help="Carry on long conversations, remove stop tokens.")
