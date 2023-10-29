@@ -35,7 +35,7 @@ def main():
         try:
             # Receive the segment number (header) first
             segment_number = socket.recv_string()
-            medaiid = socket.recv_string()
+            mediaid = socket.recv_string()
             mediatype = socket.recv_string()
             username = socket.recv_string()
             source = socket.recv_string()
