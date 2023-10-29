@@ -66,7 +66,7 @@ def main():
         # create an output file using the prompt and segment_number
         image_file = f"{args.output_directory}/{mediaid}/{segment_number}.png"
         os.makedirs(os.path.dirname(image_file), exist_ok=True)
-        if args.savefile:
+        if args.save_file:
             if args.image_format == "pil":
                 with open(image_file, 'wb') as f:
                     f.write(image)
