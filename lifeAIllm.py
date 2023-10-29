@@ -55,7 +55,7 @@ def run_llm(message, user_messages, id, type, username, source):
         messages=user_messages,
         max_tokens=args.maxtokens,
         temperature=args.temperature,
-        stream=True
+        stream=True,
         stop=args.stoptokens.split(',') if args.stoptokens else []  # use split() result if stoptokens is not empty
     )
 
