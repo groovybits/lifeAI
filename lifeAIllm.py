@@ -125,7 +125,7 @@ def run_llm(message, user_messages, id, type, username, source):
 
             accumulator.append(pre_split) 
             # use nltk to split into sentences, send sets of args.sentence_count sentences
-            groups = get_subtitle_groups(" ".join(accumulator))
+            groups = get_subtitle_groups("".join(accumulator))
             for group in groups:
                 combined_lines = "\n".join(group)
                 combined_lines = clean_text(combined_lines)
@@ -280,6 +280,7 @@ if __name__ == "__main__":
     parser.add_argument("-tp", "--characters_per_line", type=int, default=45, help="Minimum umber of characters per line.")
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
     parser.add_argument("-ag", "--autogenerate", action="store_true", default=False, help="Carry on long conversations, remove stop tokens.")
+    parser.add_argument("--simplesplit", action="store_true", default=False, help="Simple split of text into lines, no sentence tokenization.")
     args = parser.parse_args()
 
     ## setup episode mode
