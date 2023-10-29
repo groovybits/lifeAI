@@ -48,6 +48,7 @@ class BackgroundMusic(threading.Thread):
         audiobuf = io.BytesIO(audio_samples)
         if audiobuf:
             pygame.mixer.music.load(audiobuf)
+            pygame.mixer.music.set_volume(args.volume)  # Set the volume
             pygame.mixer.music.play(-1)  # -1 instructs Pygame to loop the audio indefinitely
 
     def change_track(self, audio_buffer):
@@ -121,6 +122,7 @@ if __name__ == "__main__":
     parser.add_argument("--save_file", action="store_true", help="Save the received audio as WAV files")
     parser.add_argument("--show_hex", action="store_true", help="Show the hex representation of the audio payload")
     parser.add_argument("--audio_format", type=str, choices=["wav", "raw"], default="wav", help="Audio format to save as. Choices are 'wav' or 'raw'. Default is 'wav'.")
+    parser.add_argument("--volume", type=float, default=0.6, help="Playback volume (0.0 to 1.0, default is 0.6)")
     args = parser.parse_args()
 
     context = zmq.Context()
