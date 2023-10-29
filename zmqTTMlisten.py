@@ -70,8 +70,8 @@ def main():
         try:
             # Receive the segment number (header) first
             segment_number = socket.recv_string()
-            id = socket.recv_string()
-            type = socket.recv_string()
+            mediaid = socket.recv_string()
+            mediatype = socket.recv_string()
             username = socket.recv_string()
             source = socket.recv_string()
             message = socket.recv_string()
@@ -85,7 +85,7 @@ def main():
 
             # Check if we need to output to a file
             if args.save_file:
-                clean_id = id.strip().replace(' ','')
+                clean_id = mediaid.strip().replace(' ','')
                 audio_file = f"{args.output_directory}/{clean_id}/{segment_number}.wav"
                 ## create directory recrusively for the file if it doesn't exist
                 os.makedirs(os.path.dirname(audio_file), exist_ok=True)

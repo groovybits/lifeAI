@@ -49,8 +49,8 @@ def main():
     while True:
         # Receive the segment number (header) first
         segment_number = socket.recv_string()
-        id = socket.recv_string()
-        type = socket.recv_string()
+        mediaid = socket.recv_string()
+        mediatype = socket.recv_string()
         username = socket.recv_string()
         source = socket.recv_string()
         message = socket.recv_string()
@@ -64,16 +64,17 @@ def main():
         print(f"Received image segment #{segment_number}")
 
         # create an output file using the prompt and segment_number
-        image_file = f"{args.output_directory}/{id}/{segment_number}.png"
+        image_file = f"{args.output_directory}/{mediaid}/{segment_number}.png"
         os.makedirs(os.path.dirname(image_file), exist_ok=True)
-        if args.image_format == "pil":
-            with open(image_file, 'wb') as f:
-                f.write(image)
-            print(f"Image saved to {image_file} as PIL\n")
-        else:
-            with open(image_file, 'wb') as f:
-                f.write(image)
-            print(f"Payload written to {image_file}\n")
+        if args.savefile:
+            if args.image_format == "pil":
+                with open(image_file, 'wb') as f:
+                    f.write(image)
+                print(f"Image saved to {image_file} as PIL\n")
+            else:
+                with open(image_file, 'wb') as f:
+                    f.write(image)
+                print(f"Payload written to {image_file}\n")
 
         # Convert the bytes back to a PIL Image object
         image = Image.open(io.BytesIO(image))
@@ -91,6 +92,7 @@ if __name__ == "__main__":
     parser.add_argument("--image_format", choices=["pil", "raw"], default="pil", help="Image format to save as. Choices are 'pil' or 'raw'.")
     parser.add_argument("--width", type=int, default=80, help="Width of the output image")
     parser.add_argument("-r", "--render", action="store_true", default=False, help="Render the output to a GUI OpenCV window for playback viewing.")
+    parser.add_argument("-sf", "--save_file", action="store_true", default=False, help="Save images.")
     args = parser.parse_args()
 
     context = zmq.Context()
