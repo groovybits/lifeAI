@@ -53,14 +53,15 @@ def main():
         mediatype = socket.recv_string()
         username = socket.recv_string()
         source = socket.recv_string()
-        image_prompt = socket.recv_string()
-        image_text = socket.recv_string()
+        message = socket.recv_string()
+        text = socket.recv_string()
+        optimized_prompt = socket.recv_string()
 
         # Now, receive the binary audio data
         image = socket.recv()
 
         # Print the header
-        print(f"Received image segment #{segment_number}")
+        print(f"Received image segment {mediaid} {mediatype} #{segment_number} of {mediatype} type from {username} in {source}:\n - {optimized_prompt}\n")
 
         # create an output file using the prompt and segment_number
         image_file = f"{args.output_directory}/{mediaid}/{segment_number}.png"
@@ -78,7 +79,7 @@ def main():
         # Convert the bytes back to a PIL Image object
         image = Image.open(io.BytesIO(image))
         payload_hex = image_to_ascii(image)
-        print(f"Image #{segment_number} Payload (Hex):\n{payload_hex}\nImage Prompt: {image_prompt}\nImage Text: {image_text}\n")
+        print(f"\n{payload_hex}\nImage Prompt: {optimized_prompt}\Original Text: {text}\nOriginal Question:{message}\n")
 
         if args.render:
             render(image)
@@ -92,6 +93,7 @@ if __name__ == "__main__":
     parser.add_argument("--width", type=int, default=80, help="Width of the output image")
     parser.add_argument("-r", "--render", action="store_true", default=False, help="Render the output to a GUI OpenCV window for playback viewing.")
     parser.add_argument("-sf", "--save_file", action="store_true", default=False, help="Save images.")
+
     args = parser.parse_args()
 
     context = zmq.Context()

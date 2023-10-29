@@ -74,14 +74,15 @@ def main():
             mediatype = socket.recv_string()
             username = socket.recv_string()
             source = socket.recv_string()
-            prompt = socket.recv_string()
-            audio_text = socket.recv_string()
+            message = socket.recv_string()
+            text = socket.recv_string()
+            optimized_prompt = socket.recv_string()
             duration = socket.recv_string()
 
             # Now, receive the binary audio data
             audio_samples = socket.recv()
 
-            print(f"Received audio segment #%s of {duration} duration." % segment_number)
+            print(f"Received music segment {mediaid} {mediatype} #{segment_number} of {duration} duration by {username} from {source}:\nMusic Prompt: {optimized_prompt}\nOriginal Prompt: {text}\nOriginal Question: {message}\n")
 
             # Check if we need to output to a file
             if args.save_file:
@@ -108,8 +109,6 @@ def main():
                 bg_music.change_track(audio_samples)
                 duration = get_audio_duration(audio_samples)
                 time.sleep(duration)
-
-            print(f"Audio #{segment_number} of {duration} duration recieved.\nAudio Text: {audio_text}\n")
 
         except Exception as e:
             print(f"Error: %s" % str(e))

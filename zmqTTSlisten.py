@@ -39,14 +39,14 @@ def main():
             mediatype = socket.recv_string()
             username = socket.recv_string()
             source = socket.recv_string()
-            prompt = socket.recv_string()
+            message = socket.recv_string()
             audio_text = socket.recv_string()
             duration = socket.recv_string()
 
             # Now, receive the binary audio data
             audio_samples = socket.recv()
 
-            print(f"Received audio segment #%s of {duration} duration." % segment_number)
+            print(f"Received audio segment {mediaid} {mediatype} #{segment_number} of {duration} duration by {username} from {source}:\nText: {audio_text}\nOriginal Question: {message}\n")
 
             # Check if we need to output to a file
             if args.save_file:
@@ -68,8 +68,6 @@ def main():
                 print(f"Payload (Hex): {textwrap.fill(payload_hex, width=80)}\n")
 
             play_audio(audio_samples)
-
-            print(f"Audio #{segment_number} of {duration} duration recieved.\nAudio Text: {audio_text}\n")
 
         except Exception as e:
             print(f"Error: %s" % str(e))

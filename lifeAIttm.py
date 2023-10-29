@@ -30,13 +30,14 @@ def main():
         mediatype = receiver.recv_string()
         username = receiver.recv_string()
         source = receiver.recv_string()
-        prompt = receiver.recv_string()
+        message = receiver.recv_string()
         text = receiver.recv_string()
+        optimized_prompt = receiver.recv_string()
 
-        print("\n---\nText to Music recieved text #%s: %s" % (segment_number, text))
+        print("\n---\nText to Music recieved text #%s: %s" % (segment_number, optimized_prompt))
 
         inputs = processor(
-            text=[text],
+            text=[optimized_prompt],
             padding=True,
             return_tensors="pt",
         )
@@ -54,8 +55,9 @@ def main():
         sender.send_string(mediatype, zmq.SNDMORE)
         sender.send_string(username, zmq.SNDMORE)
         sender.send_string(source, zmq.SNDMORE)
-        sender.send_string(prompt, zmq.SNDMORE)
+        sender.send_string(message, zmq.SNDMORE)
         sender.send_string(text, zmq.SNDMORE)
+        sender.send_string(optimized_prompt, zmq.SNDMORE)
         sender.send_string(str(duration), zmq.SNDMORE)
         sender.send(audiobuf.getvalue())
         
@@ -104,7 +106,7 @@ if __name__ == "__main__":
     )
     """
 
-    #model = model.to(args.gpu)
+    model = model.to(args.gpu)
 
     main()
 

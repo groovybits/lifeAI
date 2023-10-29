@@ -121,7 +121,7 @@ def run_llm(message, user_messages, id, type, username, source):
         accumulator_str = ''.join(accumulator)
 
         # gathered enough tokens to send
-        if token_count >= args.characters_per_line and (any(punct in accumulator_str for punct in ['.', '!', '?', '\n', ' ']) or ((args.simplesplit or token_count >= (1.5*args.characters_per_line)) and ' ' in accumulator_str)):
+        if token_count >= args.characters_per_line and (any(punct in accumulator_str for punct in ['.', '!', '?', '\n']) or ((args.simplesplit or token_count >= (1.5*args.characters_per_line)) and ' ' in accumulator_str)):
             split_indices = [accumulator_str.rfind(punct) for punct in ['.', '!', '?', '\n', ', ', ' ']]
             split_index = max(split_indices)
             pre_split = token[:split_index]
@@ -295,10 +295,10 @@ if __name__ == "__main__":
         args.promptcompletion.replace('Question', 'Plotline')
 
     context = ""
-    llm = Llama(model_path=args.model, n_ctx=args.context, verbose=args.debug, n_gpu_layers=args.gpulayers)
+    llm = Llama(model_path=args.model, n_ctx=args.context, verbose=False, n_gpu_layers=args.gpulayers)
     # LLM Model for image prompt generation
     llm_image = Llama(model_path=args.model,
-                      n_ctx=args.context, verbose=args.debug, n_gpu_layers=args.gpulayers)
+                      n_ctx=args.context, verbose=False, n_gpu_layers=args.gpulayers)
 
     if args.autogenerate:
         args.stoptokens = []

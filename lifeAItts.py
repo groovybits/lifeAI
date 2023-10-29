@@ -55,7 +55,7 @@ def main():
         mediatype = receiver.recv_string()
         username = receiver.recv_string()
         source = receiver.recv_string()
-        prompt = receiver.recv_string()
+        message = receiver.recv_string()
         text = receiver.recv_string()
 
         print("Text to Speech recieved text #%s: %s" % (segment_number, text))
@@ -81,7 +81,7 @@ def main():
         sender.send_string(mediatype, zmq.SNDMORE)
         sender.send_string(username, zmq.SNDMORE)
         sender.send_string(source, zmq.SNDMORE)
-        sender.send_string(prompt, zmq.SNDMORE)
+        sender.send_string(message, zmq.SNDMORE)
         sender.send_string(text, zmq.SNDMORE)
         sender.send_string(str(duration), zmq.SNDMORE)
         sender.send(audiobuf.getvalue())
@@ -97,6 +97,7 @@ if __name__ == "__main__":
     parser.add_argument("--audio_format", choices=["wav", "raw"], default="raw", help="Audio format to save as. Choices are 'wav' or 'raw'.")
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Port for receiving text input")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending audio output")
+    parser.add_argument("--gputype", type=str, default="cpu", required=False, help="GPU type to use. Default is cpu")
 
     args = parser.parse_args()
 
@@ -112,6 +113,8 @@ if __name__ == "__main__":
 
     model = VitsModel.from_pretrained("facebook/mms-tts-eng")
     tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-eng")
+
+    model.to(args.gputype)
 
     main()
 

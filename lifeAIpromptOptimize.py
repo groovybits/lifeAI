@@ -28,14 +28,14 @@ def main():
     while True:
         # Receive a message
         segment_number = receiver.recv_string()
-        id = receiver.recv_string()
-        type = receiver.recv_string()
+        mediaid = receiver.recv_string()
+        mediatype = receiver.recv_string()
         username = receiver.recv_string()
         source = receiver.recv_string()
         message = receiver.recv_string()
         text = receiver.recv_string()
 
-        print(f"\n---\nPrompt optimizer: received text #{text}\n")
+        print(f"\n---\nPrompt optimizer received {mediaid} {mediatype} from {username} on {source} #{segment_number}\nText: {text}\n")
         optimized_prompt = ""
 
         image_prompt_data = None
@@ -64,14 +64,15 @@ def main():
 
         # Send the processed message
         sender.send_string(str(segment_number), zmq.SNDMORE)
-        sender.send_string(id, zmq.SNDMORE)
-        sender.send_string(type, zmq.SNDMORE)
+        sender.send_string(mediaid, zmq.SNDMORE)
+        sender.send_string(mediatype, zmq.SNDMORE)
         sender.send_string(username, zmq.SNDMORE)
         sender.send_string(source, zmq.SNDMORE)
         sender.send_string(message, zmq.SNDMORE)
+        sender.send_string(text, zmq.SNDMORE)
         sender.send_string(optimized_prompt)
 
-        print(f"\nPrompt optimizer: sent optimized prompt:\n - {optimized_prompt}\n")
+        print(f"\nPrompt optimizer generated optimized prompt:\n - {optimized_prompt}\n")
 
 if __name__ == "__main__":
     model = "models/zephyr-7b-alpha.Q2_K.gguf"
