@@ -34,7 +34,7 @@ def get_subtitle_groups(text):
     groups = []
     group = []
     for sentence in sentences:
-        if len(group) < args.sentence_count:  # Limit of 3 lines per group
+        if len(group) <= args.sentence_count:  # Limit of N lines per group
             group.append(sentence)
         else:
             groups.append(group)
@@ -118,8 +118,9 @@ def run_llm(message, user_messages, id, type, username, source):
         total_tokens += 1
 
         # gathered enough tokens to send
-        if token_count > args.characters_per_line and any(punct in token for punct in ['.', '!', '?', '\n']):
-            split_index = token.rfind('.')
+        if token_count >= args.characters_per_line and (any(punct in accumulator for punct in ['.', '!', '?', '\n']) or (args.simplesplit and ' ' in token)):
+            split_indices = [accumulator.rfind(punct) for punct in ['.', '!', '?', '\n']]
+            split_index = max(split_indices)
             pre_split = token[:split_index]
             post_split = token[split_index + 1:]
 
