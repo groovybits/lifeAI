@@ -117,9 +117,12 @@ def run_llm(message, user_messages, id, type, username, source):
         print(token, end='', flush=True)
         total_tokens += 1
 
+        # Convert accumulator list to a string
+        accumulator_str = ''.join(accumulator)
+
         # gathered enough tokens to send
-        if token_count >= args.characters_per_line and (any(punct in accumulator for punct in ['.', '!', '?', '\n']) or (args.simplesplit and ' ' in token)):
-            split_indices = [accumulator.rfind(punct) for punct in ['.', '!', '?', '\n']]
+        if token_count >= args.characters_per_line and (any(punct in accumulator_str for punct in ['.', '!', '?', '\n']) or (args.simplesplit and ' ' in token)):
+            split_indices = [accumulator_str.rfind(punct) for punct in ['.', '!', '?', '\n']]
             split_index = max(split_indices)
             pre_split = token[:split_index]
             post_split = token[split_index + 1:]
@@ -278,8 +281,8 @@ if __name__ == "__main__":
     parser.add_argument("-analysis", "--analysis", action="store_true", default=False, help="Instruction mode, no history and focused on solving problems.")
     parser.add_argument("-sts", "--stoptokens", type=str, default="Question:,Answer:,Context:,[/INST]",
         help="Stop tokens to use, do not change unless you know what you are doing!")
-    parser.add_argument("-tp", "--characters_per_line", type=int, default=45, help="Minimum umber of characters per line.")
-    parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
+    parser.add_argument("-tp", "--characters_per_line", type=int, default=80, help="Minimum umber of characters per line.")
+    parser.add_argument("-sc", "--sentence_count", type=int, default=2, help="Number of sentences per line.")
     parser.add_argument("-ag", "--autogenerate", action="store_true", default=False, help="Carry on long conversations, remove stop tokens.")
     parser.add_argument("--simplesplit", action="store_true", default=False, help="Simple split of text into lines, no sentence tokenization.")
     args = parser.parse_args()
