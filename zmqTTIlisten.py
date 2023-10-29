@@ -78,7 +78,7 @@ def main():
         # Convert the bytes back to a PIL Image object
         image = Image.open(io.BytesIO(image))
         payload_hex = image_to_ascii(image)
-        print(f"Image #{segment_number} Payload (Hex):\n{payload_hex}\nImage Prompt: {image_prompt}\nImage Text: {image_text}\nMessage: {message}\n")
+        print(f"Image #{segment_number} Payload (Hex):\n{payload_hex}\nImage Prompt: {image_prompt}\nImage Text: {image_text}\n")
 
         if args.render:
             render(image)

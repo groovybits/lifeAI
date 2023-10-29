@@ -109,7 +109,7 @@ def main():
                 duration = get_audio_duration(audio_samples)
                 time.sleep(duration)
 
-            print(f"Audio #{segment_number} of {duration} duration recieved.\nAudio Text: {audio_text}\nMessage: {message}\n")
+            print(f"Audio #{segment_number} of {duration} duration recieved.\nAudio Text: {audio_text}\n")
 
         except Exception as e:
             print(f"Error: %s" % str(e))
