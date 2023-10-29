@@ -196,7 +196,8 @@ def main():
 
             messages.append(ChatCompletionMessage(
                 role="user",
-                content="%s" % (args.promptcompletion.replace('{user_question}', message).replace('{context}', "")),
+                content="%s\n%s" % (args.roleenforcer.replace('{user}', username).replace('{assistant}', args.ai_name),
+                                    args.promptcompletion.replace('{user_question}', message).replace('{context}', "")),
             ))
 
             response = run_llm(message, messages, id, type, username, source)
