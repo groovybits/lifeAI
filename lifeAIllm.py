@@ -66,6 +66,7 @@ def decide_and_send(accumulator, header_message):
 
 def run_llm(header_message, user_messages):
     segment_number = header_message["segment_number"]
+    response_text = ""
     print(f"\n--- run_llm(): chat LLM generating text from request message:\n - {header_message}\n")
 
     # collect llm info in header
@@ -78,43 +79,20 @@ def run_llm(header_message, user_messages):
         "simplesplit": args.simplesplit,
         "autogenerate": args.autogenerate,
     }
-    
+
     output = llm.create_chat_completion(
         messages=user_messages,
         max_tokens=args.maxtokens,
         temperature=args.temperature,
         stream=True,
-        stop=args.stoptokens.split(',') if args.stoptokens else []  # use split() result if stoptokens is not empty
+        stop=args.stoptokens.split(',') if args.stoptokens else []
     )
-
-    """
-        "object": "chat.completion.chunk",
-        "choices": [
-            {
-            "index": 0,
-            "delta": {
-                "content": "room"
-            },
-            "finish_reason": null
-            }
-        ]
-
-         "choices": [
-            {
-            "index": 0,
-            "delta": {},
-            "finish_reason": "stop"
-            }
-        ]
-    """
 
     accumulator = []
     token_count = 0
     total_tokens = 0
     for item in output:
         delta = item["choices"][0]['delta']
-        if "llm_choices" not in header_message:
-            header_message["llm_choices"] = []
         header_message["llm_choices"] = item["choices"]
 
         # End of the output
@@ -127,50 +105,63 @@ def run_llm(header_message, user_messages):
             print(f"--- Skipping LLM response token lack of content: {json.dumps(item)}")
             continue
 
-        # Get the token
         token = delta['content']
         print(token, end='', flush=True)
         total_tokens += 1
+        response_text = f"{response_text}{token}"
+
+        accumulator.append(token)
+        token_count += len(token)
 
         # Convert accumulator list to a string
         accumulator_str = ''.join(accumulator)
 
-        # gathered enough tokens to send
-        if token_count >= args.characters_per_line and (any(punct in accumulator_str for punct in ['.', '!', '?', '\n']) or ((args.simplesplit or token_count >= (1.5*args.characters_per_line)) and ' ' in accumulator_str)):
-            split_indices = [accumulator_str.rfind(punct) for punct in ['.', '!', '?', '\n', ', ', ' ']]
-            split_index = max(split_indices)
-            pre_split = token[:split_index]
-            post_split = token[split_index + 1:]
+        # Check if it's time to send data
+        if token_count >= args.characters_per_line:
+            split_index = -1
+            for punct in ['.', '!', '?', '\n', ', ', ' ']:
+                index = accumulator_str.rfind(punct)
+                if index > split_index:
+                    split_index = index
 
-            accumulator.append(pre_split) 
-            # use nltk to split into sentences, send sets of args.sentence_count sentences
-            groups = get_subtitle_groups("".join(accumulator))
-            for group in groups:
-                combined_lines = "\n".join(group)
-                combined_lines = clean_text(combined_lines)
-                if combined_lines:
-                    data = prepare_send_data(header_message, combined_lines)
-                    send_data(data)
-                    segment_number += 1
-                    header_message["segment_number"] = segment_number
+            if split_index >= 0:
+                # Split the string and update the accumulator and token count
+                pre_split = accumulator_str[:split_index + 1]
+                post_split = accumulator_str[split_index + 1:]
 
-            accumulator = [post_split]  # Start the new accumulator with the second part
-            token_count = len(post_split)  # Update the token_count
-            header_message["tokens"] = token_count
-        else:
-            # accumulate tokens
-            accumulator.append(token)
-            token_count += len(token)
-            header_message["tokens"] = token_count
+			   	# Send subtitle groups for pre_split text
+                groups = get_subtitle_groups(pre_split)
+                for group in groups:
+                    combined_lines = "\n".join(group)
+                    combined_lines = clean_text(combined_lines)
+                    if combined_lines:
+                        header_message["text"] = combined_lines
+                        send_data(header_message.copy())  # Using send_data directly with modified header_message
+                        segment_number += 1  # Update segment_number after sending the data
+
+                # Clear accumulator and update token_count for the next round
+                accumulator = [post_split] if post_split else []
+                token_count = len(post_split)
+            else:
+                # No suitable split point found; we need a better strategy here
+                pass
 
     # Send any remaining tokens in accumulator
     if accumulator:
-        if decide_and_send(accumulator, header_message):
-            segment_number += 1
-            header_message["segment_number"] = segment_number
+        remaining_text = ''.join(accumulator)
+        groups = get_subtitle_groups(remaining_text)
+        for group in groups:
+            combined_lines = "\n".join(group)
+            combined_lines = clean_text(combined_lines)
+            if combined_lines:
+                header_message["text"] = combined_lines
+                send_data(header_message.copy())  # Using send_data directly with modified header_message
+                segment_number += 1  # Update segment_number after sending the data
 
     print(f"\n--- run_llm(): finished generating text with {total_tokens} tokens and {segment_number + 1} segments for request:\n - {header_message}\n")
-    
+    header_message['text'] = response_text
+    return header_message.copy()
+
 def create_prompt(header_message):
     ## Context inclusion if we have vectorDB results
     prompt_context = ""
@@ -262,7 +253,7 @@ def main():
                 content=prompt,
             ))
 
-            header_message = run_llm(header_message, messages)
+            header_message = run_llm(header_message.copy(), messages)
             response = header_message["text"]
 
             messages.append(ChatCompletionMessage(
@@ -333,7 +324,7 @@ if __name__ == "__main__":
     parser.add_argument("-analysis", "--analysis", action="store_true", default=False, help="Instruction mode, no history and focused on solving problems.")
     parser.add_argument("-sts", "--stoptokens", type=str, default="Question:,Answer:,Context:,[/INST],Episode:,Plotline Description:",
         help="Stop tokens to use, do not change unless you know what you are doing!")
-    parser.add_argument("-tp", "--characters_per_line", type=int, default=40, help="Minimum umber of characters per line.")
+    parser.add_argument("-tp", "--characters_per_line", type=int, default=120, help="Minimum umber of characters per line.")
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
     parser.add_argument("-ag", "--autogenerate", action="store_true", default=False, help="Carry on long conversations, remove stop tokens.")
     parser.add_argument("--simplesplit", action="store_true", default=False, help="Simple split of text into lines, no sentence tokenization.")
