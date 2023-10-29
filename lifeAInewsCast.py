@@ -113,7 +113,7 @@ def main():
                     #scrub description very well for any odd characters or non speaking words
                     
 
-                    message = f"{args.prompt}\n\n{username} reported that {title}:\n{description}\n\n"
+                    message = f"{args.prompt}{username} reported that {title}:\n{description}\n\n"
                     print(f"Sending message {message}")
 
                     # Send the message
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     parser.add_argument("--username", type=str, required=False, default="NewsAnchor", help="Username of sender")
     parser.add_argument("--keywords", type=str, required=False, default="ai anime buddhism cats", help="Keywords for news stories")
     parser.add_argument("--categories", type=str, required=False, default="technology,science,entertainment", help="News stories categories")
-    parser.add_argument("--prompt", type=str, required=False, default="Context:\n",
+    parser.add_argument("--prompt", type=str, required=False, default="Please use the following news story as context for the question...",
                         help="Prompt to give context as a newstory feed")
     args = parser.parse_args()
 

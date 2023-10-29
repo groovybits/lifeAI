@@ -55,8 +55,8 @@ def run_llm(message, user_messages, id, type, username, source):
         messages=user_messages,
         max_tokens=args.maxtokens,
         temperature=args.temperature,
-        stream=True,
-        stop=args.stoptokens.split(',') if args.stoptokens else []  # use split() result if stoptokens is not empty
+        stream=True
+        #stop=args.stoptokens.split(',') if args.stoptokens else []  # use split() result if stoptokens is not empty
     )
 
     """
@@ -138,7 +138,7 @@ def create_prompt(username, question, user_context = ""):
     ## Context inclusion if we have vectorDB results
     prompt_context = ""
     if user_context != "":
-        prompt_context = "Context:%s\n" % user_context
+        prompt_context = "\nContext:%s\n" % user_context
 
     ## Prompt parts
     instructions = "Answer questions from users in a twitch chatroom, be kind and helpful."
