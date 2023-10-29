@@ -121,7 +121,7 @@ def run_llm(message, user_messages, id, type, username, source):
         accumulator_str = ''.join(accumulator)
 
         # gathered enough tokens to send
-        if token_count >= args.characters_per_line and (any(punct in accumulator_str for punct in ['.', '!', '?', '\n']) or (args.simplesplit and ' ' in token)):
+        if token_count >= args.characters_per_line and (any(punct in accumulator_str for punct in ['.', '!', '?', '\n']) or ((args.simplesplit or token_count >= (1.5*args.characters_per_line)) and ' ' in accumulator_str)):
             split_indices = [accumulator_str.rfind(punct) for punct in ['.', '!', '?', '\n']]
             split_index = max(split_indices)
             pre_split = token[:split_index]
