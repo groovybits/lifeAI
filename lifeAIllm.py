@@ -34,7 +34,7 @@ def get_subtitle_groups(text):
     groups = []
     group = []
     for sentence in sentences:
-        if len(group) < args.maxlines:  # Limit of 3 lines per group
+        if len(group) < args.sentence_count:  # Limit of 3 lines per group
             group.append(sentence)
         else:
             groups.append(group)
