@@ -85,7 +85,8 @@ def main():
 
             # Check if we need to output to a file
             if args.save_file:
-                audio_file = f"{args.output_directory}/{id.strip().replace(' ','')}/{segment_number}.wav"
+                clean_id = id.strip().replace(' ','')
+                audio_file = f"{args.output_directory}/{clean_id}/{segment_number}.wav"
                 ## create directory recrusively for the file if it doesn't exist
                 os.makedirs(os.path.dirname(audio_file), exist_ok=True)
                 if args.audio_format == "wav":
