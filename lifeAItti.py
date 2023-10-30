@@ -93,6 +93,9 @@ if __name__ == "__main__":
     parser.add_argument("--output_port", type=int, default=3002, required=False, help="Port for sending image output")
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Port for receiving text input")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending image output")
+    parser.add_argument("--nsfw", action="store_true", default=False, help="Disable NSFW filters, caution!!!")
+    parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
+    parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
 
     args = parser.parse_args()
 
@@ -100,13 +103,22 @@ if __name__ == "__main__":
     tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-eng")
     model_id = "runwayml/stable-diffusion-v1-5"
     ## Disable NSFW filters
-    pipe = StableDiffusionPipeline.from_pretrained(model_id,
-                                                    torch_dtype=torch.float16,
-                                                    safety_checker = None,
-                                                    requires_safety_checker = False)
+    pipe = None
+    if args.nsfw:
+        pipe = StableDiffusionPipeline.from_pretrained(model_id,
+                                                        torch_dtype=torch.float16,
+                                                        safety_checker = None,
+                                                        requires_safety_checker = False)
+    else:
+        pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
 
     ## Offload to GPU Metal
-    pipe = pipe.to("mps")
+    if args.metal:
+        pipe = pipe.to("mps")
+    elif args.cuda:
+        pipe = pipe.to("cuda")
+    else:
+        pipe = pipe.to("mps")
 
     context = zmq.Context()
     receiver = context.socket(zmq.SUB)

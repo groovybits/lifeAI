@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 import time
 import json
 import re
+import traceback
 
 load_dotenv()
 
@@ -35,14 +36,28 @@ def get_news(offset=0, keywords="ai anime buddhism cats", categories="technology
         'offset': offset,
         })
 
-    conn.request('GET', '/v1/news?{}'.format(params))
+    res = None
+    data = None
+    try:
+        conn.request('GET', '/v1/news?{}'.format(params))
 
-    res = conn.getresponse()
-    data = res.read()
+        res = conn.getresponse()
+        data = res.read().decode('utf-8')
 
-    print(f"Got back {data[:120]} from Media Stack")
+        data_json = json.loads(data)
+        if 'data' in data_json and len(data_json['data']) > 0:
+            count = len(data_json['data'])
+            print(f"got news feed with {count} articles from Media Stack.")
+        else:
+            print(f"Error getting news from Media Stack: {data_json}")
+            return None
 
-    return data.decode('utf-8')
+        return data_json
+    except Exception as e:
+        print(f"Error connecting to MediaStack: {e} {res} {data}")
+        # output stacktrace and full error
+        traceback.print_exc()
+        return None
 
 def clean_text(text):
     # This regular expression pattern will match any character that is NOT a lowercase or uppercase letter or a space.
@@ -84,10 +99,21 @@ def main():
 
     pagination = 0
     segment_number = 0
+    failures = 0
     while True:
+        print(f"Getting news from Media Stack...")
+        news_json = get_news(pagination, args.keywords, args.categories)
+        if news_json == None:
+            print(f"Error getting news from Media Stack, retrying in 30 seconds...")
+            if failures > 5:
+                pagination = 0
+                print(f"Too many failures, resetting pagination to 0.")
+            time.sleep(30)
+            failures += 1
+            continue
+
         segment_number += 1
-        news = get_news(0, args.keywords, args.categories)
-        news_json = json.loads(news)
+        pagination += 100
 
         if 'data' in news_json and len(news_json['data']) > 0:
             count = len(news_json['data'])
@@ -139,7 +165,7 @@ def main():
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--interval", type=int, default=120, required=False, help="interval to send messages in seconds, default is 120")
+    parser.add_argument("--interval", type=int, default=60, required=False, help="interval to send messages in seconds, default is 120")
     parser.add_argument("--output_port", type=int, default=1500, required=False, help="Port to send message to")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Host for sending message to.")
     parser.add_argument("--username", type=str, required=False, default="NewsAnchor", help="Username of sender")

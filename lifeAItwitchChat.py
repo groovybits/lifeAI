@@ -36,6 +36,9 @@ class AiTwitchBot(commands.Cog):
         self.ai_personality = args.ai_personality
         personalities[self.ai_name] = self.ai_personality
 
+        ## Setup various personalities for the bot
+        personalities["Buddha"] = "Buddha, the enlightened one, the awakened one, the one who has seen the truth of the world and the universe. I am here to help you with your questions and to help you learn about the world around you."
+
     ## Channel entrance for our bot
     async def event_ready(self):
         try:
@@ -125,7 +128,7 @@ class AiTwitchBot(commands.Cog):
 
             # Send the message
             client_request = {
-                "segment_number": "0",
+                "segment_number": "1",
                 "mediaid": ctx.message.id,
                 "mediatype": "chat",
                 "username": name,
@@ -284,10 +287,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--output_port", type=int, default=1500, required=False, help="Port to send message to")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Host for sending message to.")
-    parser.add_argument("--ai_name", type=str, required=False, default="Buddha", help="Name of the bot")
+    parser.add_argument("--ai_name", type=str, required=False, default="GAIB", help="Name of the bot")
     parser.add_argument("--ai_personality", type=str,
                         required=False, 
-                        default="Helpful wise boddisattva helping twitch chat users with their suffering and joy with equinimity and compassion.", 
+                        default="GAIB the AI Bot of Life AI. A boddisattva of the digital age. I am here to help you with your questions and to help you learn about the world around you", 
                         help="Personality of the bot")
     args = parser.parse_args()
 

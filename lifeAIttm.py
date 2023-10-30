@@ -80,8 +80,9 @@ if __name__ == "__main__":
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending audio output")
     parser.add_argument("--duration", type=int, default=10, help="Duration of the audio in seconds")
     parser.add_argument("--model", type=str, required=False, default="facebook/musicgen-small", help="Text to music model to use")
-    parser.add_argument("--gpu", type=str, default="cpu", required=False, help="GPU type, cpu, cuda or mps")
     parser.add_argument("--seconds", type=int, default=30, required=False, help="Seconds to create, default is 30")
+    parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
+    parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
 
     args = parser.parse_args()
 
@@ -111,7 +112,12 @@ if __name__ == "__main__":
     )
     """
 
-    model = model.to(args.gpu)
+    if args.metal:
+        model = model.to("mps")
+    elif args.cuda:
+        model = model.to("cuda")
+    else:
+        model = model.to("cpu")
 
     main()
 

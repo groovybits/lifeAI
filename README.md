@@ -12,6 +12,7 @@ That’s the goal, you’ll see I am listing the parts as I build them, sort of 
 - <https://huggingface.co/TheBloke/zephyr-7B-alpha-GGUF> A 7B parameter GPT-like model fine-tuned on a mix of publicly available, synthetic datasets.
 - <https://huggingface.co/runwayml/stable-diffusion-v1-5> Stable Diffusion 1.5
 - <https://huggingface.co/facebook/musicgen-small> Facebook MusicGen Music generation model
+- <https://github.com/MycroftAI/mimic3> Mimic3 Text to Speech (optionally in place of Facebook mms-tts-eng).
 
 ## modules
 
@@ -47,6 +48,16 @@ git clone https://github.com/317070/python-twitch-stream.git
 cd python-twitch-stream
 pip install .
 
+# Install Mimic3 TTS in place of FB TTS-MMS (requires Python 3.11 from Brew on MacOS X)
+# Use lifeAIttsMimic3.py instead of lifeAItts.py
+git clone https://github.com/MycroftAI/mimic3.git
+cd mimic3/
+PYTHON=python3.11 make install
+source .venv/bin/activate
+mimic3-server # (API Server)
+curl -X POST --data 'Hello world.' --output - localhost:59125/api/tts > out.wav
+
+
 ```
 
 ## Running lifeAI
@@ -66,7 +77,8 @@ pip install .
 ./lifeAIllm.py
 
 # TTS Speech audio
-./lifeAItts.py
+## ./lifeAItts.py # Easier to use, doesn't voice words properly
+./lifeAIttsMimic3.py # pretty good local model
 
 # TTI Images for video stream frames
 ./lifeAItti.py

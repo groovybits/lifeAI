@@ -11,10 +11,13 @@
 import zmq
 import argparse
 import json
+import traceback
 
 from transformers import logging as trlogging
 import warnings
 import urllib3
+import signal
+import time
 
 from llama_cpp import Llama, ChatCompletionMessage
 import nltk  # Import nltk for sentence tokenization
@@ -97,13 +100,28 @@ def run_llm(header_message, user_messages):
         "autogenerate": args.autogenerate,
     }
 
-    output = llm.create_chat_completion(
-        messages=user_messages,
-        max_tokens=args.maxtokens,
-        temperature=args.temperature,
-        stream=True,
-        stop=args.stoptokens.split(',') if args.stoptokens else []
-    )
+    ## set timer and timeout if llm takes more than 300 seconds
+    def handler(signum, frame):
+        raise Exception("LLM took too long to respond!")
+    signal.signal(signal.SIGALRM, handler)
+    signal.alarm(args.timeout) # N seconds
+
+    output = None
+    try:
+        output = llm.create_chat_completion(
+            messages=user_messages,
+            max_tokens=args.maxtokens,
+            temperature=args.temperature,
+            stream=True,
+            stop=args.stoptokens.split(',') if args.stoptokens else []
+        )
+    except Exception as e:
+        print(f"--- run_llm(): LLM exception: {e}")
+        # stacktrace
+        traceback.print_exc()
+        return header_message.copy()
+
+    signal.alarm(0) # reset alarm
 
     accumulator = []
     token_count = 0
@@ -241,9 +259,26 @@ def create_prompt(header_message):
         # instructions altered for generating an episode script
         instructions = "Use the context as inspiration and references for requests with a plotline for a story from various sources like Twitch chat or a news feed. Format the output like a TV episode script using markdown."
     ## Build prompt
-    prompt = f"<<SYS>>{context}Personality: As {ainame} You are {aipersonality} {instructions}<</SYS>>\n\n%s%s" % (
+    prompt = f"<s> [INST] <<SYS>> {context}Personality: As {ainame} You are {aipersonality} {instructions} <</SYS>>\n\n%s%s [/INST]" % (
             args.roleenforcer.replace('{user}', username).replace('{assistant}', ainame),
             args.promptcompletion.replace('{user_question}', question))
+    
+    return prompt
+
+def create_system_prompt(header_message):
+    
+    username = header_message["username"]
+    ainame = header_message["ainame"]
+    aipersonality = header_message["aipersonality"]
+
+    ## Prompt parts
+    instructions = "Use the context as inspiration and references for your answers the questions or requests asked from various sources like Twitch chat or a news feed."
+    if args.episode:
+        # instructions altered for generating an episode script
+        instructions = "Use the context as inspiration and references for requests with a plotline for a story from various sources like Twitch chat or a news feed. Format the output like a TV episode script using markdown."
+    ## Build prompt
+    prompt = f"Personality: As {ainame} You are {aipersonality} {instructions}\n\n%s" % (
+            args.roleenforcer.replace('{user}', username).replace('{assistant}', ainame))
     
     return prompt
 
@@ -251,7 +286,7 @@ def main():
     messages = [
         ChatCompletionMessage(
             role="system",
-            content=f"<<SYS>>{args.systemprompt}<</SYS>>"
+            content=args.systemprompt,
         ),
     ]
 
@@ -310,16 +345,25 @@ def main():
                     total_length -= len(messages[1]['content'])
                     del messages[1]
 
-            system_message = ChatCompletionMessage(role="system", content=prompt)
+            system_message = ChatCompletionMessage(role="system", content=create_system_prompt(header_message))
             # replace first member of messages with system message
             messages[0] = system_message
 
             messages.append(ChatCompletionMessage(
                 role="user",
-                content=f"{username} from {source} said {message}",
+                content=f"{prompt}"
+                #content=f"Question: {username} from {source} said {message}\nAnswer:",
             ))
 
+            response = None
             header_message = run_llm(header_message.copy(), messages)
+            if header_message is None:
+                print(f"\nLLM: Failed to generate a response!")
+                header_message = run_llm(header_message.copy(), messages)
+                if header_message is None:
+                    print(f"\nLLM: Failed to generate a response again!")
+                    # give up and continue
+                    continue
             response = header_message["text"]
 
             messages.append(ChatCompletionMessage(
@@ -338,7 +382,7 @@ def main():
                 "autogenerate": args.autogenerate,
             }
 
-            llm_output = llm_image(
+            llm_output = llm_analysis(
                 prompt,
                 max_tokens=args.maxtokens,
                 temperature=args.temperature,
@@ -364,7 +408,7 @@ def main():
 
 if __name__ == "__main__":
     model = "models/zephyr-7b-alpha.Q2_K.gguf"
-    prompt_template = "Question: {user_question}\nAnswer:\n\n"
+    prompt_template = "Question: {user_question}\nAnswer: "
     role_enforcer = "Give an Answer the message from {user} listed as a Question at the prompt below. Stay in the role of {assistant} using the Context if listed to help generate a response.\n"
 
     parser = argparse.ArgumentParser()
@@ -375,14 +419,13 @@ if __name__ == "__main__":
     parser.add_argument("--maxtokens", type=int, default=0)
     parser.add_argument("--context", type=int, default=32768)
     parser.add_argument("--temperature", type=float, default=0.8)
-    parser.add_argument("--gpulayers", type=int, default=0)
     parser.add_argument("--model", type=str, default=model)
     parser.add_argument("-d", "--debug", action="store_true", default=False)
     parser.add_argument("--ai_name", type=str, default="GAIB")
     parser.add_argument("--systemprompt", type=str, default="The Groovy AI Bot that is here to help you find enlightenment and learn about technology of the future.")
     parser.add_argument("-e", "--episode", action="store_true", default=False, help="Episode mode, Output an TV Episode format script.")
     parser.add_argument("-pc", "--promptcompletion", type=str, default=prompt_template,
-                        help="Prompt completion like...\n\nQuestion: {user_question}\nAnswer:")
+                        help="Prompt completion like... `Question: {user_question}\nAnswer:`")
     parser.add_argument("-re", "--roleenforcer",
                         type=str, default=role_enforcer,
                         help="Role enforcer statement with {user} and {assistant} template names replaced by the actual ones in use.")
@@ -394,6 +437,9 @@ if __name__ == "__main__":
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
     parser.add_argument("-ag", "--autogenerate", action="store_true", default=False, help="Carry on long conversations, remove stop tokens.")
     parser.add_argument("--simplesplit", action="store_true", default=False, help="Simple split of text into lines, no sentence tokenization.")
+    parser.add_argument("--timeout", type=int, default=300, help="Timeout in seconds for LLM to respond.")
+    parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
+    parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
     args = parser.parse_args()
 
     ## setup episode mode
@@ -403,10 +449,13 @@ if __name__ == "__main__":
         args.stoptokens = ["Plotline:"]
 
     context = ""
-    llm = Llama(model_path=args.model, n_ctx=args.context, verbose=False, n_gpu_layers=args.gpulayers, rope_freq_base=0, rope_freq_scale=0)
+    gpulayers = 0
+    if args.metal or args.cuda:
+        gpulayers = -1
+    llm = Llama(model_path=args.model, n_ctx=args.context, verbose=False, n_gpu_layers=gpulayers, rope_freq_base=0, rope_freq_scale=0)
     # LLM Model for image prompt generation
-    llm_image = Llama(model_path=args.model,
-                      n_ctx=args.context, verbose=False, n_gpu_layers=args.gpulayers, rope_freq_base=0, rope_freq_scale=0)
+    llm_analysis = Llama(model_path=args.model,
+                      n_ctx=args.context, verbose=False, n_gpu_layers=gpulayers, rope_freq_base=0, rope_freq_scale=0)
 
     if args.autogenerate:
         args.stoptokens = []

@@ -90,14 +90,14 @@ if __name__ == "__main__":
     parser.add_argument("--maxtokens", type=int, default=200)
     parser.add_argument("--context", type=int, default=1024)
     parser.add_argument("--temperature", type=float, default=0.4)
-    parser.add_argument("--gpulayers", type=int, default=0)
     parser.add_argument("--model", type=str, default=model)
     parser.add_argument("-d", "--debug", action="store_true", default=False)
     parser.add_argument("--qprompt", type=str, default="ImageDescription", 
                         help="Prompt to use for image generation, default ImageDescription")
     parser.add_argument("--aprompt", type=str, default="ImagePrompt", 
                         help="Prompt to use for image generation, default ImagePrompt")
-
+    parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
+    parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
     args = parser.parse_args()
 
     prompt = prompt.format(qprompt=args.qprompt, aprompt=args.aprompt, topic=args.topic)
@@ -116,8 +116,11 @@ if __name__ == "__main__":
     sender.bind(f"tcp://{args.output_host}:{args.output_port}")
 
     # LLM Model for image prompt generation
+    gpulayers = 0
+    if args.metal or args.cuda:
+       gpulayers = -1 
     llm_image = Llama(model_path=args.model,
-                      n_ctx=args.context, verbose=args.debug, n_gpu_layers=args.gpulayers)
+                      n_ctx=args.context, verbose=args.debug, n_gpu_layers=gpulayers)
 
     main()
 
