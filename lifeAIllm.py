@@ -130,6 +130,9 @@ def run_llm(header_message, user_messages):
         if 'Question: ' in accumulator_str:
             # remove everything before Question: including Question: in accumulator array
             found_question = True
+            question_index = accumulator_str.find('Question: ')
+            accumulator = [accumulator_str[question_index:]]
+            accumulator_str = ''.join(accumulator)
 
         # Check if it's time to send data
         if found_question and token_count >= args.characters_per_line:
