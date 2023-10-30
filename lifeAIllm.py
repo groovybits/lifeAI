@@ -65,7 +65,7 @@ def decide_and_send(accumulator, header_message):
     return False  # Indicates that no data was sent
 
 def run_llm(header_message, user_messages):
-    segment_number = header_message["segment_number"]
+    segment_number = int(header_message["segment_number"])
     response_text = ""
     print(f"\n--- run_llm(): chat LLM generating text from request message:\n - {header_message}\n")
 
@@ -330,7 +330,7 @@ if __name__ == "__main__":
     parser.add_argument("-analysis", "--analysis", action="store_true", default=False, help="Instruction mode, no history and focused on solving problems.")
     parser.add_argument("-sts", "--stoptokens", type=str, default="Question:,Answer:,Context:,[/INST],Episode:,Plotline Description:",
         help="Stop tokens to use, do not change unless you know what you are doing!")
-    parser.add_argument("-tp", "--characters_per_line", type=int, default=120, help="Minimum umber of characters per line.")
+    parser.add_argument("-tp", "--characters_per_line", type=int, default=150, help="Minimum umber of characters per buffer, buffer window before output.")
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
     parser.add_argument("-ag", "--autogenerate", action="store_true", default=False, help="Carry on long conversations, remove stop tokens.")
     parser.add_argument("--simplesplit", action="store_true", default=False, help="Simple split of text into lines, no sentence tokenization.")
