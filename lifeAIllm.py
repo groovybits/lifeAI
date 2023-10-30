@@ -71,13 +71,14 @@ def decide_and_send(accumulator, header_message):
     if combined_lines:
         data = prepare_send_data(header_message, combined_lines)
         send_data(data)
+        print(f"--- run_llm(): sent data:\n - {data}\n---\n")
         return True  # Indicates that data was sent
     return False  # Indicates that no data was sent
 
 def run_llm(header_message, user_messages):
     segment_number = int(header_message["segment_number"])
     response_text = ""
-    print(f"\n--- run_llm(): chat LLM generating text from request message:\n - {header_message}\n")
+    print(f"\n--- run_llm(): chat LLM generating text from request message.")
 
     # collect llm info in header
     header_message["llm_info"] = {
@@ -131,20 +132,33 @@ def run_llm(header_message, user_messages):
             # remove everything before Question: including Question: in accumulator array
             found_question = True
             question_index = accumulator_str.find('Question: ')
+            print(f"\n--- run_llm(): found question at index {question_index} in accumulator string:\n - {accumulator_str}\n")
             #accumulator = [accumulator_str[question_index:]]
             #accumulator_str = ''.join(accumulator)
 
+        # list of stop tokens in sentences to watch for
+        stop_tokens = ['.\s', '!\s', '?\s', '\n']
+
         # Check if it's time to send data
-        if token_count >= args.characters_per_line:
+        if token_count >= args.characters_per_line: # and any([stop_token in accumulator_str for stop_token in stop_tokens]):
             split_index = -1
+            space_index = -1
             # Find the last occurrence of punctuation followed by a space or a newline
             for punct in ['.\s', '!\s', '?\s', '\n']:
                 index = accumulator_str.rfind(punct)
                 if index > split_index:
                     split_index = index + 1  # Include punctuation
 
+            # find the last space in teh accumulator
+            if token_count >= (args.characters_per_line*1.5) and split_index < 0:
+                for punct in [' ']:
+                    index = accumulator_str.rfind(punct)
+                    if index > space_index:
+                        space_index = index + 1 # last space in accumulator
+
             # Ensure we have enough characters to split
-            if split_index >= 0 and split_index <= len(accumulator_str) - args.characters_per_line:
+            if split_index >= 0 and token_count >= args.characters_per_line:
+                print(f"\n--- run_llm(): found split index {split_index} in accumulator string:\n - {accumulator_str}\n")
                 pre_split = accumulator_str[:split_index]
                 post_split = accumulator_str[split_index:]
 
@@ -153,7 +167,7 @@ def run_llm(header_message, user_messages):
                 for group in groups:
                     combined_lines = "\n".join(group)
                     combined_lines = clean_text(combined_lines)
-                    if combined_lines:
+                    if combined_lines.replace(" ","").replace("\n","") != "":
                         header_message["text"] = combined_lines
                         header_message["segment_number"] = segment_number
                         send_data(header_message.copy())  # Send the data with the current segment number
@@ -162,26 +176,55 @@ def run_llm(header_message, user_messages):
                 # Clear accumulator and update token_count for the next round
                 accumulator = [post_split]
                 token_count = len(post_split)
+            elif space_index >= 0 and token_count >= args.characters_per_line:
+                print(f"\n--- run_llm(): found space index {space_index} in accumulator string:\n - {accumulator_str}\n")
+                pre_split = accumulator_str[:space_index]
+                post_split = accumulator_str[space_index:]
+
+                # Send subtitle groups for pre_split text
+                groups = get_subtitle_groups(pre_split)
+                for group in groups:
+                    combined_lines = "\n".join(group)
+                    combined_lines = clean_text(combined_lines)
+                    if combined_lines.replace(" ","").replace("\n","") != "":
+                        header_message["text"] = combined_lines
+                        header_message["segment_number"] = segment_number
+                        send_data(header_message.copy())
+                        segment_number += 1
+                
+                # Clear accumulator and update token_count for the next round
+                accumulator = [post_split]
+                token_count = len(post_split)
             else:
                 # If there's no suitable split point, wait for more content
+                print(f"\n--- run_llm(): no split index found in accumulator string:\n - {accumulator_str}\n")
                 continue
 
-        # Send any remaining tokens in accumulator
+    # Send any remaining tokens in accumulator
     if accumulator:
+        print(f"\n--- run_llm(): sending remaining tokens in accumulator:\n - {accumulator}\n")
         remaining_text = ''.join(accumulator)
         if len(remaining_text) >= args.characters_per_line:
             groups = get_subtitle_groups(remaining_text)
             for group in groups:
                 combined_lines = "\n".join(group)
                 combined_lines = clean_text(combined_lines)
-                if combined_lines:
+                if combined_lines.replace(" ","").replace("\n","") != "":
                     header_message["text"] = combined_lines
                     header_message["segment_number"] = segment_number
                     send_data(header_message.copy())  # Send the data with the current segment number
                     segment_number += 1  # Increment for the next round
+        elif len(remaining_text) > 0:
+            # send it all
+            combined_lines = remaining_text
+            combined_lines = clean_text(combined_lines)
+            if combined_lines.replace(" ","").replace("\n","") != "":
+                header_message["text"] = combined_lines
+                header_message["segment_number"] = segment_number
+                send_data(header_message.copy())
 
 
-    print(f"\n--- run_llm(): finished generating text with {total_tokens} tokens and {segment_number + 1} segments for request:\n - {header_message}\n")
+    print(f"\n--- run_llm(): finished generating text with {total_tokens} tokens and {segment_number + 1} segments for request.")
     header_message['text'] = response_text
     header_message['segment_number'] = segment_number  # Ensure the final segment number is correct
     return header_message.copy()
@@ -322,7 +365,7 @@ def main():
 
 if __name__ == "__main__":
     model = "models/zephyr-7b-alpha.Q2_K.gguf"
-    prompt_template = "Question: {user_question}\nAnswer: "
+    prompt_template = "Question: {user_question}\nAnswer:\n\n"
     role_enforcer = "Give an Answer the message from {user} listed as a Question at the prompt below. Stay in the role of {assistant} using the Context if listed to help generate a response.\n"
 
     parser = argparse.ArgumentParser()
@@ -346,9 +389,9 @@ if __name__ == "__main__":
                         help="Role enforcer statement with {user} and {assistant} template names replaced by the actual ones in use.")
     parser.add_argument("-p", "--personality", type=str, default="friendly helpful compassionate boddisatvva guru.", help="Personality of the AI, choices are 'friendly' or 'mean'.")
     parser.add_argument("-analysis", "--analysis", action="store_true", default=False, help="Instruction mode, no history and focused on solving problems.")
-    parser.add_argument("-sts", "--stoptokens", type=str, default="Question:,Plotline Description:",
+    parser.add_argument("-sts", "--stoptokens", type=str, default="Question:",
         help="Stop tokens to use, do not change unless you know what you are doing!")
-    parser.add_argument("-tp", "--characters_per_line", type=int, default=80, help="Minimum umber of characters per buffer, buffer window before output.")
+    parser.add_argument("-tp", "--characters_per_line", type=int, default=200, help="Minimum umber of characters per buffer, buffer window before output.")
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
     parser.add_argument("-ag", "--autogenerate", action="store_true", default=False, help="Carry on long conversations, remove stop tokens.")
     parser.add_argument("--simplesplit", action="store_true", default=False, help="Simple split of text into lines, no sentence tokenization.")
@@ -357,8 +400,8 @@ if __name__ == "__main__":
     ## setup episode mode
     if args.episode:
         args.roleenforcer.replace('Answer the question asked by', 'Create a story from the plotline given by')
-        args.promptcompletion.replace('Answer:', 'Episode:')
-        args.promptcompletion.replace('Question:', 'Plotline Description:')
+        args.promptcompletion.replace('Question:', 'Plotline:')
+        args.stoptokens = ["Plotline:"]
 
     context = ""
     llm = Llama(model_path=args.model, n_ctx=args.context, verbose=False, n_gpu_layers=args.gpulayers, rope_freq_base=0, rope_freq_scale=0)
