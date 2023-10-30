@@ -191,7 +191,7 @@ def create_prompt(header_message):
     prompt_context = ""
     if "context" in header_message:
         # join array of history messsges for context
-        prompt_context = "\nContext:%s\n" % " ".join(header_message["context"])
+        prompt_context = "\nContext:%s\n" % json.dumps(header_message["context"])
     username = header_message["username"]
     ainame = header_message["ainame"]
     aipersonality = header_message["aipersonality"]
