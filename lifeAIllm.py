@@ -45,6 +45,16 @@ def get_subtitle_groups(text):
 
 def clean_text(text):
     cleaned_text = text.encode('ascii', 'ignore').decode('ascii')
+    cleaned_text = cleaned_text.replace('<|assistant|>',"")
+    cleaned_text = cleaned_text.replace('<|/assistant|>',"")
+    cleaned_text = cleaned_text.replace('<|>',"")
+    cleaned_text = cleaned_text.replace('</|>',"")
+    cleaned_text = cleaned_text.replace('<|user|>',"")
+    cleaned_text = cleaned_text.replace('<|/user|>',"")
+    cleaned_text = cleaned_text.replace('<<SYS>>',"")
+    cleaned_text = cleaned_text.replace('<</SYS>>',"")
+    cleaned_text = cleaned_text.replace('[INST]',"")
+    cleaned_text = cleaned_text.replace('[/INST]',"")
     return cleaned_text
 
 def prepare_send_data(header_message, combined_lines):
@@ -91,6 +101,7 @@ def run_llm(header_message, user_messages):
     accumulator = []
     token_count = 0
     total_tokens = 0
+    found_question = True
     for item in output:
         delta = item["choices"][0]['delta']
         header_message["llm_choices"] = item["choices"]
@@ -116,8 +127,12 @@ def run_llm(header_message, user_messages):
         # Convert accumulator list to a string
         accumulator_str = ''.join(accumulator)
 
+        if 'Question: ' in accumulator_str:
+            # remove everything before Question: including Question: in accumulator array
+            found_question = True
+
         # Check if it's time to send data
-        if token_count >= args.characters_per_line:
+        if found_question and token_count >= args.characters_per_line:
             split_index = -1
             # Find the last occurrence of punctuation followed by a space or a newline
             for punct in ['.\s', '!\s', '?\s', '\n']:
@@ -185,7 +200,7 @@ def create_prompt(header_message):
         # instructions altered for generating an episode script
         instructions = "Use the context as inspiration and references for requests with a plotline for a story from various sources like Twitch chat or a news feed. Format the output like a TV episode script using markdown."
     ## Build prompt
-    prompt = f"{context}Peronality: As {ainame} You are {aipersonality} {instructions}\n\n%s%s" % (
+    prompt = f"<<SYS>>{context}Personality: As {ainame} You are {aipersonality} {instructions}<</SYS>>\n\n%s%s" % (
             args.roleenforcer.replace('{user}', username).replace('{assistant}', ainame),
             args.promptcompletion.replace('{user_question}', question))
     
@@ -195,7 +210,7 @@ def main():
     messages = [
         ChatCompletionMessage(
             role="system",
-            content=args.systemprompt
+            content=f"<<SYS>>{args.systemprompt}<</SYS>>"
         ),
     ]
 
@@ -328,9 +343,9 @@ if __name__ == "__main__":
                         help="Role enforcer statement with {user} and {assistant} template names replaced by the actual ones in use.")
     parser.add_argument("-p", "--personality", type=str, default="friendly helpful compassionate boddisatvva guru.", help="Personality of the AI, choices are 'friendly' or 'mean'.")
     parser.add_argument("-analysis", "--analysis", action="store_true", default=False, help="Instruction mode, no history and focused on solving problems.")
-    parser.add_argument("-sts", "--stoptokens", type=str, default="Question:,Answer:,Context:,[/INST],Episode:,Plotline Description:",
+    parser.add_argument("-sts", "--stoptokens", type=str, default="Question:,Answer:,Context:,Episode:,Plotline Description:,Personality:,User:",
         help="Stop tokens to use, do not change unless you know what you are doing!")
-    parser.add_argument("-tp", "--characters_per_line", type=int, default=150, help="Minimum umber of characters per buffer, buffer window before output.")
+    parser.add_argument("-tp", "--characters_per_line", type=int, default=100, help="Minimum umber of characters per buffer, buffer window before output.")
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
     parser.add_argument("-ag", "--autogenerate", action="store_true", default=False, help="Carry on long conversations, remove stop tokens.")
     parser.add_argument("--simplesplit", action="store_true", default=False, help="Simple split of text into lines, no sentence tokenization.")
@@ -343,10 +358,10 @@ if __name__ == "__main__":
         args.promptcompletion.replace('Question:', 'Plotline Description:')
 
     context = ""
-    llm = Llama(model_path=args.model, n_ctx=args.context, verbose=False, n_gpu_layers=args.gpulayers)
+    llm = Llama(model_path=args.model, n_ctx=args.context, verbose=False, n_gpu_layers=args.gpulayers, rope_freq_base=0, rope_freq_scale=0)
     # LLM Model for image prompt generation
     llm_image = Llama(model_path=args.model,
-                      n_ctx=args.context, verbose=False, n_gpu_layers=args.gpulayers)
+                      n_ctx=args.context, verbose=False, n_gpu_layers=args.gpulayers, rope_freq_base=0, rope_freq_scale=0)
 
     if args.autogenerate:
         args.stoptokens = []
