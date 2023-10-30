@@ -19,6 +19,7 @@ from transformers import logging as trlogging
 import warnings
 import urllib3
 import inflect
+import re
 
 warnings.simplefilter(action='ignore', category=Warning)
 warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
