@@ -346,7 +346,7 @@ if __name__ == "__main__":
                         help="Role enforcer statement with {user} and {assistant} template names replaced by the actual ones in use.")
     parser.add_argument("-p", "--personality", type=str, default="friendly helpful compassionate boddisatvva guru.", help="Personality of the AI, choices are 'friendly' or 'mean'.")
     parser.add_argument("-analysis", "--analysis", action="store_true", default=False, help="Instruction mode, no history and focused on solving problems.")
-    parser.add_argument("-sts", "--stoptokens", type=str, default="Question:,Answer:,Context:,Episode:,Plotline Description:,Personality:,User:",
+    parser.add_argument("-sts", "--stoptokens", type=str, default="Question:,Plotline Description:",
         help="Stop tokens to use, do not change unless you know what you are doing!")
     parser.add_argument("-tp", "--characters_per_line", type=int, default=80, help="Minimum umber of characters per buffer, buffer window before output.")
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
