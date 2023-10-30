@@ -147,7 +147,7 @@ if __name__ == "__main__":
     parser.add_argument("--categories", type=str, required=False, default="technology,science,entertainment", help="News stories categories")
     parser.add_argument("--prompt", type=str, required=False, default="News Story just in... ",
                         help="Prompt to give context as a newstory feed")
-    parser.add_argument("--aipersonality", type=str, required=False, default="I am GAIB the AI Bot of Life AI, I am sending an interesting news article for analysis.", help="AI personality")
+    parser.add_argument("--aipersonality", type=str, required=False, default="GAIB the AI Bot of Life AI, I am sending an interesting news article for analysis.", help="AI personality")
     parser.add_argument("--ainame", type=str, required=False, default="GAIB", help="AI name")
     args = parser.parse_args()
 

@@ -182,7 +182,7 @@ class AiTwitchBot(commands.Cog):
                 "username": name,
                 "source": "Twitch",
                 "message": prompt,
-                "aipersonality": "You are a musician and will compose an amazing piece of music for us.",
+                "aipersonality": "a musician and will compose an amazing piece of music for us.",
                 "ainame": "MusicGen",
             }
             socket.send_json(client_request)
@@ -221,7 +221,7 @@ class AiTwitchBot(commands.Cog):
                 "username": name,
                 "source": "Twitch",
                 "message": prompt,
-                "aipersonality": "You are a digital artist and phtographer, you will compose an amazing piece of art or take an amazing photo image for us.",
+                "aipersonality": "a digital artist and phtographer, you will compose an amazing piece of art or take an amazing photo image for us.",
                 "ainame": "ImageGen",
             }
             socket.send_json(client_request)
