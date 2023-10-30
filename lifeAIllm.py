@@ -131,11 +131,11 @@ def run_llm(header_message, user_messages):
             # remove everything before Question: including Question: in accumulator array
             found_question = True
             question_index = accumulator_str.find('Question: ')
-            accumulator = [accumulator_str[question_index:]]
-            accumulator_str = ''.join(accumulator)
+            #accumulator = [accumulator_str[question_index:]]
+            #accumulator_str = ''.join(accumulator)
 
         # Check if it's time to send data
-        if found_question and token_count >= args.characters_per_line:
+        if token_count >= args.characters_per_line:
             split_index = -1
             # Find the last occurrence of punctuation followed by a space or a newline
             for punct in ['.\s', '!\s', '?\s', '\n']:
@@ -348,7 +348,7 @@ if __name__ == "__main__":
     parser.add_argument("-analysis", "--analysis", action="store_true", default=False, help="Instruction mode, no history and focused on solving problems.")
     parser.add_argument("-sts", "--stoptokens", type=str, default="Question:,Answer:,Context:,Episode:,Plotline Description:,Personality:,User:",
         help="Stop tokens to use, do not change unless you know what you are doing!")
-    parser.add_argument("-tp", "--characters_per_line", type=int, default=100, help="Minimum umber of characters per buffer, buffer window before output.")
+    parser.add_argument("-tp", "--characters_per_line", type=int, default=80, help="Minimum umber of characters per buffer, buffer window before output.")
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
     parser.add_argument("-ag", "--autogenerate", action="store_true", default=False, help="Carry on long conversations, remove stop tokens.")
     parser.add_argument("--simplesplit", action="store_true", default=False, help="Simple split of text into lines, no sentence tokenization.")

@@ -167,7 +167,7 @@ def main():
         # fill out variables from header_message
         segment_number = header_message["segment_number"]
         text = header_message["text"]
-        optimized_prompt = ""
+        optimized_prompt = text
         if "optimized_text" in header_message:
             optimized_prompt = header_message["optimized_text"]
         elif not args.use_prompt:

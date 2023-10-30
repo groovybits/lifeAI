@@ -18,12 +18,34 @@ import torch
 from transformers import logging as trlogging
 import warnings
 import urllib3
+import inflect
 
 warnings.simplefilter(action='ignore', category=Warning)
 warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
 from urllib3.exceptions import NotOpenSSLWarning
 warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 trlogging.set_verbosity_error()
+
+def clean_text(text):
+    p = inflect.engine()
+
+    def num_to_words(match):
+        number = match.group()
+        try:
+            words = p.number_to_words(number)
+        except inflect.NumOutOfRangeError:
+            words = "[number too large]"
+        return words
+
+    text = re.sub(r'\b\d+(\.\d+)?\b', num_to_words, text)
+
+    # Add a pause after punctuation
+    text = text.replace('.', '. ')
+    text = text.replace(',', ', ')
+    text = text.replace('?', '? ')
+    text = text.replace('!', '! ')
+
+    return text[:300]
 
 def main():
     while True:
@@ -52,7 +74,7 @@ def main():
 
         print(f"Text to Image recieved optimized prompt:\n{header_message}.")
 
-        image = pipe(optimized_prompt).images[0]
+        image = pipe(clean_text(optimized_prompt)).images[0]
 
         # Convert PIL Image to bytes
         img_byte_arr = io.BytesIO()

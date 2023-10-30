@@ -65,7 +65,9 @@ def main():
         mediaid = header_message["mediaid"]
         message = header_message["message"]
         text = header_message["text"]
-        optimized_prompt = header_message["optimized_text"]
+        optimized_prompt = text
+        if 'optimized_text' in header_message:
+            optimized_prompt = header_message["optimized_text"]
 
         # Now, receive the binary audio data
         image = socket.recv()
