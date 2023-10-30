@@ -108,7 +108,7 @@ def run_llm(header_message, user_messages):
         token = delta['content']
         print(token, end='', flush=True)
         total_tokens += 1
-        response_text = f"{response_text}{token}"
+        response_text += token
 
         accumulator.append(token)
         token_count += len(token)
@@ -119,47 +119,53 @@ def run_llm(header_message, user_messages):
         # Check if it's time to send data
         if token_count >= args.characters_per_line:
             split_index = -1
-            for punct in ['.', '!', '?', '\n', ', ', ' ']:
+            # Find the last occurrence of punctuation followed by a space or a newline
+            for punct in ['.\s', '!\s', '?\s', '\n']:
                 index = accumulator_str.rfind(punct)
                 if index > split_index:
-                    split_index = index
+                    split_index = index + 1  # Include punctuation
 
-            if split_index >= 0:
-                # Split the string and update the accumulator and token count
-                pre_split = accumulator_str[:split_index + 1]
-                post_split = accumulator_str[split_index + 1:]
+            # Ensure we have enough characters to split
+            if split_index >= 0 and split_index <= len(accumulator_str) - args.characters_per_line:
+                pre_split = accumulator_str[:split_index]
+                post_split = accumulator_str[split_index:]
 
-			   	# Send subtitle groups for pre_split text
+                # Send subtitle groups for pre_split text
                 groups = get_subtitle_groups(pre_split)
                 for group in groups:
                     combined_lines = "\n".join(group)
                     combined_lines = clean_text(combined_lines)
                     if combined_lines:
                         header_message["text"] = combined_lines
-                        send_data(header_message.copy())  # Using send_data directly with modified header_message
-                        segment_number += 1  # Update segment_number after sending the data
+                        header_message["segment_number"] = segment_number
+                        send_data(header_message.copy())  # Send the data with the current segment number
+                        segment_number += 1  # Increment for the next round
 
                 # Clear accumulator and update token_count for the next round
-                accumulator = [post_split] if post_split else []
+                accumulator = [post_split]
                 token_count = len(post_split)
             else:
-                # No suitable split point found; we need a better strategy here
-                pass
+                # If there's no suitable split point, wait for more content
+                continue
 
-    # Send any remaining tokens in accumulator
+        # Send any remaining tokens in accumulator
     if accumulator:
         remaining_text = ''.join(accumulator)
-        groups = get_subtitle_groups(remaining_text)
-        for group in groups:
-            combined_lines = "\n".join(group)
-            combined_lines = clean_text(combined_lines)
-            if combined_lines:
-                header_message["text"] = combined_lines
-                send_data(header_message.copy())  # Using send_data directly with modified header_message
-                segment_number += 1  # Update segment_number after sending the data
+        if len(remaining_text) >= args.characters_per_line:
+            groups = get_subtitle_groups(remaining_text)
+            for group in groups:
+                combined_lines = "\n".join(group)
+                combined_lines = clean_text(combined_lines)
+                if combined_lines:
+                    header_message["text"] = combined_lines
+                    header_message["segment_number"] = segment_number
+                    send_data(header_message.copy())  # Send the data with the current segment number
+                    segment_number += 1  # Increment for the next round
+
 
     print(f"\n--- run_llm(): finished generating text with {total_tokens} tokens and {segment_number + 1} segments for request:\n - {header_message}\n")
     header_message['text'] = response_text
+    header_message['segment_number'] = segment_number  # Ensure the final segment number is correct
     return header_message.copy()
 
 def create_prompt(header_message):
