@@ -139,14 +139,14 @@ def run_llm(header_message, user_messages):
             found_question = True
             question_index = accumulator_str.find('Answer: ')
             print(f"\n--- run_llm(): found question at index {question_index} in accumulator string:\n - {accumulator_str}\n")
-            accumulator = [accumulator_str[question_index:]]
-            accumulator_str = ''.join(accumulator)
+            #accumulator = [accumulator_str[question_index:]]
+            #accumulator_str = ''.join(accumulator)
 
         # list of stop tokens in sentences to watch for
         stop_tokens = ['.', '!', '?']
 
         # Check if it's time to send data
-        if found_question and token_count >= args.characters_per_line: # and any([stop_token in accumulator_str for stop_token in stop_tokens]):
+        if token_count >= args.characters_per_line: # and any([stop_token in accumulator_str for stop_token in stop_tokens]):
             split_index = -1
             space_index = -1
             # Find the last occurrence of punctuation followed by a space or a newline
@@ -210,24 +210,13 @@ def run_llm(header_message, user_messages):
     if accumulator:
         print(f"\n--- run_llm(): sending remaining tokens in accumulator:\n - {accumulator}\n")
         remaining_text = ''.join(accumulator)
-        if len(remaining_text) >= args.characters_per_line:
-            groups = get_subtitle_groups(remaining_text)
-            for group in groups:
-                combined_lines = "\n".join(group)
-                combined_lines = clean_text(combined_lines)
-                if combined_lines.replace(" ","").replace("\n","") != "":
-                    header_message["text"] = combined_lines
-                    header_message["segment_number"] = segment_number
-                    send_data(header_message.copy())  # Send the data with the current segment number
-                    segment_number += 1  # Increment for the next round
-        elif len(remaining_text) > 0:
-            # send it all
-            combined_lines = remaining_text
-            combined_lines = clean_text(combined_lines)
-            if combined_lines.replace(" ","").replace("\n","") != "":
-                header_message["text"] = combined_lines
-                header_message["segment_number"] = segment_number
-                send_data(header_message.copy())
+        # send it all
+        combined_lines = remaining_text
+        combined_lines = clean_text(combined_lines)
+        if combined_lines.replace(" ","").replace("\n","") != "":
+            header_message["text"] = combined_lines
+            header_message["segment_number"] = segment_number
+            send_data(header_message.copy())
 
 
     print(f"\n--- run_llm(): finished generating text with {total_tokens} tokens and {segment_number + 1} segments for request.")

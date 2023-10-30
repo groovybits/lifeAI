@@ -21,9 +21,6 @@ import zmq
 import json
 
 load_dotenv()
-
-current_personality = ""
-current_name = ""
 chat_db = "db/chat.db"
 
 personalities = {}
@@ -35,8 +32,8 @@ class AiTwitchBot(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.ai_name = current_name
-        self.ai_personality = current_personality
+        self.ai_name = args.ai_name
+        self.ai_personality = args.ai_personality
         personalities[self.ai_name] = self.ai_personality
 
     ## Channel entrance for our bot
@@ -150,7 +147,7 @@ class AiTwitchBot(commands.Cog):
     @commands.command(name="personality")
     async def personality(self, ctx: commands.Context):
         try:
-            personality = ctx.message.content.replace('!personality','')
+            personality = ctx.message.content.replace('!personality ','').strip()
             print(f"--- Got personality switch to personality: %s" % personality)
             if personality not in personalities:
                 print(f"{ctx.message.author.name} tried to alter the personality to {personality} yet is not in the list of personalities.")
@@ -198,7 +195,7 @@ class AiTwitchBot(commands.Cog):
             # get the name of the person who sent the message
             name = ctx.message.author.name
             # send the list of personalities
-            await ctx.send(f"{name} the personalities we have are {personalities}")
+            await ctx.send(f"{name} the personalities we have are {json.dumps(personalities, indent=2, sort_keys=True)}")
         except Exception as e:
             print("Error in listpersonalities command twitch bot: %s" % str(e))
 
@@ -236,13 +233,13 @@ class AiTwitchBot(commands.Cog):
     async def name(self, ctx: commands.Context):
         try:
             # format is "!name <name> <personality>"
-            name = ctx.message.content.replace('!name','').strip().replace(' ', '_')
+            name = ctx.message.content.replace('!name','').strip()
             name, personality = name.split(' ', 1)
             namepattern = re.compile(r'^[a-zA-Z0-9]*$')
             personalitypattern = re.compile(r'^[a-zA-Z0-9 ,.]*$')
             print(f"--- Got name switch from {ctx.author} for ai name: %s" % name)
             # confirm name has no spaces and is 12 or less characters and alphanumeric, else tell the chat user it is not the right format
-            if len(name) > 32 or ' ' in name or len(personality) > 200:
+            if len(name) > 50 or ' ' in name or len(personality) > 200:
                 print(f"{ctx.message.author.name} tried to alter the name to {name} yet is too long or has spaces.")
                 await ctx.send(f"{ctx.message.author.name} the name you have chosen is too long, please choose a name that is 12 characters or less")
                 return
