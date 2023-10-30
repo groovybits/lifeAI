@@ -80,6 +80,12 @@ def run_llm(header_message, user_messages):
     response_text = ""
     print(f"\n--- run_llm(): chat LLM generating text from request message.")
 
+    # send the question to the LLM
+    header_message["text"] = f"User {header_message['username']} asked: {header_message['message'][:200]}...."
+    header_message["segment_number"] = segment_number
+    send_data(header_message.copy())
+    segment_number += 1
+
     # collect llm info in header
     header_message["llm_info"] = {
         "maxtokens": args.maxtokens,
@@ -128,19 +134,19 @@ def run_llm(header_message, user_messages):
         # Convert accumulator list to a string
         accumulator_str = ''.join(accumulator)
 
-        if 'Question: ' in accumulator_str:
+        if 'Answer: ' in accumulator_str:
             # remove everything before Question: including Question: in accumulator array
             found_question = True
-            question_index = accumulator_str.find('Question: ')
+            question_index = accumulator_str.find('Answer: ')
             print(f"\n--- run_llm(): found question at index {question_index} in accumulator string:\n - {accumulator_str}\n")
-            #accumulator = [accumulator_str[question_index:]]
-            #accumulator_str = ''.join(accumulator)
+            accumulator = [accumulator_str[question_index:]]
+            accumulator_str = ''.join(accumulator)
 
         # list of stop tokens in sentences to watch for
         stop_tokens = ['.', '!', '?']
 
         # Check if it's time to send data
-        if token_count >= args.characters_per_line: # and any([stop_token in accumulator_str for stop_token in stop_tokens]):
+        if found_question and token_count >= args.characters_per_line: # and any([stop_token in accumulator_str for stop_token in stop_tokens]):
             split_index = -1
             space_index = -1
             # Find the last occurrence of punctuation followed by a space or a newline
