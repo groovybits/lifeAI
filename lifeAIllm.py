@@ -310,9 +310,13 @@ def main():
                     total_length -= len(messages[1]['content'])
                     del messages[1]
 
+            system_message = ChatCompletionMessage(role="system", content=prompt)
+            # replace first member of messages with system message
+            messages[0] = system_message
+
             messages.append(ChatCompletionMessage(
                 role="user",
-                content=prompt,
+                content=f"{username} from {source} said {message}",
             ))
 
             header_message = run_llm(header_message.copy(), messages)
