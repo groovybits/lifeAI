@@ -68,7 +68,7 @@ def send_data(data):
 def decide_and_send(accumulator, header_message):
     combined_lines = "".join([line for line in accumulator if line.strip()])
     combined_lines = clean_text(combined_lines)
-    if combined_lines:
+    if combined_lines.replace(" ","").replace("\n","") != "":
         data = prepare_send_data(header_message, combined_lines)
         send_data(data)
         print(f"--- run_llm(): sent data:\n - {data}\n---\n")
@@ -137,14 +137,14 @@ def run_llm(header_message, user_messages):
             #accumulator_str = ''.join(accumulator)
 
         # list of stop tokens in sentences to watch for
-        stop_tokens = ['.\s', '!\s', '?\s', '\n']
+        stop_tokens = ['.', '!', '?']
 
         # Check if it's time to send data
         if token_count >= args.characters_per_line: # and any([stop_token in accumulator_str for stop_token in stop_tokens]):
             split_index = -1
             space_index = -1
             # Find the last occurrence of punctuation followed by a space or a newline
-            for punct in ['.\s', '!\s', '?\s', '\n']:
+            for punct in ['.', '!', '?']:
                 index = accumulator_str.rfind(punct)
                 if index > split_index:
                     split_index = index + 1  # Include punctuation
@@ -157,7 +157,7 @@ def run_llm(header_message, user_messages):
                         space_index = index + 1 # last space in accumulator
 
             # Ensure we have enough characters to split
-            if split_index >= 0 and token_count >= args.characters_per_line:
+            if split_index >= 0:
                 print(f"\n--- run_llm(): found split index {split_index} in accumulator string:\n - {accumulator_str}\n")
                 pre_split = accumulator_str[:split_index]
                 post_split = accumulator_str[split_index:]
@@ -176,7 +176,7 @@ def run_llm(header_message, user_messages):
                 # Clear accumulator and update token_count for the next round
                 accumulator = [post_split]
                 token_count = len(post_split)
-            elif space_index >= 0 and token_count >= args.characters_per_line:
+            elif space_index >= 0:
                 print(f"\n--- run_llm(): found space index {space_index} in accumulator string:\n - {accumulator_str}\n")
                 pre_split = accumulator_str[:space_index]
                 post_split = accumulator_str[space_index:]
