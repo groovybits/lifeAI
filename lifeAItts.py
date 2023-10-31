@@ -21,6 +21,7 @@ import inflect
 import re
 import logging
 import time
+import traceback
 
 warnings.simplefilter(action='ignore', category=Warning)
 warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
@@ -66,7 +67,8 @@ def main():
         segment_number = header_message["segment_number"]
         text = header_message["text"]
 
-        print("Text to Speech recieved request:\n%s" % header_message)
+        logger.debug("Text to Speech recieved request:\n%s" % header_message)
+        logger.info(f"Text to Speech: recieved text #{segment_number}\n{text}")
 
         inputs = tokenizer(clean_text_for_tts(text), return_tensors="pt")
         inputs['input_ids'] = inputs['input_ids'].long()
@@ -77,7 +79,8 @@ def main():
                 output = model(**inputs).waveform
             waveform_np = output.squeeze().numpy().T
         except Exception as e:
-            print(f"Exception: ERROR STT error with output.squeeze().numpy().T on audio: {text}")
+            logger.error(f"{traceback.print_exc()}")
+            logger.error(f"Exception: ERROR STT error with output.squeeze().numpy().T on audio: {text}")
             continue
         audiobuf = io.BytesIO()
         sf.write(audiobuf, waveform_np, model.config.sampling_rate, format='WAV')
@@ -92,7 +95,8 @@ def main():
         sender.send_json(header_message, zmq.SNDMORE)
         sender.send(audiobuf.getvalue())
         
-        print(f"Text to Speech: sent audio #{segment_number}\n{header_message}")
+        logger.debug(f"Text to Speech: sent audio #{segment_number}\n{header_message}")
+        logger.info(f"Text to Speech: sent audio #{segment_number} of {duration} duration.\n{text}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

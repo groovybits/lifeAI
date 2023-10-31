@@ -89,7 +89,8 @@ def main():
             # Now, receive the binary audio data
             audio_samples = socket.recv()
 
-            print(f"Received music segment mediaid: {header_message}\n")
+            logger.debug(f"Received music segment mediaid: {header_message}\n")
+            logger.info(f"Received music segment #{segment_number} mediaid: {mediaid}\n")
 
             # Check if we need to output to a file
             if args.save_file:
@@ -100,25 +101,24 @@ def main():
                 if args.audio_format == "wav":
                     with open(audio_file, 'wb') as f:
                         f.write(audio_samples)
-                    print(f"Audio saved to {audio_file} as WAV")
+                    logger.info(f"Audio saved to {audio_file} as WAV")
                 else:
                     with open(audio_file, 'wb') as f:
                         f.write(audio_samples)
-                    print(f"Payload written to {audio_file}\n")
+                    logger.info(f"Payload written to {audio_file}\n")
 
             # Convert the payload to its hex representation and display
             if args.show_hex:
                 payload_hex = audio_samples.hex()
-                print(f"Payload (Hex): {textwrap.fill(payload_hex, width=80)}\n")
+                print(f"Payload (Hex): {textwrap.fill(payload_hex, width=80)}\n", flush=True)
 
             # Signal thread to play new audio, sleep for duration so we don't interupt it
             if audio_samples:
                 bg_music.change_track(audio_samples)
                 duration = get_audio_duration(audio_samples)
                 time.sleep(duration)
-
         except Exception as e:
-            print(f"Error: %s" % str(e))
+            logger.error(f"Error: %s" % str(e))
             continue
 
 if __name__ == "__main__":
@@ -157,7 +157,7 @@ if __name__ == "__main__":
 
     context = zmq.Context()
     socket = context.socket(zmq.SUB)
-    print("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
+    logger.info("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
     socket.connect(f"tcp://{args.input_host}:{args.input_port}")
     socket.setsockopt_string(zmq.SUBSCRIBE, "")
 

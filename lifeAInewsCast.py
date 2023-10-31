@@ -48,16 +48,20 @@ def get_news(offset=0, keywords="ai anime buddhism cats", categories="technology
         data_json = json.loads(data)
         if 'data' in data_json and len(data_json['data']) > 0:
             count = len(data_json['data'])
-            print(f"got news feed with {count} articles from Media Stack.")
+            logger.info(f"got news feed with {count} articles from Media Stack.")
+            # write to file db/news.json for debugging and caching
+            with open('db/news.json', 'w') as outfile:
+                json.dump(data_json, outfile)
         else:
-            print(f"Error getting news from Media Stack: {data_json}")
+            logger.error(f"Error getting news from Media Stack: {data_json}")
             return None
 
         return data_json
     except Exception as e:
-        print(f"Error connecting to MediaStack: {e} {res} {data}")
         # output stacktrace and full error
-        traceback.print_exc()
+        logger.error(f"{traceback.print_exc()}")
+        logger.error(f"Error connecting to MediaStack: {e} {res} {data}")
+        
         return None
 
 def clean_text(text):
@@ -102,15 +106,22 @@ def main():
     segment_number = 0
     failures = 0
     while True:
-        print(f"Getting news from Media Stack...")
-        news_json = get_news(pagination, args.keywords, args.categories)
-        if news_json == None:
-            print(f"Error getting news from Media Stack, retrying in 30 seconds...")
-            if failures > 5:
-                pagination = 0
-                print(f"Too many failures, resetting pagination to 0.")
+        logger.info(f"Getting news from Media Stack...")
+        news_json = None
+        try:
+            news_json = get_news(pagination, args.keywords, args.categories)
+            if news_json == None:
+                logger.error(f"Error getting news from Media Stack, retrying in 30 seconds...")
+                if failures > 5:
+                    pagination = 0
+                    logger.error(f"Too many failures, resetting pagination to 0.")
+                time.sleep(30)
+                failures += 1
+                continue
+        except Exception as e:
+            logger.error(f"{traceback.print_exc()}")
+            logger.error(f"Error getting news from Media Stack: {e}")
             time.sleep(30)
-            failures += 1
             continue
 
         segment_number += 1
@@ -118,9 +129,9 @@ def main():
 
         if 'data' in news_json and len(news_json['data']) > 0:
             count = len(news_json['data'])
-            print(f"got news feed with {count} articles from Media Stack.")
+            logger.info(f"got news feed with {count} articles from Media Stack.")
             for story in news_json['data']:
-                print(f"Story: {story}")
+                logger.debug(f"Story: {story}")
                 if 'description' in story:
                     mediaid = uuid.uuid4().hex[:8]
                     username = args.username
@@ -134,14 +145,12 @@ def main():
                         title = story['title']
 
                     if title == "" and description == "":
-                        print(f"Empty news story! Skipping... {json.dumps(news_json)}")
+                        logger.error(f"Empty news story! Skipping... {json.dumps(news_json)}")
                         continue
 
-                    #scrub description very well for any odd characters or non speaking words
-                    
-
                     message = f"{args.prompt}{username} reported \"{title}\" - {description}\n\n"
-                    print(f"Sending message {message}")
+                    logger.debug(f"Sending message {message}")
+                    logger.info(f"Sending story {story} by {username} - {description[:60]}")
 
                     # Send the message
                     client_request = {
@@ -157,7 +166,7 @@ def main():
                     }
                     socket.send_json(client_request)
                 else:
-                    print("News: Found an empty story! %s" % json.dumps(story))
+                    logger.error("News: Found an empty story! %s" % json.dumps(story))
 
                 time.sleep(args.interval)
 
@@ -205,7 +214,7 @@ if __name__ == "__main__":
 
     # Socket to send messages on
     socket = context.socket(zmq.PUSH)
-    print("connect to send message: %s:%d" % (args.output_host, args.output_port))
+    logger.info("connect to send message: %s:%d" % (args.output_host, args.output_port))
     socket.connect(f"tcp://{args.output_host}:{args.output_port}")
 
     main()

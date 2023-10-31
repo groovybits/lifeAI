@@ -60,7 +60,6 @@ def stream_api_response(api_url, completion_params, zmq_sender, header_message, 
     segment_number = header_message.get("segment_number", 0)
     accumulated_text = ""
 
-    print(f"\n--- stream_api_response(): chat LLM streaming API response. to {api_url} with completion_params: {completion_params}")
     logger.info(f"--- stream_api_response(): chat LLM streaming API response. to {api_url} with completion_params: {completion_params}")
 
     tokens = 0
@@ -89,7 +88,6 @@ def stream_api_response(api_url, completion_params, zmq_sender, header_message, 
     if accumulated_text:
         clean_and_send_group(accumulated_text, zmq_sender, header_message, segment_number, sentence_count)
 
-    print(f"\n--- stream_api_response(): chat LLM streaming API response: {tokens} tokens, {characters} characters.")
     logger.info(f"--- stream_api_response(): chat LLM streaming API response: {tokens} tokens, {characters} characters.")
 
 def clean_and_send_group(text, zmq_sender, header_message, segment_number, sentence_count):
@@ -113,7 +111,6 @@ def clean_and_send_group(text, zmq_sender, header_message, segment_number, sente
 
 def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_count, args):
     segment_number = int(header_message["segment_number"])
-    print(f"\n--- run_llm(): chat LLM generating text from request message.")
     logger.info(f"--- run_llm(): chat LLM generating text from request message.")
 
     # Prepare the message to send to the LLM
@@ -157,6 +154,7 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
     except Exception as e:
         logger.error(f"--- run_llm(): LLM exception: {e}")
         traceback.print_exc()
+        print(f"{traceback.print_exc()}")
         return header_message.copy()
 
     return header_message.copy()
@@ -184,13 +182,11 @@ def main(args):
 
     # Set up the ZMQ receiver
     receiver = zmq_context.socket(zmq.PULL)
-    print(f"Connected to ZMQ at {args.input_host}:{args.input_port}")
     logger.info(f"Connected to ZMQ at {args.input_host}:{args.input_port}")
     receiver.bind(f"tcp://{args.input_host}:{args.input_port}")
 
     # Set up the ZMQ sender
     sender = zmq_context.socket(zmq.PUB)
-    print(f"Bound to ZMQ out at {args.output_host}:{args.output_port}")
     logger.info(f"Bound to ZMQ out at {args.output_host}:{args.output_port}")
     sender.bind(f"tcp://{args.output_host}:{args.output_port}")
 
@@ -231,7 +227,7 @@ def main(args):
 
         except Exception as e:
             logger.error(f"Exception occurred: {e}")
-            traceback.print_exc()
+            logger.errir(f"{traceback.print_exc()}")
             # Add some sleep time to prevent a tight loop in case of a recurring error
             time.sleep(1)
 

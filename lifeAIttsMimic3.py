@@ -45,7 +45,8 @@ def main():
          # clean text of end of line spaces after punctuation
         text = re.sub(r'([.,!?;:])\s+', r'\1', text)
 
-        print("Text to Speech received request:\n%s" % header_message)
+        logger.debug("Text to Speech received request:\n%s" % header_message)
+        logger.info(f"Text to Speech received request #{segment_number}:\n{text}")
 
         try:
             audio_blob = get_tts_audio(
@@ -59,8 +60,8 @@ def main():
             )
             duration = len(audio_blob) / (22050 * 2)  # Assuming 22.5kHz 16-bit audio for duration calculation
         except Exception as e:
-            print(f"Exception: ERROR TTS error with API request for text: {text}")
-            print(e)
+            logger.error(f"Exception: ERROR TTS error with API request for text: {text}")
+            logger.error(e)
             continue
 
         audiobuf = io.BytesIO(audio_blob)
@@ -73,7 +74,8 @@ def main():
         sender.send_json(header_message, zmq.SNDMORE)
         sender.send(audiobuf.getvalue())
 
-        print(f"Text to Speech: sent audio #{segment_number}\n{header_message}")
+        logger.debug(f"Text to Speech: sent audio #{segment_number}\n{header_message}")
+        logger.info(f"Text to Speech: sent audio #{segment_number} of {duration} duration.\n{text}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -114,12 +116,12 @@ if __name__ == "__main__":
 
     context = zmq.Context()
     receiver = context.socket(zmq.SUB)
-    print(f"Connected to ZMQ in: {args.input_host}:{args.input_port}")
+    logger.info(f"Connected to ZMQ in: {args.input_host}:{args.input_port}")
     receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
     receiver.setsockopt_string(zmq.SUBSCRIBE, "")
 
     sender = context.socket(zmq.PUB)
-    print(f"Bounded to ZMQ out: {args.output_host}:{args.output_port}")
+    logger.info(f"Bounded to ZMQ out: {args.output_host}:{args.output_port}")
     sender.bind(f"tcp://{args.output_host}:{args.output_port}")
 
     main()

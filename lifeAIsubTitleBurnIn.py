@@ -61,7 +61,7 @@ def draw_japanese_text_on_image(image_np, text, position, font_path, font_size):
 
 def add_text_to_image(image, text):
     if image is not None:
-        print("Adding text to image")
+        logger.info(f"Adding text to image: {text}")
 
         # Maintain aspect ratio and add black bars
         width, height = image.size
@@ -173,10 +173,10 @@ def main():
         if "optimized_text" in header_message:
             optimized_prompt = header_message["optimized_text"]
         elif not args.use_prompt:
-            print(f"Subtitle Burn-In: No optimized text, using original text.")
+            logger.error(f"Subtitle Burn-In: No optimized text, using original text: {text}")
         image = receiver.recv()
 
-        print(f"Subtitle Burn-In: recieved image {header_message}")
+        logger.debug(f"Subtitle Burn-In: recieved image {header_message}")
 
         # check if we have optimized text
         
@@ -196,7 +196,7 @@ def main():
         sender.send_json(header_message, zmq.SNDMORE)
         sender.send(image)
 
-        print("Subtitle Burn-In: sent image #%s" % segment_number)
+        logger.info("Subtitle Burn-In: sent image #%s" % segment_number)
       
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -236,12 +236,12 @@ if __name__ == "__main__":
 
     context = zmq.Context()
     receiver = context.socket(zmq.SUB)
-    print("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
+    logger.info("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
     receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
     receiver.setsockopt_string(zmq.SUBSCRIBE, "")
 
     sender = context.socket(zmq.PUB)
-    print("binded to ZMQ out: %s:%d" % (args.output_host, args.output_port))
+    logger.info("binded to ZMQ out: %s:%d" % (args.output_host, args.output_port))
     sender.bind(f"tcp://{args.output_host}:{args.output_port}")
 
     main()

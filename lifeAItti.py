@@ -73,9 +73,9 @@ def main():
             optimized_prompt = header_message["optimized_text"]
         else:
             optimized_prompt = header_message["text"]
-            print(f"TTI: No optimized text, using original text.")
+            logger.error(f"TTI: No optimized text, using original text.")
 
-        print(f"Text to Image recieved optimized prompt:\n{header_message}.")
+        logger.debug(f"Text to Image recieved optimized prompt:\n{header_message}.")
 
         image = pipe(clean_text(optimized_prompt)).images[0]
 
@@ -87,7 +87,7 @@ def main():
         sender.send_json(header_message, zmq.SNDMORE)
         sender.send(image)
 
-        print(f"Text to Image sent image #{segment_number}:\n - {optimized_prompt}")
+        logger.info(f"Text to Image sent image #{segment_number}:\n - {optimized_prompt}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -146,12 +146,12 @@ if __name__ == "__main__":
 
     context = zmq.Context()
     receiver = context.socket(zmq.SUB)
-    print("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
+    logger.info("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
     receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
     receiver.setsockopt_string(zmq.SUBSCRIBE, "")
 
     sender = context.socket(zmq.PUB)
-    print("binded to ZMQ out: %s:%d" % (args.output_host, args.output_port))
+    logger.info("binded to ZMQ out: %s:%d" % (args.output_host, args.output_port))
     sender.bind(f"tcp://{args.output_host}:{args.output_port}")
 
     main()

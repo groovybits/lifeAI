@@ -45,11 +45,11 @@ class AiTwitchBot(commands.Cog):
     async def event_ready(self):
         try:
             'Called once when the bot goes online.'
-            print(f"{os.environ['BOT_NICK']} is online!")
+            logger.info(f"{os.environ['BOT_NICK']} is online!")
             ws = self.bot._ws  # this is only needed to send messages within event_ready
             await ws.send_privmsg(os.environ['CHANNEL'], f"/me has landed!")
         except Exception as e:
-            print("Error in event_ready twitch bot: %s" % str(e))
+            logger.error("Error in event_ready twitch bot: %s" % str(e))
 
     ## Message sent in chat
     async def event_message(self, message):
@@ -62,10 +62,10 @@ class AiTwitchBot(commands.Cog):
             if message.echo:
                 return
 
-            print(f"--- Received message from {message.author.name}: {message.content}")
+            logger.info(f"--- Received message from {message.author.name}: {message.content}")
             await self.bot.handle_commands(message)
         except Exception as e:
-            print("Error in event_message twitch bot: %s" % str(e))
+            logger.error("Error in event_message twitch bot: %s" % str(e))
 
     @commands.command(name="message")
     async def chat_request(self, ctx: commands.Context):
@@ -84,15 +84,15 @@ class AiTwitchBot(commands.Cog):
 
             # Check our list of personalities
             if ainame_request not in personalities:
-                print(f"--- {name} asked for character {ainame_request} but they don't exist, using default {ainame}.")
-                await ctx.send(f"{name} the personality you have chosen is not in the list of personalities.")
-                await ctx.send(f"Personalities:\n{json.dumps(personalities, )}\n")
+                logger.info(f"--- {name} asked for character {ainame_request} but they don't exist, using default {ainame}.")
+                #await ctx.send(f"{name} the personality you have chosen is not in the list of personalities.")
+                #await ctx.send(f"Personalities:\n{json.dumps(personalities, )}\n")
             else:
                 ainame = ainame_request
                 aipersonality = personalities[ainame]
-                print(f"--- {name} using character name {ainame} with personality {aipersonality}.")
+                logger.info(f"--- {name} using character name {ainame} with personality {aipersonality}.")
 
-            print(f"--- {name} asked {ainame} the question: {question}")
+            logger.info(f"--- {name} asked {ainame} the question: {question}")
 
             # Connect to the database
             db_conn = sqlite3.connect(chat_db)
@@ -112,7 +112,7 @@ class AiTwitchBot(commands.Cog):
             cursor.execute("SELECT name FROM users WHERE name = ?", (name,))
             dbdata = cursor.fetchone()
             if dbdata is None:
-                print(f"Setting up DB for user {name}.")
+                logger.info(f"Setting up DB for user {name}.")
                 cursor.execute("INSERT INTO users (name) VALUES (?)", (name,))
                 db_conn.commit()
 
@@ -143,18 +143,19 @@ class AiTwitchBot(commands.Cog):
 
             await ctx.send(f"{ainame}: Thank you for the question {name}, I will try to answer it after I finish my current answer.")
 
-            print(f"twitch client sent message:\n{client_request}\n")
+            logger.debug(f"twitch client sent message:\n{client_request}\n")
+            logger.info(f"twitch client {name} sent message:\n{question}\n")
         except Exception as e:
-            print("Error in chat_request twitch bot: %s" % str(e))
+            logger.error("Error in chat_request twitch bot: %s" % str(e))
 
     # set the personality of the bot
     @commands.command(name="personality")
     async def personality(self, ctx: commands.Context):
         try:
             personality = ctx.message.content.replace('!personality ','').strip()
-            print(f"--- Got personality switch to personality: %s" % personality)
+            logger.info(f"--- Got personality switch to personality: %s" % personality)
             if personality not in personalities:
-                print(f"{ctx.message.author.name} tried to alter the personality to {personality} yet is not in the list of personalities.")
+                logger.error(f"{ctx.message.author.name} tried to alter the personality to {personality} yet is not in the list of personalities.")
                 await ctx.send(f"{ctx.message.author.name} the personality you have chosen is not in the list of personalities, please choose a personality that is in the list of personalities.")
                 await ctx.send(f"Personalities:\n{json.dumps(personalities, indent=2, sort_keys=True)}\n")
                 return
@@ -164,7 +165,7 @@ class AiTwitchBot(commands.Cog):
             self.ai_name = personality
 
         except Exception as e:
-            print("Error in personality command twitch bot: %s" % str(e))
+            logger.error("Error in personality command twitch bot: %s" % str(e))
 
     ## music command - sends us a prompt to generate ai music with and then play it for the channel
     @commands.command(name="music")
@@ -189,9 +190,9 @@ class AiTwitchBot(commands.Cog):
             }
             socket.send_json(client_request)
 
-            print(f"twitch client sent music request: {client_request} ")
+            logger.debug(f"twitch client sent music request: {client_request} ")
         except Exception as e:
-            print("Error in music command twitch bot: %s" % str(e))
+            logger.error("Error in music command twitch bot: %s" % str(e))
 
     ## list personalities command - sends us a list of the personalities we have
     @commands.command(name="personalities")
@@ -202,7 +203,7 @@ class AiTwitchBot(commands.Cog):
             # send the list of personalities
             await ctx.send(f"{name} the personalities we have are:\nPersonalities:\n{json.dumps(personalities, indent=2, sort_keys=True)}\n")
         except Exception as e:
-            print("Error in listpersonalities command twitch bot: %s" % str(e))
+            logger.error("Error in listpersonalities command twitch bot: %s" % str(e))
 
     ## image command - sends us a prompt to generate ai images with and then send it to the channel
     @commands.command(name="image")
@@ -228,10 +229,10 @@ class AiTwitchBot(commands.Cog):
             }
             socket.send_json(client_request)
 
-            print(f"twitch client sent image request: {client_request} ")
+            logger.debug(f"twitch client sent image request: {client_request} ")
 
         except Exception as e:
-            print("Error in image command twitch bot: %s" % str(e))
+            logger.error("Error in image command twitch bot: %s" % str(e))
 
     # set the name of the bot
     @commands.command(name="name")
@@ -242,14 +243,14 @@ class AiTwitchBot(commands.Cog):
             name, personality = name.split(' ', 1)
             namepattern = re.compile(r'^[a-zA-Z0-9]*$')
             personalitypattern = re.compile(r'^[a-zA-Z0-9 ,.]*$')
-            print(f"--- Got name switch from {ctx.author} for ai name: %s" % name)
+            logger.info(f"--- Got name switch from {ctx.author} for ai name: %s" % name)
             # confirm name has no spaces and is 12 or less characters and alphanumeric, else tell the chat user it is not the right format
             if len(name) > 50 or ' ' in name or len(personality) > 200:
-                print(f"{ctx.message.author.name} tried to alter the name to {name} yet is too long or has spaces.")
+                logger.error(f"{ctx.message.author.name} tried to alter the name to {name} yet is too long or has spaces.")
                 await ctx.send(f"{ctx.message.author.name} the name you have chosen is too long, please choose a name that is 12 characters or less")
                 return
             if not namepattern.match(name) or not personalitypattern.match(personality):
-                print(f"{ctx.message.author.name} tried to alter the name to {name} yet is not alphanumeric.")
+                logger.error(f"{ctx.message.author.name} tried to alter the name to {name} yet is not alphanumeric.")
                 await ctx.send(f"{ctx.message.author.name} the name you have chosen is not alphanumeric, please choose a name that is alphanumeric")
                 return
             await ctx.send(f"{ctx.message.author.name} created name {name}")
@@ -259,7 +260,7 @@ class AiTwitchBot(commands.Cog):
             if name not in personalities:
                 personalities[name] = personality
         except Exception as e:
-            print("Error in name command twitch bot: %s" % str(e))
+            logger.error("Error in name command twitch bot: %s" % str(e))
 
 ## Allows async running in thread for events
 def main():
@@ -323,7 +324,7 @@ if __name__ == "__main__":
 
     # Socket to send messages on
     socket = context.socket(zmq.PUSH)
-    print("connect to send message: %s:%d" % (args.output_host, args.output_port))
+    logger.info("connect to send message: %s:%d" % (args.output_host, args.output_port))
     socket.connect(f"tcp://{args.output_host}:{args.output_port}")
 
     main()

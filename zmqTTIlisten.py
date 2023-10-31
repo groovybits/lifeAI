@@ -75,7 +75,7 @@ def main():
         image = socket.recv()
 
         # Print the header
-        print(f"Received image segment {header_message}\n")
+        logger.debug(f"Received image segment {header_message}\n")
 
         # create an output file using the prompt and segment_number
         image_file = f"{args.output_directory}/{mediaid}/{segment_number}.png"
@@ -84,16 +84,17 @@ def main():
             if args.image_format == "pil":
                 with open(image_file, 'wb') as f:
                     f.write(image)
-                print(f"Image saved to {image_file} as PIL\n")
+                logger.info(f"Image saved to {image_file} as PIL\n")
             else:
                 with open(image_file, 'wb') as f:
                     f.write(image)
-                print(f"Payload written to {image_file}\n")
+                logger.info(f"Payload written to {image_file}\n")
 
         # Convert the bytes back to a PIL Image object
         image = Image.open(io.BytesIO(image))
         payload_hex = image_to_ascii(image)
-        print(f"\n{payload_hex}\nImage Prompt: {optimized_prompt}\Original Text: {text}\nOriginal Question:{message}\n")
+        print(f"\n{payload_hex}\n", flush=True)
+        logger.info(f"Image Prompt: {optimized_prompt}\Original Text: {text}\nOriginal Question:{message}\n")
 
         if args.render:
             render(image)
@@ -134,7 +135,7 @@ if __name__ == "__main__":
 
     context = zmq.Context()
     socket = context.socket(zmq.SUB)
-    print("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
+    logger.info("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
     socket.connect(f"tcp://{args.input_host}:{args.input_port}")
     socket.setsockopt_string(zmq.SUBSCRIBE, "")
 

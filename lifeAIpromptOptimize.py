@@ -156,13 +156,13 @@ if __name__ == "__main__":
 
     # Set up the subscriber
     receiver = context.socket(zmq.SUB)
-    print(f"connected to ZMQ in {args.input_host}:{args.input_port}")
+    logger.info(f"connected to ZMQ in {args.input_host}:{args.input_port}")
     receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
     receiver.setsockopt_string(zmq.SUBSCRIBE, "")
 
     # Set up the publisher
     sender = context.socket(zmq.PUB)
-    print(f"binded to ZMQ out {args.output_host}:{args.output_port}")
+    logger.info(f"binded to ZMQ out {args.output_host}:{args.output_port}")
     sender.bind(f"tcp://{args.output_host}:{args.output_port}")
 
     # LLM Model for image prompt generation

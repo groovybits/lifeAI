@@ -46,9 +46,10 @@ def main():
             optimized_prompt = header_message["optimized_prompt"]
         else:
             optimized_prompt = header_message["text"]
-            print(f"TTM: No optimized prompt, using original text.")
+            logger.error(f"TTM: No optimized prompt, using original text.")
 
-        print(f"Text to Music Recieved:\n{header_message}")
+        logger.debug(f"Text to Music Recieved:\n{header_message}")
+        logger.info(f"Text to Music Recieved:\n{optimized_prompt}")
 
         inputs = processor(
             text=[optimized_prompt],
@@ -68,7 +69,8 @@ def main():
         sender.send_json(header_message, zmq.SNDMORE)
         sender.send(audiobuf.getvalue())
         
-        print(f"Text to Music Sent:\n{header_message}")
+        logger.debug(f"Text to Music Sent:\n{header_message}")
+        logger.info(f"Text to Music of {duration} duration Sent:\n{optimized_prompt}")
     
 
 if __name__ == "__main__":
