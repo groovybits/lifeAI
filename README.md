@@ -27,6 +27,8 @@ That’s the goal, you’ll see I am listing the parts as I build them, sort of 
 - [Text to AI Speech](lifeAItts.py)   Facebook MMS-TTS Text to Speech Conversion.
 - [Text to AI Music](lifeAIttm.py)    Facebook Music Generation.
 - [Text to AI Image](lifeAItti.py)    Stable Diffusion Text to Image Generation.
+- [LLM llama.cpp Python](lifeAIllm.py)       Llama2 llama.cpp Python SDK
+- [LLM llama.cpp Server](lifeAIllmAPI.py)    Llama2 llama.cpp server local API service
 - [Prompt Optimizer](lifeAIpromptOptimizer.py) Optimize prompt or turn text into a prompt.
 - [Subtitle Burner](lifeAIsubTitleBurnIn.py) Burn-In subtitles in Anime style white/black bold.
 
