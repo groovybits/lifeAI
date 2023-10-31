@@ -18,6 +18,8 @@ import urllib3
 import signal
 import time
 import requests
+import logging
+import uuid
 
 import nltk  # Import nltk for sentence tokenization
 from threading import Thread
@@ -59,6 +61,7 @@ def stream_api_response(api_url, completion_params, zmq_sender, header_message, 
     accumulated_text = ""
 
     print(f"\n--- stream_api_response(): chat LLM streaming API response. to {api_url} with completion_params: {completion_params}")
+    logger.info(f"--- stream_api_response(): chat LLM streaming API response. to {api_url} with completion_params: {completion_params}")
 
     tokens = 0
     characters = 0
@@ -67,7 +70,7 @@ def stream_api_response(api_url, completion_params, zmq_sender, header_message, 
         for line in response.iter_lines():
             if line:
                 decoded_line = line.decode('utf-8')
-                print(f"--- stream_api_response(): chat LLM streaming API response: {json.dumps(decoded_line)}")
+                logger.debug(f"--- stream_api_response(): chat LLM streaming API response: {json.dumps(decoded_line)}")
                 if decoded_line.startswith('data: '):
                     message = json.loads(decoded_line[6:])
                     content = message.get('content', '')
@@ -87,6 +90,7 @@ def stream_api_response(api_url, completion_params, zmq_sender, header_message, 
         clean_and_send_group(accumulated_text, zmq_sender, header_message, segment_number, sentence_count)
 
     print(f"\n--- stream_api_response(): chat LLM streaming API response: {tokens} tokens, {characters} characters.")
+    logger.info(f"--- stream_api_response(): chat LLM streaming API response: {tokens} tokens, {characters} characters.")
 
 def clean_and_send_group(text, zmq_sender, header_message, segment_number, sentence_count):
     # Clean the text
@@ -110,6 +114,7 @@ def clean_and_send_group(text, zmq_sender, header_message, segment_number, sente
 def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_count, args):
     segment_number = int(header_message["segment_number"])
     print(f"\n--- run_llm(): chat LLM generating text from request message.")
+    logger.info(f"--- run_llm(): chat LLM generating text from request message.")
 
     # Prepare the message to send to the LLM
     header_message["text"] = f"User {header_message['username']} asked: {header_message['message'][:200]}...."
@@ -146,12 +151,11 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
             completion_params['n_predict'] = args.maxtokens
         
         # Start a new thread to stream the API response and send it back to the client
-        print(f"\n--- run_llm(): chat LLM streaming API response. to {api_url}")
         streaming_thread = Thread(target=stream_api_response, args=(api_url, completion_params, zmq_sender, header_message, characters_per_line, sentence_count))
         streaming_thread.start()
         streaming_thread.join()
     except Exception as e:
-        print(f"--- run_llm(): LLM exception: {e}")
+        logger.error(f"--- run_llm(): LLM exception: {e}")
         traceback.print_exc()
         return header_message.copy()
 
@@ -179,11 +183,13 @@ def main(args):
     # Set up the ZMQ receiver
     receiver = zmq_context.socket(zmq.PULL)
     print(f"Connected to ZMQ at {args.input_host}:{args.input_port}")
+    logger.info(f"Connected to ZMQ at {args.input_host}:{args.input_port}")
     receiver.bind(f"tcp://{args.input_host}:{args.input_port}")
 
     # Set up the ZMQ sender
     sender = zmq_context.socket(zmq.PUB)
     print(f"Bound to ZMQ out at {args.output_host}:{args.output_port}")
+    logger.info(f"Bound to ZMQ out at {args.output_host}:{args.output_port}")
     sender.bind(f"tcp://{args.output_host}:{args.output_port}")
 
     while True:
@@ -207,7 +213,7 @@ def main(args):
                 "text": ""
             }
             
-            print(f"\n---\nLLM: received message:\n - {json.dumps(header_message, indent=2)}\n")
+            logger.debug(f"LLM: received message:\n - {json.dumps(header_message, indent=2)}\n")
 
             # Generate the prompt
             prompt = create_prompt(header_message, args)
@@ -218,11 +224,11 @@ def main(args):
 
             # If run_llm returned None, we should handle this case.
             if header_message is None:
-                print(f"\nLLM: Failed to generate a response, trying again.")
+                logger.error(f"\nLLM: Failed to generate a response, trying again.")
                 continue  # Continue to the next iteration of the loop.
 
         except Exception as e:
-            print(f"Exception occurred: {e}")
+            logger.error(f"Exception occurred: {e}")
             traceback.print_exc()
             # Add some sleep time to prevent a tight loop in case of a recurring error
             time.sleep(1)
@@ -261,7 +267,30 @@ if __name__ == "__main__":
     parser.add_argument("--api_endpoint", type=str, default="http://127.0.0.1:8080/completion", help="API endpoint for LLM completion.")
     parser.add_argument("--n_keep", type=int, default=0, help="Number of tokens to keep for the context.")
     parser.add_argument("--no_cache_prompt", action='store_true', help="Flag to disable caching of prompts.")
+    parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
+
     args = parser.parse_args()
+
+    LOGLEVEL = logging.INFO
+
+    if args.loglevel == "info":
+        LOGLEVEL = logging.INFO
+    elif args.loglevel == "debug":
+        LOGLEVEL = logging.DEBUG
+    elif args.loglevel == "warning":
+        LOGLEVEL = logging.WARNING
+    else:
+        LOGLEVEL = logging.INFO
+
+    log_id = time.strftime("%Y%m%d-%H%M%S")
+    logging.basicConfig(filename=f"logs/llmAPI-{log_id}.log", level=LOGLEVEL)
+    logger = logging.getLogger('GAIB')
+
+    ch = logging.StreamHandler()
+    ch.setLevel(LOGLEVEL)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
     # Setup episode mode if enabled
     if args.episode:
