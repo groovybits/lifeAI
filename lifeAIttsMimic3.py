@@ -9,6 +9,8 @@ import requests
 import io
 import warnings
 import re
+import logging
+import time
 
 # Suppress warnings
 warnings.simplefilter(action='ignore', category=Warning)
@@ -34,6 +36,14 @@ def main():
         header_message = receiver.recv_json()
         segment_number = header_message["segment_number"]
         text = header_message["text"]
+
+        # remove new lines
+        text = text.replace('\n', ' ')
+        # reduce multiple spaces to single space
+        text = re.sub(r'\s+', ' ', text)
+
+         # clean text of end of line spaces after punctuation
+        text = re.sub(r'([.,!?;:])\s+', r'\1', text)
 
         print("Text to Speech received request:\n%s" % header_message)
 
@@ -77,8 +87,30 @@ if __name__ == "__main__":
     parser.add_argument("--length_scale", type=str, default='1', help="Length scale parameter for TTS API")
     parser.add_argument("--ssml", type=str, default='false', help="SSML parameter for TTS API")
     parser.add_argument("--audio_target", type=str, default='client', help="Audio target parameter for TTS API")
+    parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
 
     args = parser.parse_args()
+
+    LOGLEVEL = logging.INFO
+
+    if args.loglevel == "info":
+        LOGLEVEL = logging.INFO
+    elif args.loglevel == "debug":
+        LOGLEVEL = logging.DEBUG
+    elif args.loglevel == "warning":
+        LOGLEVEL = logging.WARNING
+    else:
+        LOGLEVEL = logging.INFO
+
+    log_id = time.strftime("%Y%m%d-%H%M%S")
+    logging.basicConfig(filename=f"logs/ttsMimic3-{log_id}.log", level=LOGLEVEL)
+    logger = logging.getLogger('GAIB')
+
+    ch = logging.StreamHandler()
+    ch.setLevel(LOGLEVEL)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
     context = zmq.Context()
     receiver = context.socket(zmq.SUB)

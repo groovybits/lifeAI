@@ -164,7 +164,7 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
 def create_prompt(header_message, args):
     prompt_context = ""
     if "context" in header_message:
-        prompt_context = "\n".join(header_message["context"])  # Joining context messages
+        prompt_context = "\nContext:%s\n" % json.dumps(header_message["context"]).replace('"', '').replace('[', '').replace(']', '').replace(',', '\n').strip()
 
     instructions = args.systemprompt
     if args.episode:
@@ -179,6 +179,8 @@ def create_prompt(header_message, args):
 
 def main(args):
     zmq_context = zmq.Context()
+    receiver = None
+    sender = None
 
     # Set up the ZMQ receiver
     receiver = zmq_context.socket(zmq.PULL)
@@ -256,7 +258,7 @@ if __name__ == "__main__":
     parser.add_argument("-re", "--roleenforcer", type=str, default=role_enforcer, help="Role enforcer statement with {user} and {assistant} template names replaced by the actual ones in use.")
     parser.add_argument("-p", "--personality", type=str, default="friendly helpful compassionate bodhisattva guru.", help="Personality of the AI, choices are 'friendly' or 'mean'.")
     parser.add_argument("-sts", "--stoptokens", type=str, default="Question:", help="Stop tokens to use, do not change unless you know what you are doing!")
-    parser.add_argument("-tp", "--characters_per_line", type=int, default=200, help="Minimum number of characters per buffer, buffer window before output.")
+    parser.add_argument("-tp", "--characters_per_line", type=int, default=300, help="Minimum number of characters per buffer, buffer window before output.")
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
     parser.add_argument("-ag", "--autogenerate", action="store_true", default=False, help="Carry on long conversations, remove stop tokens.")
     parser.add_argument("--simplesplit", action="store_true", default=False, help="Simple split of text into lines, no sentence tokenization.")
@@ -268,6 +270,8 @@ if __name__ == "__main__":
     parser.add_argument("--n_keep", type=int, default=0, help="Number of tokens to keep for the context.")
     parser.add_argument("--no_cache_prompt", action='store_true', help="Flag to disable caching of prompts.")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
+    parser.add_argument("--sub", action="store_true", default=False, help="Publish to a topic")
+    parser.add_argument("--pub", action="store_true", default=False, help="Publish to a topic")
 
     args = parser.parse_args()
 

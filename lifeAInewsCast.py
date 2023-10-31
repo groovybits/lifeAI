@@ -18,6 +18,7 @@ import time
 import json
 import re
 import traceback
+import logging
 
 load_dotenv()
 
@@ -175,7 +176,30 @@ if __name__ == "__main__":
                         help="Prompt to give context as a newstory feed")
     parser.add_argument("--aipersonality", type=str, required=False, default="GAIB the AI Bot of Life AI, I am sending an interesting news article for analysis.", help="AI personality")
     parser.add_argument("--ainame", type=str, required=False, default="GAIB", help="AI name")
+    parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
+
     args = parser.parse_args()
+
+    LOGLEVEL = logging.INFO
+
+    if args.loglevel == "info":
+        LOGLEVEL = logging.INFO
+    elif args.loglevel == "debug":
+        LOGLEVEL = logging.DEBUG
+    elif args.loglevel == "warning":
+        LOGLEVEL = logging.WARNING
+    else:
+        LOGLEVEL = logging.INFO
+
+    log_id = time.strftime("%Y%m%d-%H%M%S")
+    logging.basicConfig(filename=f"logs/newCast-{log_id}.log", level=LOGLEVEL)
+    logger = logging.getLogger('GAIB')
+
+    ch = logging.StreamHandler()
+    ch.setLevel(LOGLEVEL)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
     context = zmq.Context()
 

@@ -20,6 +20,8 @@ import warnings
 import urllib3
 import inflect
 import re
+import logging
+import time
 
 warnings.simplefilter(action='ignore', category=Warning)
 warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
@@ -96,8 +98,30 @@ if __name__ == "__main__":
     parser.add_argument("--nsfw", action="store_true", default=False, help="Disable NSFW filters, caution!!!")
     parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
     parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
+    parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
 
     args = parser.parse_args()
+
+    LOGLEVEL = logging.INFO
+
+    if args.loglevel == "info":
+        LOGLEVEL = logging.INFO
+    elif args.loglevel == "debug":
+        LOGLEVEL = logging.DEBUG
+    elif args.loglevel == "warning":
+        LOGLEVEL = logging.WARNING
+    else:
+        LOGLEVEL = logging.INFO
+
+    log_id = time.strftime("%Y%m%d-%H%M%S")
+    logging.basicConfig(filename=f"logs/tti-{log_id}.log", level=LOGLEVEL)
+    logger = logging.getLogger('GAIB')
+
+    ch = logging.StreamHandler()
+    ch.setLevel(LOGLEVEL)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
     model = VitsModel.from_pretrained("facebook/mms-tts-eng")
     tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-eng")

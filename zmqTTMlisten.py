@@ -20,6 +20,7 @@ import os
 import sys
 import threading
 from pydub import AudioSegment
+import logging
 
 def get_audio_duration(audio_samples):
     audio_segment = AudioSegment.from_file(io.BytesIO(audio_samples), format="wav")
@@ -129,7 +130,30 @@ if __name__ == "__main__":
     parser.add_argument("--show_hex", action="store_true", help="Show the hex representation of the audio payload")
     parser.add_argument("--audio_format", type=str, choices=["wav", "raw"], default="wav", help="Audio format to save as. Choices are 'wav' or 'raw'. Default is 'wav'.")
     parser.add_argument("--volume", type=float, default=0.4, help="Playback volume (0.0 to 1.0, default is 0.6)")
+    parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
+
     args = parser.parse_args()
+
+    LOGLEVEL = logging.INFO
+
+    if args.loglevel == "info":
+        LOGLEVEL = logging.INFO
+    elif args.loglevel == "debug":
+        LOGLEVEL = logging.DEBUG
+    elif args.loglevel == "warning":
+        LOGLEVEL = logging.WARNING
+    else:
+        LOGLEVEL = logging.INFO
+
+    log_id = time.strftime("%Y%m%d-%H%M%S")
+    logging.basicConfig(filename=f"logs/zmqTTMlisten-{log_id}.log", level=LOGLEVEL)
+    logger = logging.getLogger('GAIB')
+
+    ch = logging.StreamHandler()
+    ch.setLevel(LOGLEVEL)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
     context = zmq.Context()
     socket = context.socket(zmq.SUB)

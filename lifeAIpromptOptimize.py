@@ -17,6 +17,8 @@ import warnings
 import urllib3
 
 from llama_cpp import Llama
+import logging
+import time
 
 warnings.simplefilter(action='ignore', category=Warning)
 warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
@@ -24,7 +26,22 @@ from urllib3.exceptions import NotOpenSSLWarning
 warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 trlogging.set_verbosity_error()
 
+def clean_text(text):
+    # clean text so it works in JSON
+    text = text.replace('\\', '\\\\')  # Escape backslashes first
+    text = text.replace('"', '\\"')    # Escape double quotes
+    text = text.replace('\n', '\\n')   # Escape newlines
+    text = text.replace('\r', '\\r')   # Escape carriage returns
+    text = text.replace('\t', '\\t')   # Escape tabs
+    text = text.replace('/', '\\/')    # usually, this isn't necessary.
+
+    # Truncate the text to 300 characters if needed
+    return text[:args.maxtokens]
+
 def main():
+    prompt_template = "Take the <title> - <summary> title and summary listed and transform it into a short summarized description to be used for {topic}."
+    prompt = prompt_template.format(topic=args.topic)
+
     while True:
         """ From LLM Source
           header_message = {
@@ -37,16 +54,29 @@ def main():
             "text": "",
         }
         """
-        # Receive a message
         header_message = receiver.recv_json()
-        text = header_message["text"]
+        # Receive a message
+        if not header_message:
+            logger.error("Error! No message received.")
+            time.sleep(1)
+            continue
 
-        print(f"\n---\nPrompt optimizer received {header_message}\n")
+        text = ""
+        message = ""
+
+        if "text" in header_message:
+            text = header_message["text"]
+
+        if "message" in header_message:
+            message = header_message["message"][:80]
+
+        logger.debug(f"\n---\nPrompt optimizer received {header_message}\n")
+
+        logger.info(f"Message: - {message}\nText: - {text}")
+
+        full_prompt = f"{prompt}\n\n{args.qprompt}: {message} - {text}\n{args.aprompt}:"
+
         optimized_prompt = ""
-
-        image_prompt_data = None
-        full_prompt = f"{prompt}\n\n{args.qprompt}: {text}\n{args.aprompt}:"
-        print(f"Prompt optimizer: sending text to LLM:\n - {text}\n")
         try:
             image_prompt_data = llm_image(
                 full_prompt,
@@ -79,7 +109,6 @@ def main():
 
 if __name__ == "__main__":
     model = "models/zephyr-7b-alpha.Q2_K.gguf"
-    prompt = "Take the {qprompt} and summarize it into a short 2 sentence description of under 200 tokens for {topic} from the {aprompt}."
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_host", type=str, default="127.0.0.1")
     parser.add_argument("--input_port", type=int, default=2000)
@@ -87,20 +116,41 @@ if __name__ == "__main__":
     parser.add_argument("--output_port", type=int, default=3001)
     parser.add_argument("--topic", type=str, default="image generation", 
                         help="Topic to use for image generation, default 'image generation'")
-    parser.add_argument("--maxtokens", type=int, default=200)
+    parser.add_argument("--maxtokens", type=int, default=120)
     parser.add_argument("--context", type=int, default=1024)
-    parser.add_argument("--temperature", type=float, default=0.4)
+    parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("--model", type=str, default=model)
     parser.add_argument("-d", "--debug", action="store_true", default=False)
-    parser.add_argument("--qprompt", type=str, default="ImageDescription", 
+    parser.add_argument("--qprompt", type=str, default="Question:", 
                         help="Prompt to use for image generation, default ImageDescription")
-    parser.add_argument("--aprompt", type=str, default="ImagePrompt", 
+    parser.add_argument("--aprompt", type=str, default="Answer:", 
                         help="Prompt to use for image generation, default ImagePrompt")
     parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
     parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
+    parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
+ 
     args = parser.parse_args()
 
-    prompt = prompt.format(qprompt=args.qprompt, aprompt=args.aprompt, topic=args.topic)
+    LOGLEVEL = logging.INFO
+
+    if args.loglevel == "info":
+        LOGLEVEL = logging.INFO
+    elif args.loglevel == "debug":
+        LOGLEVEL = logging.DEBUG
+    elif args.loglevel == "warning":
+        LOGLEVEL = logging.WARNING
+    else:
+        LOGLEVEL = logging.INFO
+
+    log_id = time.strftime("%Y%m%d-%H%M%S")
+    logging.basicConfig(filename=f"logs/promptOptimize-{log_id}.log", level=LOGLEVEL)
+    logger = logging.getLogger('GAIB')
+
+    ch = logging.StreamHandler()
+    ch.setLevel(LOGLEVEL)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
     context = zmq.Context()
 

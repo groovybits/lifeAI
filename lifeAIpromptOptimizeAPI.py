@@ -17,30 +17,43 @@ import urllib3
 import traceback
 import logging
 import requests
+import json
+import traceback
 
 warnings.simplefilter(action='ignore', category=Warning)
 warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
 from urllib3.exceptions import NotOpenSSLWarning
 warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 
+def clean_text(text):
+    # clean text so it works in JSON
+    text = text.replace('\\', '\\\\')  # Escape backslashes first
+    text = text.replace('"', '\\"')    # Escape double quotes
+    text = text.replace('\n', '\\n')   # Escape newlines
+    text = text.replace('\r', '\\r')   # Escape carriage returns
+    text = text.replace('\t', '\\t')   # Escape tabs
+    text = text.replace('/', '\\/')    # usually, this isn't necessary.
+
+    # Truncate the text to 300 characters if needed
+    return text[:args.maxtokens]
+
 def get_api_response(api_url, completion_params):
-    logger.debug(f"\n--- stream_api_response(): Sending POST request to {api_url} with completion_params: {completion_params}")
-    response = requests.post(api_url, json=completion_params)
-    
-    print(f"Response status code: {response.status_code}")
-    print(f"Response text: {response.text}")
+    logger.debug(f"--- stream_api_response(): POST to {api_url} with parameters {completion_params}")
+
+    response = requests.request("POST", api_url, data=json.dumps(completion_params))
+
+    logger.debug(f"Response status code: {response.status_code}")
+    logger.debug(f"Response text: {response.text}")
 
     if response.status_code != 200:
         logger.error(f"Request failed with status code {response.status_code}: {response.text}")
         return None
     
-    return response.json()  # Assuming the server returns JSON response
+    return response.text
 
 def run_llm(prompt, api_url, args):
-    print(f"\n--- run_llm(): chat LLM generating text from request message.")
-    logger.info(f"--- run_llm(): chat LLM generating text from request message.")
-
     try:
+        prompt = clean_text(prompt)
         completion_params = {
             'prompt': prompt,
             'temperature': args.temperature,
@@ -56,14 +69,54 @@ def run_llm(prompt, api_url, args):
         if args.maxtokens:
             completion_params['n_predict'] = args.maxtokens
         
-        return get_api_response(api_url, completion_params)
-    except Exception as e:
-        logger.error(f"--- run_llm(): LLM exception: {e}")
-        traceback.print_exc()
+        response = None
+        tries = 0
+        max_tries = 10
+        while not response and tries < max_tries:
+            try:
+                response = get_api_response(api_url, completion_params)
+                response = json.loads(response)
+            except Exception as e:
+                traceback.print_exc()
+                logger.error(f"--- run_llm(): LLM exception: {str(e)}")
+            time.sleep(1)
+            tries += 1
 
-    return None
+        """
+        Response status code: 200
+        Response text: {"content":"Generate according to: The output from the LLM\n\n
+        Short Description: A result produced by a language learning model, as requested.",
+        "generation_settings":{"frequency_penalty":0.0,"grammar":"","ignore_eos":false,
+        "logit_bias":[],"mirostat":0,"mirostat_eta":0.10000000149011612,"mirostat_tau":5.0,
+        "model":"/Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-beta.Q8_0.gguf","n_ctx":32768,"n_keep":0,
+        "n_predict":120,"n_probs":0,"penalize_nl":true,"presence_penalty":0.0,"repeat_last_n":64,
+        "repeat_penalty":1.100000023841858,"seed":4294967295,"stop":["Question:"],"stream":false,
+        "temp":0.4000000059604645,"tfs_z":1.0,"top_k":40,"top_p":0.8999999761581421,"typical_p":1.0},
+        "model":"/Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-beta.Q8_0.gguf",
+        "prompt":"Take the ImageDescription and summarize it into a short 2 sentence description of under 200 tokens for image generation from the ImagePrompt.\n\nImageDescription: The output from the LLM\nImagePrompt:",
+        "slot_id":0,"stop":true,"stopped_eos":true,"stopped_limit":false,"stopped_word":false,"stopping_word":"",
+        "timings":{"predicted_ms":961.919,"predicted_n":27,"predicted_per_second":28.068891455517566,
+        "predicted_per_token_ms":35.626629629629626,"prompt_ms":64.421,"prompt_n":0,"prompt_per_second":0.0,
+        "prompt_per_token_ms":null},"tokens_cached":75,"tokens_evaluated":48,"tokens_predicted":27,"truncated":false}
+        """
+        # Confirm we have an image prompt
+        if 'content' in response:
+            optimized_prompt = response["content"]
+            logger.info(f"--- run_llm(): LLM generated prompt - \"{optimized_prompt}\"")
+            return optimized_prompt
+        else:
+            logger.error(f"\nError! LLM prompt generation failed: \"{response}\"")
+            optimized_prompt = ""
+    except Exception as e:
+        traceback.print_exc()
+        logger.error(f"--- run_llm(): LLM exception: {str(e)}")
+
+    return ""
 
 def main():
+    prompt_template = "Take the <title> - <summary> title and summary listed and transform it into a short summarized description to be used for {topic}."
+    prompt = prompt_template.format(topic=args.topic)
+
     while True:
         """ From LLM Source
           header_message = {
@@ -78,35 +131,38 @@ def main():
         """
         # Receive a message
         header_message = receiver.recv_json()
-        text = header_message["text"]
+        if not header_message:
+            logger.error("Error! No message received.")
+            time.sleep(1)
+            continue
+
+        text = ""
+        message = ""
+
+        if "text" in header_message:
+            text = header_message["text"]
+
+        if "message" in header_message:
+            message = header_message["message"][:80]
 
         logger.debug(f"\n---\nPrompt optimizer received {header_message}\n")
+
+        logger.info(f"Message: - {message}\nText: - {text}")
+
+        full_prompt = f"{prompt}\n\n{args.qprompt}: {message} - {text}\n{args.aprompt}:"
+
         optimized_prompt = ""
-
-        image_prompt_data = None
-        full_prompt = f"{prompt}\n\n{args.qprompt}: {text}\n{args.aprompt}:"
-        logger.info(f"Prompt optimizer: sending text to LLM:\n - {text}\n")
-        print(f"Prompt optimizer: sending text to LLM:\n - {text}\n")
         try:
-            image_prompt_data = run_llm(full_prompt, args.api_endpoint, args)
-
-            # image_prompt_data["choices"][0]["text"]
-
-            # Confirm we have an image prompt
-            if 'choices' in image_prompt_data and len(image_prompt_data["choices"]) > 0 and 'text' in image_prompt_data["choices"][0]:
-                optimized_prompt = image_prompt_data["choices"][0]["text"]
-                logger.info(f"\nSuccess! Generated image prompt:\n - {optimized_prompt}")
-                print(f"\nSuccess! Generated image prompt:\n - {optimized_prompt}")
-            else:
-                logger.error(f"\nError! Image prompt generation failed, using original prompt:\n - {image_prompt_data}")
-                optimized_prompt = None
+            logger.info(f"Prompt optimizer: sending text to LLM - {text}")
+            optimized_prompt = run_llm(full_prompt, args.api_endpoint, args)
 
             if not optimized_prompt.strip():
-                logger.error(f"\nError! Image prompt generation empty, using original prompt:\n - {image_prompt_data}")
-                optimized_prompt = None
+                logger.error(f"Error! prompt generation generated an empty prompt, using original.")
+                optimized_prompt = ""
         except Exception as e:
-            logger.error(f"\nError! Image prompt generation llm didn't get any result:\n{str(e)}")
-            optimized_prompt = None
+            traceback.print_exc()
+            logger.error(f"Error! prompt generation llm failed with exception: %s" % str(e))
+            optimized_prompt = ""
 
         # Add optimized prompt
         if optimized_prompt:
@@ -115,12 +171,11 @@ def main():
         # Send the processed message
         sender.send_json(header_message)
 
-        logger.info(f"\nPrompt optimizer input text:\n - {text}\ngenerated optimized prompt:\n - {optimized_prompt}\n")
-        print(f"\nPrompt optimizer input text:\n - {text}\ngenerated optimized prompt:\n - {optimized_prompt}\n")
+        logger.info(f"Text: - {text}\nPrompt: - {optimized_prompt}")
 
 if __name__ == "__main__":
     model = "models/zephyr-7b-alpha.Q2_K.gguf"
-    prompt = "Take the {qprompt} and summarize it into a short 2 sentence description of under 200 tokens for {topic} from the {aprompt}."
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_host", type=str, default="127.0.0.1")
     parser.add_argument("--input_port", type=int, default=2000)
@@ -128,14 +183,14 @@ if __name__ == "__main__":
     parser.add_argument("--output_port", type=int, default=3001)
     parser.add_argument("--topic", type=str, default="image generation", 
                         help="Topic to use for image generation, default 'image generation'")
-    parser.add_argument("--maxtokens", type=int, default=120)
-    parser.add_argument("--context", type=int, default=1024)
+    parser.add_argument("--maxtokens", type=int, default=300)
+    parser.add_argument("--context", type=int, default=4096)
     parser.add_argument("--temperature", type=float, default=0.4)
     parser.add_argument("--model", type=str, default=model)
     parser.add_argument("-d", "--debug", action="store_true", default=False)
-    parser.add_argument("--qprompt", type=str, default="ImageDescription", 
+    parser.add_argument("--qprompt", type=str, default="Question:", 
                         help="Prompt to use for image generation, default ImageDescription")
-    parser.add_argument("--aprompt", type=str, default="ImagePrompt", 
+    parser.add_argument("--aprompt", type=str, default="Answer:", 
                         help="Prompt to use for image generation, default ImagePrompt")
     parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
     parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
@@ -144,6 +199,10 @@ if __name__ == "__main__":
     parser.add_argument("--n_keep", type=int, default=0, help="Number of tokens to keep for the context.")
     parser.add_argument("-sts", "--stoptokens", type=str, default="Question:", help="Stop tokens to use, do not change unless you know what you are doing!")
     parser.add_argument("--no_cache_prompt", action='store_true', help="Flag to disable caching of prompts.")
+    parser.add_argument("--sub", action="store_true", default=False, help="Publish to a topic")
+    parser.add_argument("--pub", action="store_true", default=False, help="Publish to a topic")
+    parser.add_argument("--bind_output", action="store_true", default=False, help="Bind to a topic")
+    parser.add_argument("--bind_input", action="store_true", default=False, help="Bind to a topic")
 
     args = parser.parse_args()
 
@@ -168,20 +227,38 @@ if __name__ == "__main__":
     ch.setFormatter(formatter)
     logger.addHandler(ch)
 
-    prompt = prompt.format(qprompt=args.qprompt, aprompt=args.aprompt, topic=args.topic)
-
     context = zmq.Context()
+    receiver = None
+    sender = None
 
     # Set up the subscriber
-    receiver = context.socket(zmq.SUB)
-    print(f"connected to ZMQ in {args.input_host}:{args.input_port}")
-    receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
-    receiver.setsockopt_string(zmq.SUBSCRIBE, "")
+    if args.sub:
+        receiver = context.socket(zmq.SUB)
+        print(f"Setup ZMQ in {args.input_host}:{args.input_port}")
+    else:
+        receiver = context.socket(zmq.PULL)
+        print(f"Setup ZMQ in {args.input_host}:{args.input_port}")
+
+    if args.bind_input:
+        receiver.bind(f"tcp://{args.input_host}:{args.input_port}")
+    else:
+        receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
+
+    if args.sub:
+        receiver.setsockopt_string(zmq.SUBSCRIBE, "")
 
     # Set up the publisher
-    sender = context.socket(zmq.PUB)
-    print(f"binded to ZMQ out {args.output_host}:{args.output_port}")
-    sender.bind(f"tcp://{args.output_host}:{args.output_port}")
+    if args.pub:
+        sender = context.socket(zmq.PUB)
+        print(f"binded to ZMQ out {args.output_host}:{args.output_port}")
+    else:
+        sender = context.socket(zmq.PUSH)
+        print(f"binded to ZMQ out {args.output_host}:{args.output_port}")
+        
+    if args.bind_output:
+        sender.bind(f"tcp://{args.output_host}:{args.output_port}")
+    else:    
+        sender.connect(f"tcp://{args.output_host}:{args.output_port}")
 
     main()
 

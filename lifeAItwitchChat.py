@@ -19,6 +19,8 @@ import uuid
 import argparse
 import zmq
 import json
+import logging
+import time
 
 load_dotenv()
 chat_db = "db/chat.db"
@@ -79,16 +81,16 @@ class AiTwitchBot(commands.Cog):
 
             # Split the cleaned question into words and get the first word
             ainame_request = cleaned_question.split()[0] if cleaned_question else None
-            aipersonality = self.ai_personality
 
             # Check our list of personalities
             if ainame_request not in personalities:
-                print(f"--- {name} asked for {ainame_request} but it doesn't exist, using default.")
-                ctx.send(f"{name} the personality you have chosen is not in the list of personalities, please choose a personality that is in the list of personalities {json.dumps(personalities)}. You can create them using !name <name> <personality>.")
+                print(f"--- {name} asked for character {ainame_request} but they don't exist, using default {ainame}.")
+                await ctx.send(f"{name} the personality you have chosen is not in the list of personalities.")
+                await ctx.send(f"Personalities:\n{json.dumps(personalities, )}\n")
             else:
                 ainame = ainame_request
                 aipersonality = personalities[ainame]
-                print(f"--- {name} set personality to {ainame} with personality {aipersonality}.")
+                print(f"--- {name} using character name {ainame} with personality {aipersonality}.")
 
             print(f"--- {name} asked {ainame} the question: {question}")
 
@@ -115,9 +117,8 @@ class AiTwitchBot(commands.Cog):
                 db_conn.commit()
 
             # Add the new message to the messages table
-            if question != "...":
-                cursor.execute("INSERT INTO messages (user, content) VALUES (?, ?)", (name, question))
-                db_conn.commit()
+            cursor.execute("INSERT INTO messages (user, content) VALUES (?, ?)", (name, question))
+            db_conn.commit()
 
             # Retrieve the chat history for this user
             cursor.execute("SELECT content FROM messages WHERE user = ? ORDER BY timestamp", (name,))
@@ -154,7 +155,8 @@ class AiTwitchBot(commands.Cog):
             print(f"--- Got personality switch to personality: %s" % personality)
             if personality not in personalities:
                 print(f"{ctx.message.author.name} tried to alter the personality to {personality} yet is not in the list of personalities.")
-                await ctx.send(f"{ctx.message.author.name} the personality you have chosen is not in the list of personalities, please choose a personality that is in the list of personalities {json.dumps(personalities)}")
+                await ctx.send(f"{ctx.message.author.name} the personality you have chosen is not in the list of personalities, please choose a personality that is in the list of personalities.")
+                await ctx.send(f"Personalities:\n{json.dumps(personalities, indent=2, sort_keys=True)}\n")
                 return
             await ctx.send(f"{ctx.message.author.name} switched personality to {personality}")
             # set our personality to the content
@@ -198,7 +200,7 @@ class AiTwitchBot(commands.Cog):
             # get the name of the person who sent the message
             name = ctx.message.author.name
             # send the list of personalities
-            await ctx.send(f"{name} the personalities we have are {json.dumps(personalities, indent=2, sort_keys=True)}")
+            await ctx.send(f"{name} the personalities we have are:\nPersonalities:\n{json.dumps(personalities, indent=2, sort_keys=True)}\n")
         except Exception as e:
             print("Error in listpersonalities command twitch bot: %s" % str(e))
 
@@ -292,7 +294,30 @@ if __name__ == "__main__":
                         required=False, 
                         default="GAIB the AI Bot of Life AI. A boddisattva of the digital age. I am here to help you with your questions and to help you learn about the world around you", 
                         help="Personality of the bot")
+    parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
+
     args = parser.parse_args()
+
+    LOGLEVEL = logging.INFO
+
+    if args.loglevel == "info":
+        LOGLEVEL = logging.INFO
+    elif args.loglevel == "debug":
+        LOGLEVEL = logging.DEBUG
+    elif args.loglevel == "warning":
+        LOGLEVEL = logging.WARNING
+    else:
+        LOGLEVEL = logging.INFO
+
+    log_id = time.strftime("%Y%m%d-%H%M%S")
+    logging.basicConfig(filename=f"logs/twitchChat-{log_id}.log", level=LOGLEVEL)
+    logger = logging.getLogger('GAIB')
+
+    ch = logging.StreamHandler()
+    ch.setLevel(LOGLEVEL)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
     context = zmq.Context()
 

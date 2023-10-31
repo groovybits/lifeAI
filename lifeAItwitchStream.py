@@ -23,6 +23,8 @@ import soundfile as sf
 import wave
 import numpy as np
 from pydub import AudioSegment
+import logging
+import time
 
 load_dotenv()
 
@@ -206,8 +208,30 @@ if __name__ == "__main__":
     parser.add_argument("--samplerate", type=int, default=16000, help="Sample rate of the output audio")
     parser.add_argument("-d", "--debug", action="store_true", default=False, help="Debug in a verbose manner.")
     parser.add_argument("-a", "--audio", action="store_true", default=False, help="Enable audio streaming, off by default.")
+    parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
 
     args = parser.parse_args()
+
+    LOGLEVEL = logging.INFO
+
+    if args.loglevel == "info":
+        LOGLEVEL = logging.INFO
+    elif args.loglevel == "debug":
+        LOGLEVEL = logging.DEBUG
+    elif args.loglevel == "warning":
+        LOGLEVEL = logging.WARNING
+    else:
+        LOGLEVEL = logging.INFO
+
+    log_id = time.strftime("%Y%m%d-%H%M%S")
+    logging.basicConfig(filename=f"logs/twitchStream-{log_id}.log", level=LOGLEVEL)
+    logger = logging.getLogger('GAIB')
+
+    ch = logging.StreamHandler()
+    ch.setLevel(LOGLEVEL)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
     context = zmq.Context()
     image_socket = context.socket(zmq.SUB)

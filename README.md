@@ -15,22 +15,36 @@ That’s the goal, you’ll see I am listing the parts as I build them, sort of 
 - <https://github.com/MycroftAI/mimic3> Mimic3 Text to Speech (optionally in place of Facebook mms-tts-eng).
 - <https://github.com/ggerganov/llama.cpp/tree/master/examples/server> llama.cpp (install and run server for API access locally)
 
-## modules
+## ZMQ modules from Input to Output
 
-- [ZMQ Text Client](zmqTextClient.py) Send text into lifeAI for simulation seeding.
-- [ZMQ News Client](lifeAInewsCast.py) Send news feeds into lifeAI for simulation seeding.
-- [ZMQ Twitch Chat](lifeAItwitchChat.py) Twitch Chat sent to lifeAI for responses.
-- [ZMQ Twitch Stream](lifeAITwitchStream.py) Twitch RTMP directly stream and avoid desktop capture.
-- [ZMQ TTS Listener](zmqTTSlisten.py) Listen for TTS Audio WAV file output.
-- [ZMQ TTM Listener](zmqTTMlisten.py) Listen for TTM Audio WAV file output.
-- [ZMQ TTI Listener](zmqTTIlisten.py) Listen for TTI Image PIL file output.
-- [Text to AI Speech](lifeAItts.py)   Facebook MMS-TTS Text to Speech Conversion.
-- [Text to AI Music](lifeAIttm.py)    Facebook Music Generation.
-- [Text to AI Image](lifeAItti.py)    Stable Diffusion Text to Image Generation.
-- [LLM llama.cpp Python](lifeAIllm.py)       Llama2 llama.cpp Python SDK
-- [LLM llama.cpp Server](lifeAIllmAPI.py)    Llama2 llama.cpp server local API service
-- [Prompt Optimizer](lifeAIpromptOptimizer.py) Optimize prompt or turn text into a prompt.
+- [Cmdline Input](zmqTextClient.py)        Send text into lifeAI for simulation seeding.
+- [News Input](lifeAInewsCast.py)          Send news feeds into lifeAI for simulation seeding.
+- [Twitch Chat Input](lifeAItwitchChat.py) Twitch Chat sent to lifeAI for responses.
+- [Javscript Input](TODO.md)               TODO: Future plan to plug into react frontend video viewer.
+- [Video Input](TODO.md)                   TODO: Read a video stream and alter it via AI through the system.
+- [X Input](TODO.md)                       TODO: Any input via easy connection in a generic way.
+
+- [LLM Broker llama.cpp-Python](lifeAIllm.py)       Llama2 llama.cpp Python SDK
+- [LLM Broker llama.cpp-API](lifeAIllmAPI.py)       Llama2 llama.cpp server local API service
+- [Prompt Optimizer](lifeAIpromptOptimizer.py)      Optimize prompt or turn text into a prompt.
+
+- [TTS Producer](lifeAItts.py)    Facebook MMS-TTS Text to Speech Conversion.
+- [TTM Producer](lifeAIttm.py)    Facebook Music Generation.
+- [TTI Producer](lifeAItti.py)    Stable Diffusion Text to Image Generation.
+
+- [Frame Sync](lifeAIframesync.py)           TODO: sync frames, add frames, remove frames...
+
 - [Subtitle Burner](lifeAIsubTitleBurnIn.py) Burn-In subtitles in Anime style white/black bold.
+
+- [TTS Listener](zmqTTSlisten.py) Listen for TTS Audio WAV file output and Playback/Save.
+- [TTM Listener](zmqTTMlisten.py) Listen for TTM Audio WAV file output and Playback/Save.
+- [TTI Listener](zmqTTIlisten.py) Listen for TTI Image PIL file output and Playback/Save.
+
+- [Audio Mixer](lifeAImixer.py)   TODO: Mix Music and Speaking audio together
+- [Muxer](lifeAImux.py)           TODO: Mux Images, Audio, Text and sync output time of each together.
+- [ITV](lifeAIimtpy)              TODO: Image to Video, turn images into video sequences matching audio speaking duration.
+
+- [Twitch Stream Output](lifeAITwitchStream.py) Twitch RTMP directly stream and avoid desktop capture.
 
 ## Installation
 

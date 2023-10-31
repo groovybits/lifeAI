@@ -17,6 +17,8 @@ import re
 import os
 import cv2
 import numpy as np
+import logging
+import time
 
 def image_to_ascii(image):
     image = image.resize((args.width, int((image.height/image.width) * args.width * 0.55)), Image.LANCZOS)
@@ -105,8 +107,30 @@ if __name__ == "__main__":
     parser.add_argument("--width", type=int, default=80, help="Width of the output image")
     parser.add_argument("-r", "--render", action="store_true", default=False, help="Render the output to a GUI OpenCV window for playback viewing.")
     parser.add_argument("-sf", "--save_file", action="store_true", default=False, help="Save images.")
+    parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
 
     args = parser.parse_args()
+
+    LOGLEVEL = logging.INFO
+
+    if args.loglevel == "info":
+        LOGLEVEL = logging.INFO
+    elif args.loglevel == "debug":
+        LOGLEVEL = logging.DEBUG
+    elif args.loglevel == "warning":
+        LOGLEVEL = logging.WARNING
+    else:
+        LOGLEVEL = logging.INFO
+
+    log_id = time.strftime("%Y%m%d-%H%M%S")
+    logging.basicConfig(filename=f"logs/zmqTTIlisten-{log_id}.log", level=LOGLEVEL)
+    logger = logging.getLogger('GAIB')
+
+    ch = logging.StreamHandler()
+    ch.setLevel(LOGLEVEL)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
     context = zmq.Context()
     socket = context.socket(zmq.SUB)
