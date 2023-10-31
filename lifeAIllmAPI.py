@@ -153,8 +153,7 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
         streaming_thread.join()
     except Exception as e:
         logger.error(f"--- run_llm(): LLM exception: {e}")
-        traceback.print_exc()
-        print(f"{traceback.print_exc()}")
+        logger.error(f"{traceback.print_exc()}")
         return header_message.copy()
 
     return header_message.copy()
@@ -227,7 +226,7 @@ def main(args):
 
         except Exception as e:
             logger.error(f"Exception occurred: {e}")
-            logger.errir(f"{traceback.print_exc()}")
+            logger.error(f"{traceback.print_exc()}")
             # Add some sleep time to prevent a tight loop in case of a recurring error
             time.sleep(1)
 
