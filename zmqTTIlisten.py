@@ -75,7 +75,7 @@ def main():
         image = socket.recv()
 
         # Print the header
-        logger.debug(f"Received image segment {header_message}\n")
+        logger.debug(f"Received image segment {header_message}")
 
         # create an output file using the prompt and segment_number
         image_file = f"{args.output_directory}/{mediaid}/{segment_number}.png"
@@ -94,7 +94,7 @@ def main():
         image = Image.open(io.BytesIO(image))
         payload_hex = image_to_ascii(image)
         print(f"\n{payload_hex}\n", flush=True)
-        logger.info(f"Image Prompt: {optimized_prompt}\Original Text: {text}\nOriginal Question:{message}\n")
+        logger.info(f"Image Prompt: {optimized_prompt}\Original Text: {text}\nOriginal Question:{message}")
 
         if args.render:
             render(image)

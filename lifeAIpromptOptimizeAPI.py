@@ -154,7 +154,7 @@ def main():
         optimized_prompt = ""
         try:
             logger.info(f"Prompt optimizer: sending text to LLM - {text}")
-            optimized_prompt = run_llm(full_prompt, args.api_endpoint, args)
+            optimized_prompt = run_llm(full_prompt, api_endpoint, args)
 
             if not optimized_prompt.strip():
                 logger.error(f"Error! prompt generation generated an empty prompt, using original.")
@@ -177,6 +177,8 @@ if __name__ == "__main__":
     model = "models/zephyr-7b-alpha.Q2_K.gguf"
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("--llm_port", type=int, default=8080)
+    parser.add_argument("--llm_host", type=str, default="127.0.0.1")
     parser.add_argument("--input_host", type=str, default="127.0.0.1")
     parser.add_argument("--input_port", type=int, default=2000)
     parser.add_argument("--output_host", type=str, default="127.0.0.1")
@@ -195,7 +197,6 @@ if __name__ == "__main__":
     parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
     parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
-    parser.add_argument("--api_endpoint", type=str, default="http://127.0.0.1:8080/completion", help="API endpoint for LLM completion.")
     parser.add_argument("--n_keep", type=int, default=0, help="Number of tokens to keep for the context.")
     parser.add_argument("-sts", "--stoptokens", type=str, default="Question:", help="Stop tokens to use, do not change unless you know what you are doing!")
     parser.add_argument("--no_cache_prompt", action='store_true', help="Flag to disable caching of prompts.")
@@ -205,6 +206,8 @@ if __name__ == "__main__":
     parser.add_argument("--bind_input", action="store_true", default=False, help="Bind to a topic")
 
     args = parser.parse_args()
+
+    api_endpoint = f"http://{args.llm_host}:{args.llm_port}/completion"
 
     LOGLEVEL = logging.INFO
 

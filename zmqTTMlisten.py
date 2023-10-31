@@ -89,8 +89,8 @@ def main():
             # Now, receive the binary audio data
             audio_samples = socket.recv()
 
-            logger.debug(f"Received music segment mediaid: {header_message}\n")
-            logger.info(f"Received music segment #{segment_number} mediaid: {mediaid}\n")
+            logger.debug(f"Received music segment mediaid: {header_message}")
+            logger.info(f"Received music segment #{segment_number} mediaid: {mediaid}")
 
             # Check if we need to output to a file
             if args.save_file:

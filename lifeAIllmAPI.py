@@ -217,7 +217,7 @@ def main(args):
             header_message["llm_prompt"] = prompt
 
             # Call LLM function to process the request
-            header_message = run_llm(header_message, sender, args.api_endpoint, args.characters_per_line, args.sentence_count, args)
+            header_message = run_llm(header_message, sender, api_endpoint, args.characters_per_line, args.sentence_count, args)
 
             # If run_llm returned None, we should handle this case.
             if header_message is None:
@@ -261,14 +261,17 @@ if __name__ == "__main__":
     parser.add_argument("--metal", action="store_true", default=False, help="Offload to metal MPS GPU")
     parser.add_argument("--cuda", action="store_true", default=False, help="Offload to CUDA GPU")
     parser.add_argument("--purgecontext", action="store_true", default=False, help="Purge context if it gets too large")
-    parser.add_argument("--api_endpoint", type=str, default="http://127.0.0.1:8080/completion", help="API endpoint for LLM completion.")
     parser.add_argument("--n_keep", type=int, default=0, help="Number of tokens to keep for the context.")
     parser.add_argument("--no_cache_prompt", action='store_true', help="Flag to disable caching of prompts.")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--sub", action="store_true", default=False, help="Publish to a topic")
     parser.add_argument("--pub", action="store_true", default=False, help="Publish to a topic")
+    parser.add_argument("--llm_port", type=int, default=8080)
+    parser.add_argument("--llm_host", type=str, default="127.0.0.1")
 
     args = parser.parse_args()
+
+    api_endpoint = f"http://{args.llm_host}:{args.llm_port}/completion"
 
     LOGLEVEL = logging.INFO
 

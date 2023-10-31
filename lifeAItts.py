@@ -96,7 +96,7 @@ def main():
         sender.send(audiobuf.getvalue())
         
         logger.debug(f"Text to Speech: sent audio #{segment_number}\n{header_message}")
-        logger.info(f"Text to Speech: sent audio #{segment_number} of {duration} duration.\n{text}")
+        logger.info(f"Text to Speech: sent audio #{segment_number} of {duration} duration. {text}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

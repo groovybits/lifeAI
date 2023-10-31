@@ -81,7 +81,10 @@ cmake .
 make
 sudo make install
 cd examples/server/
-server -m /Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-beta.Q8_0.gguf -t 60 -c 0 --mlock
+# Launch an LLM instance per client, the server doesn't scale well beyond 1 client in llama.cpp currently :(
+server -m /Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf -t 60 -c 0 --mlock -ngl 60 --port 8081
+server -m /Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf -t 60 -c 0 --mlock -ngl 60 --port 8082
+server -m /Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf -t 60 -c 0 --mlock -ngl 60
 ```
 
 ## Running lifeAI
@@ -105,8 +108,9 @@ curl --request POST --url http://127.0.0.1:8080/completion  \
 
 # ZMQ Whisper speech to text Client (Coming soon)
 
-# LLM Text track
-./lifeAIllm.py
+# LLM (requires llama.cpp server running)
+## ./lifeAIllm.py (python client, buggy)
+./lifeAIllmAPI.py
 
 # TTS Speech audio
 ## ./lifeAItts.py # Easier to use, doesn't voice words properly
