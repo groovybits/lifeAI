@@ -200,8 +200,10 @@ class AiTwitchBot(commands.Cog):
         try:
             # get the name of the person who sent the message
             name = ctx.message.author.name
-            # send the list of personalities
-            await ctx.send(f"{name} the personalities we have are:\nPersonalities:\n{json.dumps(personalities, indent=2, sort_keys=True)}\n")
+           
+            ## get the name and the personality
+            for name, personality in personalities.items():
+                await ctx.send(f"{name}: {personality}")            
         except Exception as e:
             logger.error("Error in listpersonalities command twitch bot: %s" % str(e))
 
@@ -239,13 +241,13 @@ class AiTwitchBot(commands.Cog):
     async def name(self, ctx: commands.Context):
         try:
             # format is "!name <name> <personality>"
-            name = ctx.message.content.replace('!name','').strip()
+            name = ctx.message.content.replace('!name ','').strip()
             name, personality = name.split(' ', 1)
             namepattern = re.compile(r'^[a-zA-Z0-9]*$')
             personalitypattern = re.compile(r'^[a-zA-Z0-9 ,.]*$')
             logger.info(f"--- Got name switch from {ctx.author} for ai name: %s" % name)
             # confirm name has no spaces and is 12 or less characters and alphanumeric, else tell the chat user it is not the right format
-            if len(name) > 50 or ' ' in name or len(personality) > 200:
+            if len(name) > 50 or ' ' in name or len(personality) > 500:
                 logger.error(f"{ctx.message.author.name} tried to alter the name to {name} yet is too long or has spaces.")
                 await ctx.send(f"{ctx.message.author.name} the name you have chosen is too long, please choose a name that is 12 characters or less")
                 return
