@@ -13,6 +13,7 @@ That’s the goal, you’ll see I am listing the parts as I build them, sort of 
 - <https://huggingface.co/runwayml/stable-diffusion-v1-5> Stable Diffusion 1.5
 - <https://huggingface.co/facebook/musicgen-small> Facebook MusicGen Music generation model
 - <https://github.com/MycroftAI/mimic3> Mimic3 Text to Speech (optionally in place of Facebook mms-tts-eng).
+- <https://github.com/ggerganov/llama.cpp/tree/master/examples/server> llama.cpp (install and run server for API access locally)
 
 ## modules
 
@@ -57,12 +58,27 @@ source .venv/bin/activate
 mimic3-server # (API Server)
 curl -X POST --data 'Hello world.' --output - localhost:59125/api/tts > out.wav
 
-
+# Get and install llama.cpp
+git clone https://github.com/ggerganov/llama.cpp.git
+cd llama.cpp
+cmake .
+make
+sudo make install
+cd examples/server/
+server -m /Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-beta.Q8_0.gguf -t 60 -c 0 --mlock
 ```
 
 ## Running lifeAI
 
 ```text
+# Run llama.cpp server for localhost API server and llama.cpp LLM handling
+server -m /Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-beta.Q8_0.gguf -t 60 -c 0 --mlock
+
+# Test llama.cpp API
+curl --request POST --url http://127.0.0.1:8080/completion  \
+             --header "Content-Type: application/json" \
+             --data '{"prompt": "Building a website can be done in 10 simple steps:","n_predict": 128}'
+
 # ZMQ input Client to send messages through the pipeline for testing
 ./zmqTextClient.py --message "An apple on a laptop." --segment_number 1 --username "User"
 

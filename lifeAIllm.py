@@ -86,6 +86,7 @@ def run_llm(header_message, user_messages):
     # send the question to the LLM
     header_message["text"] = f"User {header_message['username']} asked: {header_message['message'][:200]}...."
     header_message["segment_number"] = segment_number
+    header_message["timestamp"] = time.time()
     send_data(header_message.copy())
     segment_number += 1
 
@@ -194,6 +195,7 @@ def run_llm(header_message, user_messages):
                     if combined_lines.replace(" ","").replace("\n","") != "":
                         header_message["text"] = combined_lines
                         header_message["segment_number"] = segment_number
+                        header_message["timestamp"] = time.time()
                         send_data(header_message.copy())  # Send the data with the current segment number
                         segment_number += 1  # Increment for the next round
 
@@ -213,6 +215,7 @@ def run_llm(header_message, user_messages):
                     if combined_lines.replace(" ","").replace("\n","") != "":
                         header_message["text"] = combined_lines
                         header_message["segment_number"] = segment_number
+                        header_message["timestamp"] = time.time()
                         send_data(header_message.copy())
                         segment_number += 1
                 
@@ -234,6 +237,7 @@ def run_llm(header_message, user_messages):
         if combined_lines.replace(" ","").replace("\n","") != "":
             header_message["text"] = combined_lines
             header_message["segment_number"] = segment_number
+            header_message["timestamp"] = time.time()
             send_data(header_message.copy())
 
 
@@ -323,6 +327,7 @@ def main():
             "aipersonality": aipersonality,
             "context": user_history,
             "tokens": 0,
+            "timestamp": time.time(),
             "text": ""
         }
         
@@ -338,12 +343,14 @@ def main():
         if not args.analysis:
             # Calculate the total length of all messages in history
             total_length = sum([len(msg['content']) for msg in messages])
+            print(f"\nLLM: total length of all messages in history: {total_length}\n")
             # keep history within context size
-            while total_length > (args.context/2)+len(prompt):
-                # Remove the oldest message after the system prompt
-                if len(messages) > 2:
-                    total_length -= len(messages[1]['content'])
-                    del messages[1]
+            if args.purgecontext:
+                while total_length > (args.context/2)+len(prompt):
+                    # Remove the oldest message after the system prompt
+                    if len(messages) > 2:
+                        total_length -= len(messages[1]['content'])
+                        del messages[1]
 
             system_message = ChatCompletionMessage(role="system", content=create_system_prompt(header_message))
             # replace first member of messages with system message
@@ -351,8 +358,8 @@ def main():
 
             messages.append(ChatCompletionMessage(
                 role="user",
-                content=f"{prompt}"
-                #content=f"Question: {username} from {source} said {message}\nAnswer:",
+                #content=f"{prompt}"
+                content=f"Question: {username} from {source} said {message}\nAnswer:",
             ))
 
             response = None
@@ -399,6 +406,7 @@ def main():
                 response = message
 
             header_message["text"] = response
+            header_message["timestamp"] = time.time()
 
             sender.send_json(header_message)
 
@@ -440,6 +448,7 @@ if __name__ == "__main__":
     parser.add_argument("--timeout", type=int, default=300, help="Timeout in seconds for LLM to respond.")
     parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
     parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
+    parser.add_argument("--purgecontext", action="store_true", default=False, help="purge context if it gets too large")
     args = parser.parse_args()
 
     ## setup episode mode
