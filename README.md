@@ -17,6 +17,7 @@ That’s the goal, you’ll see I am listing the parts as I build them, sort of 
 
 ## ZMQ modules from Input to Output
 
+- [Program Manager](lifeAIstart.py)        Startup and control all the modules, uses [config.json](config.json)
 - [Cmdline Input](zmqTextClient.py)        Send text into lifeAI for simulation seeding.
 - [News Input](lifeAInewsCast.py)          Send news feeds into lifeAI for simulation seeding.
 - [Twitch Chat Input](lifeAItwitchChat.py) Twitch Chat sent to lifeAI for responses.
@@ -24,11 +25,10 @@ That’s the goal, you’ll see I am listing the parts as I build them, sort of 
 - [Video Input](TODO.md)                   TODO: Read a video stream and alter it via AI through the system.
 - [X Input](TODO.md)                       TODO: Any input via easy connection in a generic way.
 
-- [LLM Broker llama.cpp-Python](lifeAIllm.py)       Llama2 llama.cpp Python SDK
 - [LLM Broker llama.cpp-API](lifeAIllmAPI.py)       Llama2 llama.cpp server local API service
 - [Prompt Optimizer](lifeAIpromptOptimizer.py)      Optimize prompt or turn text into a prompt.
 
-- [TTS Producer](lifeAItts.py)    Facebook MMS-TTS Text to Speech Conversion.
+- [TTS Producer](lifeAIttsMimic3.py)    Mimic3 TTS Text to Speech Conversion.
 - [TTM Producer](lifeAIttm.py)    Facebook Music Generation.
 - [TTI Producer](lifeAItti.py)    Stable Diffusion Text to Image Generation.
 
