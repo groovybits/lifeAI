@@ -1,0 +1,50 @@
+{
+    "lifeAItwitchChat": {
+        "args": ["python", "lifeAItwitchChat.py"]
+    },
+    "lifeAInewsCast": {
+        "args": ["python", "lifeAInewsCat.py"]
+    },
+    "lifeAIllmAPI": {
+        "args": ["python", "lifeAIllmAPI.py"]
+    },
+    "lifeAItti": {
+        "args": ["python", "lifeAItti.py"]
+    },
+    "lifeAIttsMimic3": {
+        "args": ["python", "lifeAIttsMimic3.py"]
+    },
+    "lifeAIttm": {
+        "args": ["python", "lifeAIttm.py"]
+    },
+    "lifeAIpromptOptimizeMusic": {
+        "args": ["python", "lifeAIpromptOptimize.py", 
+            "--input_port", "2000", 
+            "--output_port", "4001", 
+            "--topic", "music generation", 
+            "--sub", 
+            "--bind_out", 
+            "--pub", 
+            "--llm_port", "8081"]
+    },
+     "lifeAIpromptOptimizeImages": {
+        "args": ["python", "lifeAIpromptOptimize.py", 
+            "--topic", "image generation", 
+            "--sub", 
+            "--bind_out", 
+            "--pub", 
+            "--llm_port", "8082"]
+    },
+    "lifeAIsubtitleBurn": {
+        "args": ["python", "lifeAIsubtitleBurn.py"]
+    },
+    "zmqTTIlisten": {
+        "args": ["python", "zmqTTIlisten.py"]
+    }, 
+    "zmqTTSlisten": {
+        "args": ["python", "zmqTTSlisten.py"]
+    },
+    "zmqTTMlisten": {
+        "args": ["python", "zmqTTMlisten.py"]
+    }
+}

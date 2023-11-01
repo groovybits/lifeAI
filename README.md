@@ -89,6 +89,19 @@ server -m /Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf -t 60 -c 
 
 ## Running lifeAI
 
+# Program Manager with config.json - [startLifeAI Program Manager](startLifeAI.py)
+
+```text
+# Setup for you already!
+./startLifeAI.py
+
+# Command line interface
+> {list, status, start <program>, stop <program>, restart <program>, exit}
+
+```
+
+# Manually running on the command line in screen/tmux session or multi-term
+
 ```text
 # Run llama.cpp server for localhost API server and llama.cpp LLM handling
 server -m /Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-beta.Q8_0.gguf -t 60 -c 0 --mlock
@@ -147,5 +160,43 @@ curl --request POST --url http://127.0.0.1:8080/completion  \
 
 ##
 ```
+
+## Logging
+
+```text
+ls -altr logs/
+```
+
+## Restarting each individual unit via cmdline interface or kill
+
+You can restart, stop and update the separate parts then restart them without much interuption.
+
+## Twitch Chat Integration + Twitch Streaming to RTMP directly!
+
+- Twitch Client can create personalities to use via !name <name> <personality> in chat.
+- Fully functional interation with twitch users.
+- Twitch streaming directly to RTMP (TODO: soon)
+
+## News feed input via MediaStack
+
+- Need to get a free or a low cost 25 a month subscription to MediaStack news feed service.
+- Pulling news articles in batches of 100 and sends them one by one to the LLM for news reporter services.
+- Fully configureable separate personality for news broadcaster feed.
+
+## Mimic3 text to speech has many voices with different values to use
+
+## Stable Diffusion Text to Image generation
+
+- Automatically downloads the right models via transformers library
+
+## Text to Music
+
+- Facebook MusicGen auto-downloads all it needs with models
+
+## Llama llama-cpp-python used yet the llama.cpp API server is preferred
+
+- Need to run a separate server process with a different port and model for each LLM in use. It doesn't handle multiple clients.
+
+## Ask if you want to help improve it, there are plenty of things todo...
 
 ## Chris Kennedy (C) 2023 GPL free as in free software, use at your own risk. Do not believe anything the LLM generates without your own validation. We are not responsible for how you use this software.
