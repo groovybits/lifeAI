@@ -44,7 +44,10 @@ That’s the goal, you’ll see I am listing the parts as I build them, sort of 
 - [Muxer](lifeAImux.py)           TODO: Mux Images, Audio, Text and sync output time of each together.
 - [ITV](lifeAIimtpy)              TODO: Image to Video, turn images into video sequences matching audio speaking duration.
 
-- [Twitch Stream Output](lifeAITwitchStream.py) Twitch RTMP directly stream and avoid desktop capture.
+- [Twitch Stream Output](lifeAITwitchStream.py)         Twitch RTMP directly stream and avoid desktop capture.
+- [Twitch Stream FFmpeg Script](bin/twitch_stream.sh)   Twitch streaming script for avoidance of OBS.
+
+- [Clean Up Assets](bin/cleanup.sh)                     Deletes assets older than "seconds" old, give value on cmdline `cleanup.sh 60` for only keeping the last hours of audio/ music/ images/ logs/ directory files/folders
 
 ## Installation
 
