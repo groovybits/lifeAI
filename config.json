@@ -47,6 +47,9 @@
     "zmqTTMlisten": {
         "args": ["python", "zmqTTMlisten.py"]
     },
+    "lifeAIframesync": {
+        "args": ["python", "lifeAIframesync.py"]
+    },
     "LLMllamacpp01": {
         "args": ["server", "-m", "/Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf", "-t", "60", "-c", "0", "--mlock", "-ngl", "60", "--port", "8080"]
     },

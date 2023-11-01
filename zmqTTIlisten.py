@@ -94,14 +94,17 @@ def main():
                     f.write(image)
                 logger.info(f"Payload written to {image_file}\n")
 
-        # Convert the bytes back to a PIL Image object
-        image = Image.open(io.BytesIO(image))
-        payload_hex = image_to_ascii(image)
-        print(f"\n{payload_hex}\n", flush=True)
-        logger.info(f"Image Prompt: {optimized_prompt}\Original Text: {text}\nOriginal Question:{message}")
+        try:
+            # Convert the bytes back to a PIL Image object
+            image = Image.open(io.BytesIO(image))
+            payload_hex = image_to_ascii(image)
+            print(f"\n{payload_hex}\n", flush=True)
+            logger.info(f"Image Prompt: {optimized_prompt}\Original Text: {text}\nOriginal Question:{message}")
 
-        if args.render:
-            render(image)
+            if args.render:
+                render(image)
+        except Exception as e:
+            logger.error(f"Error converting image to ascii: {e}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
