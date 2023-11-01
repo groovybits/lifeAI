@@ -55,5 +55,9 @@
     },
     "LLMllamacpp03": {
         "args": ["server", "-m", "/Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf", "-t", "60", "-c", "0", "--mlock", "-ngl", "60", "--port", "8082"]
+    },
+    "Mimic3TTS": {
+        "args": ["/opt/homebrew/bin/mimic3-server"]
     }
 }
+
