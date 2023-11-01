@@ -29,8 +29,8 @@ That’s the goal, you’ll see I am listing the parts as I build them, sort of 
 - [Prompt Optimizer](lifeAIpromptOptimizer.py)      Optimize prompt or turn text into a prompt.
 
 - [TTS Producer](lifeAIttsMimic3.py)    Mimic3 TTS Text to Speech Conversion.
-- [TTM Producer](lifeAIttm.py)    Facebook Music Generation.
-- [TTI Producer](lifeAItti.py)    Stable Diffusion Text to Image Generation.
+- [TTM Producer](lifeAIttm.py)          Facebook Music Generation.
+- [TTI Producer](lifeAItti.py)          Stable Diffusion Text to Image Generation. (extended prompt + NSFW off option)
 
 - [Frame Sync](lifeAIframesync.py)           TODO: sync frames, add frames, remove frames...
 
