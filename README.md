@@ -111,7 +111,7 @@ Enter command: [DRY RUN] Would start program: lifeAInewsCast
 [DRY RUN] Would start program: zmqTTMlisten
 ```
 
-# Manually running on the command line in screen/tmux session or multi-term
+## Manually running on the command line in screen/tmux session or multi-term
 
 ```text
 # Run llama.cpp server for localhost API server and llama.cpp LLM handling
