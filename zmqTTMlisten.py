@@ -84,10 +84,15 @@ def main():
             # fill out the variables from the header
             segment_number = header_message["segment_number"]
             mediaid = header_message["mediaid"]
-            duration = header_message["duration"]
 
             # Now, receive the binary audio data
             audio_samples = socket.recv()
+
+            if header_message['stream'] != "music":
+                logger.debug(f"Received non-music stream {header_message['stream']}")
+                continue
+
+            duration = header_message["duration"]
 
             logger.debug(f"Received music segment mediaid: {header_message}")
             logger.info(f"Received music segment #{segment_number} mediaid: {mediaid}")

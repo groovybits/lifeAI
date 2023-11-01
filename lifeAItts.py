@@ -90,6 +90,7 @@ def main():
 
         # fill in the header
         header_message["duration"] = duration
+        header_message["stream"] = "speech"
 
         # send the header and the audio
         sender.send_json(header_message, zmq.SNDMORE)

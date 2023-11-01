@@ -56,6 +56,10 @@ def main():
             # Now, receive the binary audio data
             audio_samples = socket.recv()
 
+            if header_message['stream'] != "speech":
+                logger.debug(f"Received non-speech stream {header_message['stream']}")
+                continue
+
             logger.debug(f"Received audio segment {header_message}\n")
 
             # Check if we need to output to a file

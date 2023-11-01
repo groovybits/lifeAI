@@ -74,6 +74,10 @@ def main():
         # Now, receive the binary audio data
         image = socket.recv()
 
+        if header_message['stream'] != "image":
+            logger.debug(f"Received non-image stream {header_message['stream']}")
+            continue
+
         # Print the header
         logger.debug(f"Received image segment {header_message}")
 

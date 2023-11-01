@@ -103,6 +103,8 @@ def main():
         image.save(img_byte_arr, format='PNG')  # Save it as PNG or JPEG depending on your preference
         image = img_byte_arr.getvalue()
 
+        header_message["stream"] = "image"
+
         sender.send_json(header_message, zmq.SNDMORE)
         sender.send(image)
 

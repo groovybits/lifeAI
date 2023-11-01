@@ -69,6 +69,7 @@ def main():
 
         # Fill in the header
         header_message["duration"] = duration
+        header_message["stream"] = "speech"
 
         # Send the header and the audio
         sender.send_json(header_message, zmq.SNDMORE)
@@ -90,7 +91,10 @@ if __name__ == "__main__":
     parser.add_argument("--ssml", type=str, default='false', help="SSML parameter for TTS API")
     parser.add_argument("--audio_target", type=str, default='client', help="Audio target parameter for TTS API")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
-
+    parser.add_argument("--sub", action="store_true", default=False, help="Publish to a topic")
+    parser.add_argument("--pub", action="store_true", default=False, help="Publish to a topic")
+    parser.add_argument("--bind_output", action="store_true", default=False, help="Bind to a topic")
+    parser.add_argument("--bind_input", action="store_true", default=False, help="Bind to a topic")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO
@@ -115,13 +119,25 @@ if __name__ == "__main__":
     logger.addHandler(ch)
 
     context = zmq.Context()
-    receiver = context.socket(zmq.SUB)
-    logger.info(f"Connected to ZMQ in: {args.input_host}:{args.input_port}")
-    receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
-    receiver.setsockopt_string(zmq.SUBSCRIBE, "")
+     # Set up the subscriber
+    if args.sub:
+        receiver = context.socket(zmq.SUB)
+        print(f"Setup ZMQ in {args.input_host}:{args.input_port}")
+    else:
+        receiver = context.socket(zmq.PULL)
+        print(f"Setup ZMQ in {args.input_host}:{args.input_port}")
 
-    sender = context.socket(zmq.PUB)
-    logger.info(f"Bounded to ZMQ out: {args.output_host}:{args.output_port}")
-    sender.bind(f"tcp://{args.output_host}:{args.output_port}")
+    if args.bind_input:
+        receiver.bind(f"tcp://{args.input_host}:{args.input_port}")
+    else:
+        receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
+
+    if args.sub:
+        receiver.setsockopt_string(zmq.SUBSCRIBE, "")
+
+    # Set up the publisher
+    sender = context.socket(zmq.PUSH)
+    print(f"binded to ZMQ out {args.output_host}:{args.output_port}")
+    sender.connect(f"tcp://{args.output_host}:{args.output_port}")
 
     main()

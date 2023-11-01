@@ -66,6 +66,7 @@ def main():
 
         duration = len(audio_values) / model.config.sampling_rate
         header_message["duration"] = duration
+        header_message["stream"] = "music"
         sender.send_json(header_message, zmq.SNDMORE)
         sender.send(audiobuf.getvalue())
         
@@ -114,13 +115,13 @@ if __name__ == "__main__":
 
     context = zmq.Context()
     receiver = context.socket(zmq.SUB)
-    print("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
+    logger.info("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
     receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
     receiver.setsockopt_string(zmq.SUBSCRIBE, "")
 
-    sender = context.socket(zmq.PUB)
-    print("binded to ZMQ out: %s:%d" % (args.output_host, args.output_port))
-    sender.bind(f"tcp://{args.output_host}:{args.output_port}")
+    # Set up the publisher
+    sender = context.socket(zmq.PUSH)
+    sender.connect(f"tcp://{args.output_host}:{args.output_port}")
 
     """
     synthesiser = pipeline("text-to-audio", args.model)

@@ -240,9 +240,9 @@ if __name__ == "__main__":
     receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
     receiver.setsockopt_string(zmq.SUBSCRIBE, "")
 
-    sender = context.socket(zmq.PUB)
+    sender = context.socket(zmq.PUSH)
     logger.info("binded to ZMQ out: %s:%d" % (args.output_host, args.output_port))
-    sender.bind(f"tcp://{args.output_host}:{args.output_port}")
+    sender.connect(f"tcp://{args.output_host}:{args.output_port}")
 
     main()
 
