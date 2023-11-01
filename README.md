@@ -80,16 +80,12 @@ cd llama.cpp
 cmake .
 make
 sudo make install
-cd examples/server/
-# Launch an LLM instance per client, the server doesn't scale well beyond 1 client in llama.cpp currently :(
-server -m /Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf -t 60 -c 0 --mlock -ngl 60 --port 8081
-server -m /Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf -t 60 -c 0 --mlock -ngl 60 --port 8082
-server -m /Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf -t 60 -c 0 --mlock -ngl 60
+# server is installed in /usr/local/bin/server and ran via the config.json
 ```
 
 ## Running lifeAI
 
-# Program Manager with [config.json](config.json) - [startLifeAI Program Manager](startLifeAI.py)
+- Program Manager with [config.json](config.json) - [startLifeAI Program Manager](startLifeAI.py)
 
 ```text
 # Setup for you already!
@@ -113,8 +109,6 @@ Enter command: [DRY RUN] Would start program: lifeAInewsCast
 [DRY RUN] Would start program: zmqTTIlisten
 [DRY RUN] Would start program: zmqTTSlisten
 [DRY RUN] Would start program: zmqTTMlisten
-
-
 ```
 
 # Manually running on the command line in screen/tmux session or multi-term
