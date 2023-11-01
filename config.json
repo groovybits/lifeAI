@@ -46,5 +46,14 @@
     },
     "zmqTTMlisten": {
         "args": ["python", "zmqTTMlisten.py"]
+    },
+    "LLMllamacpp01": {
+        "args": ["server", "-m", "/Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf", "-t", "60", "-c", "0", "--mlock", "-ngl", "60", "--port", "8080"]
+    },
+    "LLMllamacpp02": {
+        "args": ["server", "-m", "/Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf", "-t", "60", "-c", "0", "--mlock", "-ngl", "60", "--port", "8081"]
+    },
+    "LLMllamacpp03": {
+        "args": ["server", "-m", "/Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf", "-t", "60", "-c", "0", "--mlock", "-ngl", "60", "--port", "8082"]
     }
 }

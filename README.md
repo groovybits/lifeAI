@@ -89,7 +89,7 @@ server -m /Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf -t 60 -c 
 
 ## Running lifeAI
 
-# Program Manager with config.json - [startLifeAI Program Manager](startLifeAI.py)
+# Program Manager with [config.json](config.json) - [startLifeAI Program Manager](startLifeAI.py)
 
 ```text
 # Setup for you already!
