@@ -114,8 +114,9 @@ def sync_media_buffers(audio_buffer, music_buffer, image_buffer, sender, logger)
                 # Requeue the audio message
 
 def main():
-    # Start a thread for processing and sending buffers
-    threading.Thread(target=process_and_send_buffers, daemon=True).start()
+    if not args.passthrough:
+        # Start a thread for processing and sending buffers
+        threading.Thread(target=process_and_send_buffers, daemon=True).start()
 
     while True:
         header_message = receiver.recv_json()
@@ -133,6 +134,23 @@ def main():
         # fill out variables from header_message
         segment_number = header_message["segment_number"]
         asset = receiver.recv()
+
+        if args.passthrough:
+            stream = header_message['stream']
+            text = header_message['text']
+            duration = 0
+            if "duration" in header_message:
+                duration = "%d" % int(header_message["duration"])
+            timestamp = 0
+            if "timestamp" in header_message:
+                timestamp = "%d" % int(header_message["timestamp"])
+            mediaid = "none"
+            if "mediaid" in header_message:
+                mediaid = header_message['mediaid']
+            sender.send_json(header_message, zmq.SNDMORE)
+            sender.send(asset)
+            logger.info(f"Framesync: mediaid {mediaid} {timestamp} sent segment #{segment_number} {stream} {duration}: {text}")
+            continue
 
         if "stream" not in header_message:
             logger.error(f"Framesync: No stream type in header message: {header_message}")
@@ -186,7 +204,7 @@ if __name__ == "__main__":
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending image output")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--max_delay", type=int, default=5, help="Maximum allowed delay in seconds for image frames before they are dropped")
-
+    parser.add_argument("--passthrough", action="store_true", help="Pass through all messages without synchronization")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO
@@ -219,13 +237,14 @@ if __name__ == "__main__":
     logger.info("binded to ZMQ out: %s:%d" % (args.output_host, args.output_port))
     sender.bind(f"tcp://{args.output_host}:{args.output_port}")
 
-    # Define the buffer queues for each media type
-    audio_buffer = queue.Queue()
-    music_buffer = queue.Queue()
-    image_buffer = queue.Queue()
+    if not args.passthrough:
+        # Define the buffer queues for each media type
+        audio_buffer = queue.Queue()
+        music_buffer = queue.Queue()
+        image_buffer = queue.Queue()
 
-    # Start the sync_media_buffers function in a separate thread
-    threading.Thread(target=sync_media_buffers, args=(audio_buffer, music_buffer, image_buffer, sender, logger), daemon=True).start()
+        # Start the sync_media_buffers function in a separate thread
+        threading.Thread(target=sync_media_buffers, args=(audio_buffer, music_buffer, image_buffer, sender, logger), daemon=True).start()
 
     main()
 
