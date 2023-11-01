@@ -32,7 +32,7 @@ That’s the goal, you’ll see I am listing the parts as I build them, sort of 
 - [TTM Producer](lifeAIttm.py)          Facebook Music Generation.
 - [TTI Producer](lifeAItti.py)          Stable Diffusion Text to Image Generation. (extended prompt + NSFW off option)
 
-- [Frame Sync](lifeAIframesync.py)           TODO: sync frames, add frames, remove frames...
+- [Frame Sync](lifeAIframesync.py)      sync frames, add frames, remove frames...
 
 - [Subtitle Burner](lifeAIsubTitleBurnIn.py) Burn-In subtitles in Anime style white/black bold.
 
