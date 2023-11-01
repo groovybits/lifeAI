@@ -6,17 +6,29 @@ import queue
 import time
 import json
 import signal
+import sys
+
+def signal_handler(signal_received, frame):
+        # Handle any cleanup or resource releasing here
+        print(f"Signal {signal_received} received, shutting down.")
+        for name in list(manager.processes.keys()):  # Use list to avoid dictionary size change during iteration
+            manager.stop_program(name)
+        exit(0)
 
 class ProgramManager:
-    def __init__(self, config_file):
+    def __init__(self, config_file, dry_run=False):
         with open(config_file, 'r') as f:
             self.config = json.load(f)
         self.processes = {}
         self.threads = {}
         self.command_queue = queue.Queue()
         self.should_be_running = set()
+        self.dry_run = dry_run
 
     def start_program(self, name):
+        if self.dry_run:
+            print(f"[DRY RUN] Would start program: {name}")
+            return
         program_info = self.config.get(name)
         if program_info:
             process = subprocess.Popen(program_info['args'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -43,6 +55,9 @@ class ProgramManager:
                 time.sleep(1)  # Poll every second
 
     def stop_program(self, name, force_kill_timeout=10):
+        if self.dry_run:
+            print(f"[DRY RUN] Would stop program: {name}")
+            return
         if name in self.processes:
             self.should_be_running.discard(name)
             process = self.processes[name]
@@ -64,11 +79,7 @@ class ProgramManager:
             self.processes.pop(name, None)
             print(f"Stopped program {name}")
 
-        def run(self):
-            # Register signal handlers
-            signal.signal(signal.SIGINT, self.signal_handler)
-            signal.signal(signal.SIGTERM, self.signal_handler)
-
+    def run(self):
         for name in self.config:
             self.start_program(name)
 
@@ -107,15 +118,9 @@ class ProgramManager:
     def command(self, action, name):
         self.command_queue.put({'action': action, 'name': name})
 
-def signal_handler(signal_received, frame):
-    # Handle any cleanup or resource releasing here
-    print(f"Signal {signal_received} received, shutting down.")
-    for name in list(manager.processes.keys()):  # Use list to avoid dictionary size change during iteration
-        manager.stop_program(name)
-    exit(0)
-
 if __name__ == '__main__':
-    manager = ProgramManager('config.json')
+    dry_run = '--dry-run' in sys.argv
+    manager = ProgramManager('config.json', dry_run=dry_run)
 
     # Register signal handlers
     signal.signal(signal.SIGINT, signal_handler)
@@ -123,6 +128,9 @@ if __name__ == '__main__':
 
     run_thread = threading.Thread(target=manager.run)
     run_thread.start()
+
+    if dry_run:
+        print("Running in dry run mode. No actual processes will be started or stopped.")
 
     # Example command line interaction
     while True:

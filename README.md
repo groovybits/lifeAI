@@ -98,6 +98,23 @@ server -m /Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf -t 60 -c 
 # Command line interface
 > {list, status, start <program>, stop <program>, restart <program>, exit}
 
+./startLifeAI.py --dry-run
+
+[DRY RUN] Would start program: lifeAItwitchChat
+Running in dry run mode. No actual processes will be started or stopped.
+Enter command: [DRY RUN] Would start program: lifeAInewsCast
+[DRY RUN] Would start program: lifeAIllmAPI
+[DRY RUN] Would start program: lifeAItti
+[DRY RUN] Would start program: lifeAIttsMimic3
+[DRY RUN] Would start program: lifeAIttm
+[DRY RUN] Would start program: lifeAIpromptOptimizeMusic
+[DRY RUN] Would start program: lifeAIpromptOptimizeImages
+[DRY RUN] Would start program: lifeAIsubtitleBurn
+[DRY RUN] Would start program: zmqTTIlisten
+[DRY RUN] Would start program: zmqTTSlisten
+[DRY RUN] Would start program: zmqTTMlisten
+
+
 ```
 
 # Manually running on the command line in screen/tmux session or multi-term
