@@ -202,6 +202,7 @@ You can restart, stop and update the separate parts then restart them without mu
 ## Stable Diffusion Text to Image generation
 
 - Automatically downloads the right models via transformers library
+- <https://github.com/huggingface/diffusers/issues/2136> allows greater than 77 token prompting! Metal GPU optimized model
 
 ## Text to Music
 
