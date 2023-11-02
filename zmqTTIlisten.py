@@ -108,7 +108,7 @@ def main():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input_port", type=int, required=False, default=3003, help="Port for receiving image as PIL numpy arrays")
+    parser.add_argument("--input_port", type=int, required=False, default=6003, help="Port for receiving image as PIL numpy arrays")
     parser.add_argument("--input_host", type=str, required=False, default="127.0.0.1", help="Host for receiving image as PIL numpy arrays")
     parser.add_argument("--output_directory", default="images", type=str, help="Directory path to save the received images in")
     parser.add_argument("--image_format", choices=["pil", "raw"], default="pil", help="Image format to save as. Choices are 'pil' or 'raw'.")

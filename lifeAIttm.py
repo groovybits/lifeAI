@@ -13,17 +13,37 @@ import argparse
 import io
 import soundfile as sf
 from transformers import logging as trlogging
-from transformers import AutoProcessor, MusicgenForConditionalGeneration
+from transformers import AutoProcessor, MusicgenForConditionalGeneration, set_seed
+import torch
 import warnings
 import urllib3
 import logging
 import time
+import numpy as np
 
 warnings.simplefilter(action='ignore', category=Warning)
 warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
 from urllib3.exceptions import NotOpenSSLWarning
 warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 trlogging.set_verbosity_error()
+
+def generate_audio(prompt, negative_prompt, guidance_scale=3, audio_length_in_s=10, seed=0):
+    inputs = processor(
+        text=[prompt, negative_prompt],
+        padding=True,
+        return_tensors="pt",
+        ).to("cpu")
+
+    with torch.no_grad():
+        encoder_outputs = text_encoder(**inputs)
+
+    max_new_tokens = int(frame_rate * audio_length_in_s)
+
+    set_seed(seed)
+    audio_values = model.generate(inputs.input_ids[0][None, :], attention_mask=inputs.attention_mask, encoder_outputs=encoder_outputs, do_sample=True, guidance_scale=guidance_scale, max_new_tokens=max_new_tokens)
+
+    audio_values = (audio_values.cpu().numpy() * 32767).astype(np.int16)
+    return (sampling_rate, audio_values)
 
 def main():
     while True:
@@ -51,20 +71,26 @@ def main():
         logger.debug(f"Text to Music Recieved:\n{header_message}")
         logger.info(f"Text to Music Recieved:\n{optimized_prompt}")
 
-        inputs = processor(
-            text=[optimized_prompt],
-            padding=True,
-            return_tensors="pt",
-        )
+        prompt = f"music like {args.genre} {optimized_prompt}"
 
-        audio_values = model.generate(**inputs, max_new_tokens=256)
-        audio_values = audio_values.numpy().reshape(-1)
+        if time.time() - header_message['timestamp'] > args.latency:
+            logger.error(f"TTM: Message is too old, skipping.")
+            continue
+
+        sampling_rate, audio_values = generate_audio(prompt, 
+                                                     "noise, static, banging and clanging",
+                                                     args.guidance_scale,
+                                                     args.seconds,
+                                                     args.seed)
+
+        # This is assuming audio_values is meant to be mono; if it's stereo, it should be shaped to (frames, 2)
+        audio_values = audio_values.squeeze()  # This will convert (1, 1, 318080) to (318080,)
 
         audiobuf = io.BytesIO()
-        sf.write(audiobuf, audio_values, model.config.sampling_rate, format='WAV')
+        sf.write(audiobuf, audio_values, sampling_rate, format='WAV')
         audiobuf.seek(0)
 
-        duration = len(audio_values) / model.config.sampling_rate
+        duration = len(audio_values) / sampling_rate
         header_message["duration"] = duration
         header_message["stream"] = "music"
         sender.send_json(header_message, zmq.SNDMORE)
@@ -77,7 +103,7 @@ def main():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_port", type=int, default=4001, required=False, help="Port for receiving text input")
-    parser.add_argument("--output_port", type=int, default=4002, required=False, help="Port for sending audio output")
+    parser.add_argument("--output_port", type=int, default=6002, required=False, help="Port for sending audio output")
     parser.add_argument("--target_lang", type=str, default="eng", help="Target language")
     parser.add_argument("--source_lang", type=str, default="eng", help="Source language")
     parser.add_argument("--audio_format", choices=["wav", "raw"], default="raw", help="Audio format to save as. Choices are 'wav' or 'raw'.")
@@ -85,11 +111,14 @@ if __name__ == "__main__":
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending audio output")
     parser.add_argument("--duration", type=int, default=10, help="Duration of the audio in seconds")
     parser.add_argument("--model", type=str, required=False, default="facebook/musicgen-small", help="Text to music model to use")
-    parser.add_argument("--seconds", type=int, default=30, required=False, help="Seconds to create, default is 30")
+    parser.add_argument("--seconds", type=int, default=10, required=False, help="Seconds to create, default is 30")
     parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
     parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
-
+    parser.add_argument("--guidance_scale", type=float, default=3.0, help="Guidance scale for the model")
+    parser.add_argument("--seed", type=int, default=0, help="Seed for the model")
+    parser.add_argument("--genre", type=str, default="Groovy 70s soul music", help="Genre for the model")
+    parser.add_argument("--latency", type=int, default=3, help="Latency in seconds to wait before sending music")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO
@@ -123,21 +152,12 @@ if __name__ == "__main__":
     sender = context.socket(zmq.PUSH)
     sender.connect(f"tcp://{args.output_host}:{args.output_port}")
 
-    """
-    synthesiser = pipeline("text-to-audio", args.model)
-    music = synthesiser("lo-fi music with a soothing melody", forward_params={"do_sample": True})
-    scipy.io.wavfile.write("musicgen_out.wav", rate=music["sampling_rate"], music=audio["audio"])
-    """
-
     processor = AutoProcessor.from_pretrained(args.model)
     model = MusicgenForConditionalGeneration.from_pretrained(args.model)
-    """
-    model.set_generation_params(
-        use_sampling=True,
-        top_k=250,
-        duration=args.duration
-    )
-    """
+
+    sampling_rate = model.audio_encoder.config.sampling_rate
+    frame_rate = model.audio_encoder.config.frame_rate
+    text_encoder = model.get_text_encoder()
 
     if args.metal:
         model = model.to("mps")

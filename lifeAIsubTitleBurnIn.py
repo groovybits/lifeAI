@@ -177,40 +177,91 @@ def main():
         image = receiver.recv()
 
         logger.debug(f"Subtitle Burn-In: recieved image {header_message}")
-
-        # check if we have optimized text
         
         ## Convert the bytes back to a PIL Image object
         image = Image.open(io.BytesIO(image))
 
-        if args.use_prompt and optimized_prompt.strip():            
-            image = add_text_to_image(image, optimized_prompt)
-        else:
-            image = add_text_to_image(image, text)
-        
-        # Convert PIL Image
-        img_byte_arr = io.BytesIO()
-        image.save(img_byte_arr, format=args.format)  # Save it as PNG or JPEG depending on your preference
-        image = img_byte_arr.getvalue()
+        ## check the length of the text, split into lines at breaks that keep them 80 characters or less
+        ## like captions on TV, put them in an array, then count out 3 at a time and send them out
+        ## repeating the header_message
+        images_sent = 0
+        wraptext = text
+        if args.use_prompt and optimized_prompt.strip():
+            wraptext = optimized_prompt
+        lines = textwrap.wrap(wraptext, width=args.linewidth)
+        lines = [lines[i:i + args.maxlines] for i in range(0, len(lines), args.maxlines)]
 
-        sender.send_json(header_message, zmq.SNDMORE)
-        sender.send(image)
+        for line in lines:
+            line_string = "\n".join(line)
+            image_copy = image.copy()
+            header_message["index"] = images_sent
+            images_sent += 1
+            logger.debug(f"Subtitle Burn-In #{images_sent}: line: {line_string}")
 
-        logger.info("Subtitle Burn-In: sent image #%s" % segment_number)
+            if args.use_prompt and optimized_prompt.strip():            
+                image_copy = add_text_to_image(image_copy, optimized_prompt)
+            else:
+                image_copy = add_text_to_image(image_copy, line_string)
+            
+            # Convert PIL Image
+            img_byte_arr = io.BytesIO()
+            image_copy.save(img_byte_arr, format=args.format)  # Save it as PNG or JPEG depending on your preference
+            image_copy = img_byte_arr.getvalue()
+
+            ## add the text to the header_message
+            header_message["text"] = line_string
+            ## add the length of the text to the timestamp
+            #header_message["timestamp"] = header_message["timestamp"] + (len(line_string.split(" ")) / 2)
+
+            sender.send_json(header_message, zmq.SNDMORE)
+            sender.send(image_copy)
+
+            image_copy = None
+
+            # sleep like 30 fps speed
+            # measure length and time the sleep for the time to speak the words
+            # 1 second per 10 words
+            if args.framesync:
+                sleep_time = len(line_string.split(" ")) / 4
+                time.sleep(sleep_time)
+
+        # send the original image with no text to clear the screen
+        # sleep like 30 fps speed
+        if args.clear:
+            if args.framesync:
+                time.sleep(10)
+            if args.use_prompt and optimized_prompt.strip():            
+                image = add_text_to_image(image, optimized_prompt)
+            else:
+                image = add_text_to_image(image, line_string)
+                
+            # Convert PIL Image
+            img_byte_arr = io.BytesIO()
+            image.save(img_byte_arr, format=args.format)  # Save it as PNG or JPEG depending on your preference
+            image = img_byte_arr.getvalue()
+
+            header_message["text"] = text
+            header_message["index"] = images_sent
+            sender.send_json(header_message, zmq.SNDMORE)
+            sender.send(image)
+
+        logger.info("Subtitle Burn-In: sent image #%s %s times" % (segment_number, images_sent))
       
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_port", type=int, default=3002, required=False, help="Port for receiving text input")
-    parser.add_argument("--output_port", type=int, default=3003, required=False, help="Port for sending image output")
+    parser.add_argument("--output_port", type=int, default=6002, required=False, help="Port for sending image output")
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Port for receiving text input")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending image output")
     parser.add_argument("--use_prompt", action="store_true", default=False, help="Burn in the prompt that created the image")
     parser.add_argument("--format", type=str, default="PNG", help="Image format to save as. Choices are 'PNG' or 'JPEG'. Default is 'PNG'.")
-    parser.add_argument("--width", type=int, default=1024, help="Width of the output image")
-    parser.add_argument("--height", type=int, default=1024, help="Height of the output image")
-    parser.add_argument("--maxlines", type=int, default=3, help="Maximum number of lines per subtitle group")
+    parser.add_argument("--width", type=int, default=1920, help="Width of the output image")
+    parser.add_argument("--height", type=int, default=1080, help="Height of the output image")
+    parser.add_argument("--maxlines", type=int, default=20, help="Maximum number of lines per subtitle group")
+    parser.add_argument("--linewidth", type=int, default=100, help="Maximum number of characters per line")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
-
+    parser.add_argument("--framesync", action="store_true", default=False, help="Sync frames output to duration of spoken text")
+    parser.add_argument("--clear", action="store_true", default=False, help="Clear the screen after each subtitle")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO

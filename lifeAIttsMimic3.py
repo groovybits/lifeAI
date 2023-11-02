@@ -19,8 +19,8 @@ def get_tts_audio(text, voice=None, noise_scale=None, noise_w=None, length_scale
     params = {
         'text': text,
         'voice': voice or 'en_US/cmu-arctic_low#slt',
-        'noiseScale': noise_scale or '0.667',
-        'noiseW': noise_w or '0.8',
+        'noiseScale': noise_scale or '0.333',
+        'noiseW': noise_w or '0.333',
         'lengthScale': length_scale or '1',
         'ssml': ssml or 'false',
         'audioTarget': audio_target or 'client'
@@ -38,12 +38,16 @@ def main():
         text = header_message["text"]
 
         # remove new lines
-        text = text.replace('\n', ' ')
+        #text = text.replace('\n', ' ')
         # reduce multiple spaces to single space
-        text = re.sub(r'\s+', ' ', text)
+        #text = re.sub(r'\s+', ' ', text)
 
          # clean text of end of line spaces after punctuation
         text = re.sub(r'([.,!?;:])\s+', r'\1', text)
+
+        # add ssml tags
+        if args.ssml == 'true':
+            text = f"<speak><prosody pitch=\"{args.pitch}\" range=\"{args.range}\" rate=\"{args.rate}\">" + text + f"</prosody></speak>"
 
         logger.debug("Text to Speech received request:\n%s" % header_message)
         logger.info(f"Text to Speech received request #{segment_number}:\n{text}")
@@ -81,13 +85,13 @@ def main():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_port", type=int, default=2000, required=False, help="Port for receiving text input")
-    parser.add_argument("--output_port", type=int, default=2001, required=False, help="Port for sending audio output")
+    parser.add_argument("--output_port", type=int, default=6002, required=False, help="Port for sending audio output")
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Host for receiving text input")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Host for sending audio output")
-    parser.add_argument("--voice", type=str, default='en_US/cmu-arctic_low#slt', help="Voice parameter for TTS API")
-    parser.add_argument("--noise_scale", type=str, default='0.667', help="Noise scale parameter for TTS API")
-    parser.add_argument("--noise_w", type=str, default='0.8', help="Noise weight parameter for TTS API")
-    parser.add_argument("--length_scale", type=str, default='1', help="Length scale parameter for TTS API")
+    parser.add_argument("--voice", type=str, default='en_US/cmu-arctic_low#ljm', help="Voice parameter for TTS API")
+    parser.add_argument("--noise_scale", type=str, default='0.333', help="Noise scale parameter for TTS API")
+    parser.add_argument("--noise_w", type=str, default='0.333', help="Noise weight parameter for TTS API")
+    parser.add_argument("--length_scale", type=str, default='1.5', help="Length scale parameter for TTS API")
     parser.add_argument("--ssml", type=str, default='false', help="SSML parameter for TTS API")
     parser.add_argument("--audio_target", type=str, default='client', help="Audio target parameter for TTS API")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
@@ -95,6 +99,9 @@ if __name__ == "__main__":
     parser.add_argument("--pub", action="store_true", default=False, help="Publish to a topic")
     parser.add_argument("--bind_output", action="store_true", default=False, help="Bind to a topic")
     parser.add_argument("--bind_input", action="store_true", default=False, help="Bind to a topic")
+    parser.add_argument("--rate", type=str, default="default", help="Speech rate, slow, medium, fast")
+    parser.add_argument("--range", type=str, default="high", help="Speech range, low, medium, high")
+    parser.add_argument("--pitch", type=str, default="high", help="Speech pitch, low, medium, high")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO

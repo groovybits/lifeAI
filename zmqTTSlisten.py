@@ -21,7 +21,7 @@ import logging
 import time
 
 def play_audio(audio_samples):
-    pygame.mixer.init(frequency=16000, size=-16, channels=1, buffer=1024)
+    pygame.mixer.init(frequency=args.freq, size=-16, channels=args.channels, buffer=1024)
     pygame.init()
      
     audiobuf = io.BytesIO(audio_samples)
@@ -89,13 +89,15 @@ def main():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input_port", type=int, default=2001, required=False, help="Port for receiving audio numpy arrays")
+    parser.add_argument("--input_port", type=int, default=6003, required=False, help="Port for receiving audio numpy arrays")
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Host for receiving audio input")
     parser.add_argument("--output_directory", default="audio", type=str, help="Directory path to save the received wave files in")
     parser.add_argument("--save_file", action="store_true", help="Save the received audio as WAV files")
     parser.add_argument("--show_hex", action="store_true", help="Show the hex representation of the audio payload")
     parser.add_argument("--audio_format", type=str, choices=["wav", "raw"], default="wav", help="Audio format to save as. Choices are 'wav' or 'raw'. Default is 'wav'.")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
+    parser.add_argument("--freq", type=int, default=22500, help="Frequency of audio")
+    parser.add_argument("--channels", type=int, default=1, help="Number of channels")
 
     args = parser.parse_args()
 

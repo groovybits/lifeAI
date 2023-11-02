@@ -56,13 +56,13 @@ def send_data(zmq_sender, message):
     # Placeholder for the ZMQ send function, which should be defined to match your ZMQ setup.
     zmq_sender.send_json(message)
 
-def stream_api_response(api_url, completion_params, zmq_sender, header_message, characters_per_line, sentence_count):
-    segment_number = header_message.get("segment_number", 0)
+def stream_api_response(api_url, completion_params, zmq_sender, header_message, characters_per_line, sentence_count, segment_number):
     accumulated_text = ""
 
     logger.info(f"--- stream_api_response(): chat LLM streaming API response. to {api_url} with completion_params: {completion_params}")
 
     tokens = 0
+    current_tokens = 0
     characters = 0
     with requests.post(api_url, json=completion_params, stream=True) as response:
         response.raise_for_status()
@@ -77,16 +77,20 @@ def stream_api_response(api_url, completion_params, zmq_sender, header_message, 
                     if content:  # Only add to accumulated text if there is content
                         print(content, end="")
                         tokens += 1
+                        current_tokens += 1
                         characters += len(content)
                         accumulated_text += content
+                        header_message["tokens"] = current_tokens
 
                         if len(accumulated_text) >= characters_per_line:
                             segment_number = clean_and_send_group(accumulated_text, zmq_sender, header_message, segment_number, sentence_count)
                             accumulated_text = ""  # Reset the accumulator
+                            current_tokens = 0
+                            header_message["tokens"] = 0
 
     # If there's any remaining text after the loop, send it as well
     if accumulated_text:
-        clean_and_send_group(accumulated_text, zmq_sender, header_message, segment_number, sentence_count)
+        segment_number = clean_and_send_group(accumulated_text, zmq_sender, header_message, segment_number, sentence_count)
 
     logger.info(f"--- stream_api_response(): chat LLM streaming API response: {tokens} tokens, {characters} characters.")
 
@@ -109,8 +113,7 @@ def clean_and_send_group(text, zmq_sender, header_message, segment_number, sente
 
     return segment_number
 
-def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_count, args):
-    segment_number = int(header_message["segment_number"])
+def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_count, args, segment_number):
     logger.info(f"--- run_llm(): chat LLM generating text from request message.")
 
     # Prepare the message to send to the LLM
@@ -148,7 +151,7 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
             completion_params['n_predict'] = args.maxtokens
         
         # Start a new thread to stream the API response and send it back to the client
-        streaming_thread = Thread(target=stream_api_response, args=(api_url, completion_params, zmq_sender, header_message, characters_per_line, sentence_count))
+        streaming_thread = Thread(target=stream_api_response, args=(api_url, completion_params, zmq_sender, header_message, characters_per_line, sentence_count, segment_number))
         streaming_thread.start()
         streaming_thread.join()
     except Exception as e:
@@ -178,6 +181,7 @@ def main(args):
     zmq_context = zmq.Context()
     receiver = None
     sender = None
+    segment_number = 0
 
     # Set up the ZMQ receiver
     receiver = zmq_context.socket(zmq.PULL)
@@ -196,7 +200,7 @@ def main(args):
 
             # Extract information from client request
             header_message = {
-                "segment_number": client_request["segment_number"],
+                "segment_number": segment_number,
                 "mediaid": client_request["mediaid"],
                 "mediatype": client_request["mediatype"],
                 "username": client_request["username"],
@@ -217,7 +221,7 @@ def main(args):
             header_message["llm_prompt"] = prompt
 
             # Call LLM function to process the request
-            header_message = run_llm(header_message, sender, api_endpoint, args.characters_per_line, args.sentence_count, args)
+            header_message = run_llm(header_message, sender, api_endpoint, args.characters_per_line, args.sentence_count, args, segment_number)
 
             # If run_llm returned None, we should handle this case.
             if header_message is None:
@@ -253,8 +257,8 @@ if __name__ == "__main__":
     parser.add_argument("-re", "--roleenforcer", type=str, default=role_enforcer, help="Role enforcer statement with {user} and {assistant} template names replaced by the actual ones in use.")
     parser.add_argument("-p", "--personality", type=str, default="friendly helpful compassionate bodhisattva guru.", help="Personality of the AI, choices are 'friendly' or 'mean'.")
     parser.add_argument("-sts", "--stoptokens", type=str, default="Question:", help="Stop tokens to use, do not change unless you know what you are doing!")
-    parser.add_argument("-tp", "--characters_per_line", type=int, default=600, help="Minimum number of characters per buffer, buffer window before output.")
-    parser.add_argument("-sc", "--sentence_count", type=int, default=4, help="Number of sentences per line.")
+    parser.add_argument("-tp", "--characters_per_line", type=int, default=100, help="Minimum number of characters per buffer, buffer window before output.")
+    parser.add_argument("-sc", "--sentence_count", type=int, default=2, help="Number of sentences per line.")
     parser.add_argument("-ag", "--autogenerate", action="store_true", default=False, help="Carry on long conversations, remove stop tokens.")
     parser.add_argument("--simplesplit", action="store_true", default=False, help="Simple split of text into lines, no sentence tokenization.")
     parser.add_argument("--timeout", type=int, default=300, help="Timeout in seconds for LLM to respond.")

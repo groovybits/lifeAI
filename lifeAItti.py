@@ -51,6 +51,10 @@ def clean_text(text):
     return text[:300]
 
 def main():
+    last_image = None
+    last_image_timestamp = 0
+    last_image_walltime = 0
+    text_cache = []
     while True:
         """ 
           header_message = {
@@ -96,19 +100,25 @@ def main():
         negative_prompt_embeds = torch.cat(neg_embeds, dim=1)
 
         # 3. Forward
-        image = pipe(prompt_embeds=prompt_embeds, negative_prompt_embeds=negative_prompt_embeds).images[0]
+        image = None
+        if last_image == None or time.time() - header_message["timestamp"] < args.latency:
+            image = pipe(prompt_embeds=prompt_embeds, negative_prompt_embeds=negative_prompt_embeds).images[0]
 
-        # Convert PIL Image to bytes
-        img_byte_arr = io.BytesIO()
-        image.save(img_byte_arr, format='PNG')  # Save it as PNG or JPEG depending on your preference
-        image = img_byte_arr.getvalue()
+            # Convert PIL Image to bytes
+            img_byte_arr = io.BytesIO()
+            image.save(img_byte_arr, format='PNG')  # Save it as PNG or JPEG depending on your preference
+            image = img_byte_arr.getvalue()
+
+            last_image = image
 
         header_message["stream"] = "image"
 
         sender.send_json(header_message, zmq.SNDMORE)
-        sender.send(image)
+        sender.send(last_image)
 
         logger.info(f"Text to Image sent image #{segment_number}:\n - {optimized_prompt}")
+        last_image_walltime = time.time()
+        last_image_timestamp = header_message["timestamp"]
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -121,7 +131,7 @@ if __name__ == "__main__":
     parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("-m", "--model", type=str, default="runwayml/stable-diffusion-v1-5", help="Model ID to use")
-
+    parser.add_argument("--latency", type=int, default=3, help="Latency in seconds to wait for a message")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO

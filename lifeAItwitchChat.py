@@ -129,7 +129,7 @@ class AiTwitchBot(commands.Cog):
 
             # Send the message
             client_request = {
-                "segment_number": "1",
+                "segment_number": "0",
                 "mediaid": ctx.message.id,
                 "mediatype": "chat",
                 "username": name,

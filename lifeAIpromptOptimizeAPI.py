@@ -114,8 +114,12 @@ def run_llm(prompt, api_url, args):
     return ""
 
 def main():
-    prompt_template = "Take the <title> - <summary> title and summary listed and transform it into a short summarized description to be used for {topic}."
+    prompt_template = "Create a description for {topic} that is short and summarized."
     prompt = prompt_template.format(topic=args.topic)
+
+    current_text_array = []
+
+    last_timestamp = time.time()
 
     while True:
         """ From LLM Source
@@ -149,6 +153,15 @@ def main():
 
         logger.info(f"Message: - {message}\nText: - {text}")
 
+        # check if enabled and combine prompts, once we have enough then we send them combined
+        if args.combine_count > 1:
+            current_text_array.append(text)
+            if len(current_text_array) < args.combine_count:
+                continue
+            else:
+                text = " ".join(current_text_array)
+                current_text_array = []
+
         full_prompt = f"{prompt}\n\n{args.qprompt}: {message} - {text}\n{args.aprompt}:"
 
         optimized_prompt = ""
@@ -167,6 +180,10 @@ def main():
         # Add optimized prompt
         if optimized_prompt:
             header_message["optimized_text"] = optimized_prompt
+
+        # if we combined text, then we need to send the original text as well
+        if args.combine_count > 1:
+            header_message["text"] = text
 
         # Send the processed message
         sender.send_json(header_message)
@@ -204,6 +221,7 @@ if __name__ == "__main__":
     parser.add_argument("--pub", action="store_true", default=False, help="Publish to a topic")
     parser.add_argument("--bind_output", action="store_true", default=False, help="Bind to a topic")
     parser.add_argument("--bind_input", action="store_true", default=False, help="Bind to a topic")
+    parser.add_argument("--combine_count", type=int, default=1, help="Number of messages to combine into one prompt.")
 
     args = parser.parse_args()
 

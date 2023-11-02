@@ -39,7 +39,7 @@ def main():
 
     # Send the message
     client_request = {
-        "segment_number": args.segment_number,
+        "segment_number": 0,
         "mediaid": args.id,
         "mediatype": args.type,
         "username": args.username,
@@ -63,7 +63,6 @@ if __name__ == "__main__":
     parser.add_argument("--output_port", type=int, default=1500, required=False, help="Port to send message to")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Host for sending message to.")
     parser.add_argument("--message", type=str, required=False, default="Story about naruto.", help="The original prompt generating the text.")
-    parser.add_argument("--segment_number", type=int, required=False, default=1, help="Segment number")
     parser.add_argument("--id", type=str, required=False, default=default_id, help="ID of the message")
     parser.add_argument("--type", type=str, required=False, default="chat", help="Type of message")
     parser.add_argument("--username", type=str, required=False, default="anonymous", help="Username of sender")

@@ -128,13 +128,13 @@ def main():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input_port", type=int, default=4002, required=False, help="Port for receiving audio numpy arrays")
+    parser.add_argument("--input_port", type=int, default=6003, required=False, help="Port for receiving audio numpy arrays")
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Host for receiving audio input")
     parser.add_argument("--output_directory", default="music", type=str, help="Directory path to save the received wave files in")
     parser.add_argument("--save_file", action="store_true", help="Save the received audio as WAV files")
     parser.add_argument("--show_hex", action="store_true", help="Show the hex representation of the audio payload")
     parser.add_argument("--audio_format", type=str, choices=["wav", "raw"], default="wav", help="Audio format to save as. Choices are 'wav' or 'raw'. Default is 'wav'.")
-    parser.add_argument("--volume", type=float, default=0.6, help="Playback volume (0.0 to 1.0, default is 0.6)")
+    parser.add_argument("--volume", type=float, default=0.9, help="Playback volume (0.0 to 1.0, default is 0.9)")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
 
     args = parser.parse_args()

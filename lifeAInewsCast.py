@@ -124,7 +124,6 @@ def main():
             time.sleep(30)
             continue
 
-        segment_number += 1
         pagination += 100
 
         if 'data' in news_json and len(news_json['data']) > 0:
@@ -154,7 +153,7 @@ def main():
 
                     # Send the message
                     client_request = {
-                        "segment_number": segment_number,
+                        "segment_number": 0,
                         "mediaid": mediaid,
                         "mediatype": "news",
                         "username": username,
@@ -173,17 +172,18 @@ def main():
         pagination += 100
 
 if __name__ == "__main__":
+    default_personality = "You are news reporter getting stories and analyzing them and presenting various thoughts and relations of them with a joyful compassionate wise perspective. Make the news fun and silly, joke and make comedy out of the world. Speak in a conversational tone referencing yourself and the person who asked the question if given.  Maintain your role without revealing that you're an AI Language model or your inability to access real-time information. Do not mention the text or sources used, treat the contextas something you are using as internal thought to generate responses as your role."
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--interval", type=int, default=60, required=False, help="interval to send messages in seconds, default is 120")
     parser.add_argument("--output_port", type=int, default=1500, required=False, help="Port to send message to")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Host for sending message to.")
     parser.add_argument("--username", type=str, required=False, default="NewsAnchor", help="Username of sender")
-    parser.add_argument("--keywords", type=str, required=False, default="ai anime buddhism cats", help="Keywords for news stories")
+    parser.add_argument("--keywords", type=str, required=False, default="ai anime buddhism cats artificial intelligence gpt openai elon musk", help="Keywords for news stories")
     parser.add_argument("--categories", type=str, required=False, default="technology,science,entertainment", help="News stories categories")
     parser.add_argument("--prompt", type=str, required=False, default="News Story just in... ",
                         help="Prompt to give context as a newstory feed")
-    parser.add_argument("--aipersonality", type=str, required=False, default="GAIB the AI Bot of Life AI, I am sending an interesting news article for analysis.", help="AI personality")
+    parser.add_argument("--aipersonality", type=str, required=False, default=f"GAIB the AI Bot of Life AI, I am sending an interesting news article for analysis. {default_personality}", help="AI personality")
     parser.add_argument("--ainame", type=str, required=False, default="GAIB", help="AI name")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
 

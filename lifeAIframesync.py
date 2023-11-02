@@ -22,179 +22,124 @@ warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
 from urllib3.exceptions import NotOpenSSLWarning
 warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 
-def process_and_send_buffers():
-    while True:
-        # Wait until we have at least one of each type
-        if not audio_buffer.empty() and not music_buffer.empty() and not image_buffer.empty():
-            # Get the next messages from each buffer
-            audio_message, audio_asset = audio_buffer.get()
-            music_message, music_asset = music_buffer.get()
-            image_message, image_asset = image_buffer.get()
-
-            # Synchronization logic here based on segment_number and timestamp
-            # Example: use the earliest timestamp of the three as the reference
-
-            # Send the music asset continuously until a new one comes in
-            while True:
-                sender.send_json(music_message, zmq.SNDMORE)
-                sender.send(music_asset)
-
-                # Check if there's a new music message in the buffer
-                if not music_buffer.empty():
-                    music_message, music_asset = music_buffer.get()
-                    break
-
-            # Send the audio message once
-            sender.send_json(audio_message, zmq.SNDMORE)
-            sender.send(audio_asset)
-
-            # Send the image message once
-            sender.send_json(image_message, zmq.SNDMORE)
-            sender.send(image_asset)
-
-            logger.info(f"Framesync: sent audio, music, and image for segment #{audio_message['segment_number']}")
-
-def sync_media_buffers(sender, logger, max_delay):
-    # Dictionaries to hold the latest assets by segment number
-    latest_assets = {'audio': {}, 'music': {}, 'image': {}}
-
+def sync_media_buffers(audio_buffer, music_buffer, image_buffer, sender, logger, max_delay, buffer_delay):
+    wall_clock_music = time.time() # Get the current wall clock time
+    wall_clock_audio = time.time() # Get the current wall clock time
+    wall_clock_image = time.time() # Get the current wall clock time
+    master_clock = time.time() # Set the master clock to the current wall clock time
+    last_audio_duration = 0
+    last_music_duration = 0
+    last_image_duration = 0
+    last_image_timestamp = 0
+    last_image_index = 0
+    last_audio_timestamp = 0
+    last_music_timestamp = 0
+    found_image = False
+    mediaid_music = ""
+    mediaid_audio = ""
+    mediaid_image = ""
+    audio_buffering = 0
+    waiting_for_audio = False
+    first_run = True
     while True:
         try:
-            # Check for the smallest segment number available in all buffers
-            if audio_buffer.qsize() > 0 and music_buffer.qsize() > 0 and image_buffer.qsize() > 0:
-                # Get the next messages from each buffer, but do not remove them yet
-                audio_message, audio_asset = audio_buffer.queue[0]
-                music_message, music_asset = music_buffer.queue[0]
-                image_message, image_asset = image_buffer.queue[0]
-
-                # Extract segment numbers
-                audio_segment = audio_message['segment_number']
-                music_segment = music_message['segment_number']
-                image_segment = image_message['segment_number']
-
-                # Synchronize based on the segment number
-                if audio_segment == music_segment == image_segment:
-                    # Remove items from the buffer
-                    audio_buffer.get()
+            if music_buffer.qsize() > 0 and time.time() - wall_clock_music > last_music_duration:
+                music_message, music_asset = (music_buffer.queue[0] if music_buffer and music_buffer.qsize() > 0 else (None, None))
+                if music_message['timestamp'] >= time.time() + buffer_delay:
                     music_buffer.get()
-                    image_buffer.get()
-
-                    # Check delay for image and drop if necessary
-                    if (time.time() - float(image_message['timestamp'])) > max_delay:
-                        logger.warning(f"Dropping image frame for segment {image_segment} due to high delay.")
-                        continue
-
-                    # Send the synchronized assets
-                    for message, asset in [(audio_message, audio_asset), (music_message, music_asset), (image_message, image_asset)]:
-                        sender.send_json(message, zmq.SNDMORE)
-                        sender.send(asset)
-                        logger.info(f"Sent synchronized segment #{message['segment_number']} for {message['stream']}")
-
-                # Implement your logic if the segment numbers do not match
-                # e.g., skip the oldest segment, or wait for the next iteration
-                else:
-                    # Log the mismatch and wait for the next iteration
-                    logger.warning("Segment numbers do not match for synchronization. Waiting for the next segments.")
-                    time.sleep(0.1)  # Avoid tight loop if waiting is necessary
-
-        except Exception as e:
-            logger.error(f"Error while syncing media buffers: {e}")
-
-def sync_media_buffers(audio_buffer, music_buffer, image_buffer, sender, logger, max_delay):
-    # Dictionaries to hold the latest assets by segment number
-    latest_assets = {'audio': {}, 'music': {}, 'image': {}}
-
-    while True:
-        try:
-            # Check for the smallest segment number available in all buffers
-            if audio_buffer.qsize() > 0 and music_buffer.qsize() > 0 and image_buffer.qsize() > 0:
-                # Get the next messages from each buffer, but do not remove them yet
-                audio_message, audio_asset = audio_buffer.queue[0]
-                music_message, music_asset = music_buffer.queue[0]
-                image_message, image_asset = image_buffer.queue[0]
-
-                # Extract segment numbers
-                audio_segment = audio_message['segment_number']
-                music_segment = music_message['segment_number']
-                image_segment = image_message['segment_number']
-
-                # Synchronize based on the segment number
-                if audio_segment == music_segment == image_segment:
-                    # Remove items from the buffer
-                    audio_buffer.get()
+                    last_music_duration = music_message['duration']
+                    sender.send_json(music_message, zmq.SNDMORE)
+                    sender.send(music_asset)
+                    logger.info(f"Sent music segment #{music_message['segment_number']} for {music_message['stream']} {music_message['timestamp']}']")
+                    wall_clock_music = time.time()
+                    mediaid_music = music_message['mediaid']
+                    last_music_timestamp = music_message['timestamp']
+                elif time.time() - wall_clock_music > buffer_delay + max_delay:
+                    logger.warning(f"Dropping music buffer with latency of {time.time() - wall_clock_music} seconds.")
                     music_buffer.get()
-                    image_buffer.get()
-
-                    # Check delay for image and drop if necessary
-                    if (time.time() - float(image_message['timestamp'])) > max_delay:
-                        logger.warning(f"Dropping image frame for segment {image_segment} due to high delay.")
-                        continue
-
-                    # Send the synchronized assets
-                    for message, asset in [(audio_message, audio_asset), (music_message, music_asset), (image_message, image_asset)]:
-                        sender.send_json(message, zmq.SNDMORE)
-                        sender.send(asset)
-                        logger.info(f"Sent synchronized segment #{message['segment_number']} for {message['stream']}")
-
+                    wall_clock_music = time.time()
                 else:
-                    # If the segments do not match, find the one with the earliest timestamp to requeue
-                    timestamps = [audio_message['timestamp'], music_message['timestamp'], image_message['timestamp']]
-                    min_timestamp = min(timestamps)
-                    min_index = timestamps.index(min_timestamp)
-                    
-                    # Requeue the message with the earliest timestamp
-                    if min_index == 0:  # Audio has the earliest timestamp
-                        audio_buffer.get()  # Remove the message from the queue
-                        audio_buffer.put((audio_message, audio_asset))  # Requeue it
-                    elif min_index == 1:  # Music has the earliest timestamp
-                        music_buffer.get()  # Remove the message from the queue
-                        music_buffer.put((music_message, music_asset))  # Requeue it
-                    elif min_index == 2:  # Image has the earliest timestamp
-                        image_buffer.get()  # Remove the message from the queue
-                        image_buffer.put((image_message, image_asset))  # Requeue it
-                        
-                    logger.warning("Segment numbers do not match for synchronization. Requeued the earliest segment.")
+                    logger.info(f"Music buffer delay {time.time() - wall_clock_music} seconds.")
+
+            if audio_buffer.qsize() > 0 and image_buffer.qsize() > 0:
+                if time.time() - wall_clock_audio >= last_audio_duration:
+                    audio_message, audio_asset = (audio_buffer.queue[0] if audio_buffer and audio_buffer.qsize() > 0 else (None, None))
+                    image_message, image_asset = (image_buffer.queue[0] if image_buffer and image_buffer.qsize() > 0 else (None, None))
+                    if found_image: # and audio_message['timestamp'] >= image_message['timestamp']:
+                        # if we found an image then we can start sending audio or keep sending it
+                        if first_run or (last_image_timestamp > 0 and (waiting_for_audio) or audio_message['timestamp'] >= last_image_timestamp):
+                            audio_buffer.get()
+                            last_audio_duration = audio_message['duration']
+                            sender.send_json(audio_message, zmq.SNDMORE)
+                            sender.send(audio_asset)
+                            logger.info(f"Sent audio segment #{audio_message['segment_number']} for {audio_message['stream']} {audio_message['timestamp']}']")
+                            wall_clock_audio = time.time()
+                            mediaid_audio = audio_message['mediaid']
+                            last_audio_timestamp = audio_message['timestamp']
+                            waiting_for_audio = False
+                            first_run = False
+                        else:
+                            logger.info(f"Audio buffer delay {time.time() - wall_clock_audio} seconds.")
+                    else:
+                        # if we have not found an image yet then we need to wait for one
+                        if time.time() - audio_message['timestamp'] > max_delay:
+                            logger.warning(f"Dropping audio buffer with latency of {time.time() - audio_message['timestamp']} seconds.")
+                            audio_buffer.get()
+                            wall_clock_audio = time.time()
+                        else:
+                            logger.info(f"Audio buffer delay {time.time() - wall_clock_audio} seconds.")
+
+                    if not found_image or not waiting_for_audio or image_message['timestamp'] <= last_audio_timestamp:
+                        # need to send image first before starting audio
+                        image_buffer.get()
+                        sender.send_json(image_message, zmq.SNDMORE)
+                        sender.send(image_asset)
+                        logger.info(f"Sending First image segment #{image_message['segment_number']} index {image_message['index']} for {image_message['stream']} {image_message['timestamp']}']")
+                        last_image_timestamp = image_message['timestamp']
+                        wall_clock_image = time.time()
+                        found_image = True
+                        mediaid_image = image_message['mediaid']
+                        if 'index' in image_message:
+                            last_image_index = image_message['index']
+                        last_image_duration = min(5, len(image_message['text'].split(' ')) / 3) # calculate from words the delay
+                        waiting_for_audio = True
 
         except Exception as e:
             logger.error(f"Error while syncing media buffers: {e}")
 
 def main():
-    if not args.passthrough:
-        # Start a thread for processing and sending buffers
-        threading.Thread(target=process_and_send_buffers, daemon=True).start()
-
     while True:
         header_message = receiver.recv_json()
-        """ 
-          header_message = {
-            "segment_number": segment_number,
-            "mediaid": mediaid,
-            "mediatype": mediatype,
-            "username": username,
-            "source": source,
-            "message": message,
-            "text": text,
-            "optimized_text": optimized_text,
-        }"""
-        # fill out variables from header_message
-        segment_number = header_message["segment_number"]
         asset = receiver.recv()
 
+        # fill out variables from header_message
+        if "segment_number" not in header_message:
+            logger.error(f"Framesync: No segment number in header message: {header_message}")
+            continue
+
+        segment_number = header_message["segment_number"]
+        stream = header_message['stream']
+        text = header_message['text']
+        duration = 0
+        if "duration" in header_message:
+            duration = "%d" % int(header_message["duration"])
+        timestamp = 0
+        if "timestamp" in header_message:
+            timestamp = "%d" % int(header_message["timestamp"])
+        mediaid = "none"
+        if "mediaid" in header_message:
+            mediaid = header_message['mediaid']
+
+        tokens = 0
+        if "tokens" in header_message:
+            tokens = header_message['tokens']
+        
+        logger.info(f"Framesync: {mediaid}:{timestamp}#{segment_number}:{stream}:{duration} seconds {len(text)} characters {tokens} tokens: {text[:50]}")
+
         if args.passthrough:
-            stream = header_message['stream']
-            text = header_message['text']
-            duration = 0
-            if "duration" in header_message:
-                duration = "%d" % int(header_message["duration"])
-            timestamp = 0
-            if "timestamp" in header_message:
-                timestamp = "%d" % int(header_message["timestamp"])
-            mediaid = "none"
-            if "mediaid" in header_message:
-                mediaid = header_message['mediaid']
             sender.send_json(header_message, zmq.SNDMORE)
             sender.send(asset)
-            logger.info(f"Framesync: mediaid {mediaid} {timestamp} sent segment #{segment_number} {stream} {duration}: {text}")
+            text = text.replace('\n', ' ').replace('  ','').strip()
             continue
 
         if "stream" not in header_message:
@@ -235,11 +180,8 @@ def main():
             music_buffer.put((header_message, asset))
         elif is_image:
             image_buffer.put((header_message, asset))
-        
-        sender.send_json(header_message, zmq.SNDMORE)
-        sender.send(asset)
 
-        logger.info("Framesync: sent segment #%s" % segment_number)
+        logger.info(f"Framesync: {type} buffered segment #{segment_number} timestamp {timestamp}")
       
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -248,9 +190,10 @@ if __name__ == "__main__":
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Port for receiving text input")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending image output")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
-    parser.add_argument("--max_delay", type=int, default=5, help="Maximum allowed delay in seconds for image frames before they are dropped")
+    parser.add_argument("--max_delay", type=int, default=60, help="Maximum allowed delay in seconds for image frames before they are dropped")
     parser.add_argument("--passthrough", action="store_true", help="Pass through all messages without synchronization")
     parser.add_argument("--max_segment_diff", type=int, default=2, help="Maximum allowed segment number difference before older segments are skipped")
+    parser.add_argument("--buffer_delay", type=int, default=0, help="Delay in seconds to buffer messages before sending them out")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO
@@ -290,7 +233,7 @@ if __name__ == "__main__":
         image_buffer = queue.Queue()
 
         # Start the sync_media_buffers function in a separate thread
-        threading.Thread(target=sync_media_buffers, args=(audio_buffer, music_buffer, image_buffer, sender, logger), daemon=True).start()
+        threading.Thread(target=sync_media_buffers, args=(audio_buffer, music_buffer, image_buffer, sender, logger, args.max_delay, args.buffer_delay), daemon=True).start()
 
     main()
 
