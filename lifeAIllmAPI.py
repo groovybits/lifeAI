@@ -257,7 +257,7 @@ if __name__ == "__main__":
     parser.add_argument("-re", "--roleenforcer", type=str, default=role_enforcer, help="Role enforcer statement with {user} and {assistant} template names replaced by the actual ones in use.")
     parser.add_argument("-p", "--personality", type=str, default="friendly helpful compassionate bodhisattva guru.", help="Personality of the AI, choices are 'friendly' or 'mean'.")
     parser.add_argument("-sts", "--stoptokens", type=str, default="Question:", help="Stop tokens to use, do not change unless you know what you are doing!")
-    parser.add_argument("-tp", "--characters_per_line", type=int, default=100, help="Minimum number of characters per buffer, buffer window before output.")
+    parser.add_argument("-tp", "--characters_per_line", type=int, default=1000, help="Minimum number of characters per buffer, buffer window before output.")
     parser.add_argument("-sc", "--sentence_count", type=int, default=2, help="Number of sentences per line.")
     parser.add_argument("-ag", "--autogenerate", action="store_true", default=False, help="Carry on long conversations, remove stop tokens.")
     parser.add_argument("--simplesplit", action="store_true", default=False, help="Simple split of text into lines, no sentence tokenization.")

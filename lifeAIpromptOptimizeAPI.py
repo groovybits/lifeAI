@@ -202,8 +202,8 @@ if __name__ == "__main__":
     parser.add_argument("--output_port", type=int, default=3001)
     parser.add_argument("--topic", type=str, default="image generation", 
                         help="Topic to use for image generation, default 'image generation'")
-    parser.add_argument("--maxtokens", type=int, default=300)
-    parser.add_argument("--context", type=int, default=4096)
+    parser.add_argument("--maxtokens", type=int, default=200)
+    parser.add_argument("--context", type=int, default=1024)
     parser.add_argument("--temperature", type=float, default=0.4)
     parser.add_argument("--model", type=str, default=model)
     parser.add_argument("-d", "--debug", action="store_true", default=False)
@@ -221,7 +221,7 @@ if __name__ == "__main__":
     parser.add_argument("--pub", action="store_true", default=False, help="Publish to a topic")
     parser.add_argument("--bind_output", action="store_true", default=False, help="Bind to a topic")
     parser.add_argument("--bind_input", action="store_true", default=False, help="Bind to a topic")
-    parser.add_argument("--combine_count", type=int, default=1, help="Number of messages to combine into one prompt.")
+    parser.add_argument("--combine_count", type=int, default=3, help="Number of messages to combine into one prompt.")
 
     args = parser.parse_args()
 

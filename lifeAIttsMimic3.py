@@ -37,11 +37,6 @@ def main():
         segment_number = header_message["segment_number"]
         text = header_message["text"]
 
-        # remove new lines
-        #text = text.replace('\n', ' ')
-        # reduce multiple spaces to single space
-        #text = re.sub(r'\s+', ' ', text)
-
          # clean text of end of line spaces after punctuation
         text = re.sub(r'([.,!?;:])\s+', r'\1', text)
 
@@ -102,6 +97,7 @@ if __name__ == "__main__":
     parser.add_argument("--rate", type=str, default="default", help="Speech rate, slow, medium, fast")
     parser.add_argument("--range", type=str, default="high", help="Speech range, low, medium, high")
     parser.add_argument("--pitch", type=str, default="high", help="Speech pitch, low, medium, high")
+    parser.add_argument("--delay", type=int, default=3, help="Delay in seconds after timestamp before sending audio")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO

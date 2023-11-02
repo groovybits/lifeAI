@@ -16,93 +16,57 @@ import logging
 import time
 import queue
 import threading
+from queue import PriorityQueue
 
 warnings.simplefilter(action='ignore', category=Warning)
 warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
 from urllib3.exceptions import NotOpenSSLWarning
 warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 
-def sync_media_buffers(audio_buffer, music_buffer, image_buffer, sender, logger, max_delay, buffer_delay):
-    wall_clock_music = time.time() # Get the current wall clock time
-    wall_clock_audio = time.time() # Get the current wall clock time
-    wall_clock_image = time.time() # Get the current wall clock time
-    master_clock = time.time() # Set the master clock to the current wall clock time
-    last_audio_duration = 0
-    last_music_duration = 0
-    last_image_duration = 0
-    last_image_timestamp = 0
-    last_image_index = 0
-    last_audio_timestamp = 0
-    last_music_timestamp = 0
-    found_image = False
-    mediaid_music = ""
-    mediaid_audio = ""
-    mediaid_image = ""
-    audio_buffering = 0
-    waiting_for_audio = False
-    first_run = True
+def sync_media_buffers(audio_buffer, music_buffer, image_buffer, sender, logger, max_delay):
+    master_clock = None  # Initialize the master clock to None
+    mux_pq = PriorityQueue()
+
     while True:
         try:
-            if music_buffer.qsize() > 0 and time.time() - wall_clock_music > last_music_duration:
-                music_message, music_asset = (music_buffer.queue[0] if music_buffer and music_buffer.qsize() > 0 else (None, None))
-                if music_message['timestamp'] >= time.time() + buffer_delay:
-                    music_buffer.get()
-                    last_music_duration = music_message['duration']
-                    sender.send_json(music_message, zmq.SNDMORE)
-                    sender.send(music_asset)
-                    logger.info(f"Sent music segment #{music_message['segment_number']} for {music_message['stream']} {music_message['timestamp']}']")
-                    wall_clock_music = time.time()
-                    mediaid_music = music_message['mediaid']
-                    last_music_timestamp = music_message['timestamp']
-                elif time.time() - wall_clock_music > buffer_delay + max_delay:
-                    logger.warning(f"Dropping music buffer with latency of {time.time() - wall_clock_music} seconds.")
-                    music_buffer.get()
-                    wall_clock_music = time.time()
-                else:
-                    logger.info(f"Music buffer delay {time.time() - wall_clock_music} seconds.")
+            # Process music buffer
+            if not music_buffer.empty():
+                music_message, music_asset = music_buffer.get()
+                sender.send_json(music_message, zmq.SNDMORE)
+                sender.send(music_asset)
+                logger.info(f"Sent music segment #{music_message['segment_number']} at timestamp {music_message['timestamp']}")
 
-            if audio_buffer.qsize() > 0 and image_buffer.qsize() > 0:
-                if time.time() - wall_clock_audio >= last_audio_duration:
-                    audio_message, audio_asset = (audio_buffer.queue[0] if audio_buffer and audio_buffer.qsize() > 0 else (None, None))
-                    image_message, image_asset = (image_buffer.queue[0] if image_buffer and image_buffer.qsize() > 0 else (None, None))
-                    if found_image: # and audio_message['timestamp'] >= image_message['timestamp']:
-                        # if we found an image then we can start sending audio or keep sending it
-                        if first_run or (last_image_timestamp > 0 and (waiting_for_audio) or audio_message['timestamp'] >= last_image_timestamp):
-                            audio_buffer.get()
-                            last_audio_duration = audio_message['duration']
-                            sender.send_json(audio_message, zmq.SNDMORE)
-                            sender.send(audio_asset)
-                            logger.info(f"Sent audio segment #{audio_message['segment_number']} for {audio_message['stream']} {audio_message['timestamp']}']")
-                            wall_clock_audio = time.time()
-                            mediaid_audio = audio_message['mediaid']
-                            last_audio_timestamp = audio_message['timestamp']
-                            waiting_for_audio = False
-                            first_run = False
-                        else:
-                            logger.info(f"Audio buffer delay {time.time() - wall_clock_audio} seconds.")
-                    else:
-                        # if we have not found an image yet then we need to wait for one
-                        if time.time() - audio_message['timestamp'] > max_delay:
-                            logger.warning(f"Dropping audio buffer with latency of {time.time() - audio_message['timestamp']} seconds.")
-                            audio_buffer.get()
-                            wall_clock_audio = time.time()
-                        else:
-                            logger.info(f"Audio buffer delay {time.time() - wall_clock_audio} seconds.")
+            # Process audio and image buffers
+            if not mux_pq.empty() or (not audio_buffer.empty() and not image_buffer.empty()):
+                if not audio_buffer.empty():
+                    audio_message, audio_asset = audio_buffer.get()
+                    mux_pq.put((audio_message['timestamp'], ('audio', audio_message, audio_asset)))
+                if not image_buffer.empty():
+                    image_message, image_asset = image_buffer.get()
+                    mux_pq.put((image_message['timestamp'], ('image', image_message, image_asset)))
 
-                    if not found_image or not waiting_for_audio or image_message['timestamp'] <= last_audio_timestamp:
-                        # need to send image first before starting audio
-                        image_buffer.get()
-                        sender.send_json(image_message, zmq.SNDMORE)
-                        sender.send(image_asset)
-                        logger.info(f"Sending First image segment #{image_message['segment_number']} index {image_message['index']} for {image_message['stream']} {image_message['timestamp']}']")
-                        last_image_timestamp = image_message['timestamp']
-                        wall_clock_image = time.time()
-                        found_image = True
-                        mediaid_image = image_message['mediaid']
-                        if 'index' in image_message:
-                            last_image_index = image_message['index']
-                        last_image_duration = min(5, len(image_message['text'].split(' ')) / 3) # calculate from words the delay
-                        waiting_for_audio = True
+                # Send out assets in timestamp order, waiting for images to catch up to audio
+                if not mux_pq.empty():
+                    _, (media_type, message, asset) = mux_pq.get()
+                    current_time = time.time()
+
+                    if media_type == 'audio' and (master_clock is None or message['timestamp'] <= master_clock):
+                        sender.send_json(message, zmq.SNDMORE)
+                        sender.send(asset)
+                        logger.info(f"Sent {media_type} segment #{message['segment_number']} at timestamp {message['timestamp']}")
+                        master_clock = message['timestamp']
+
+                    elif media_type == 'image' and (master_clock is None or message['timestamp'] <= master_clock):
+                        sender.send_json(message, zmq.SNDMORE)
+                        sender.send(asset)
+                        logger.info(f"Sent {media_type} segment #{message['segment_number']} at timestamp {message['timestamp']}")
+                        master_clock = message['timestamp']
+
+                    # Check for delay
+                    if current_time - message['timestamp'] > max_delay:
+                        logger.warning(f"Dropping {media_type} segment #{message['segment_number']} due to high delay.")
+
+                    time.sleep(0.01)  # Sleep to prevent CPU overuse
 
         except Exception as e:
             logger.error(f"Error while syncing media buffers: {e}")
@@ -233,7 +197,7 @@ if __name__ == "__main__":
         image_buffer = queue.Queue()
 
         # Start the sync_media_buffers function in a separate thread
-        threading.Thread(target=sync_media_buffers, args=(audio_buffer, music_buffer, image_buffer, sender, logger, args.max_delay, args.buffer_delay), daemon=True).start()
+        threading.Thread(target=sync_media_buffers, args=(audio_buffer, music_buffer, image_buffer, sender, logger, args.max_delay), daemon=True).start()
 
     main()
 

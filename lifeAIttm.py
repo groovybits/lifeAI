@@ -109,16 +109,15 @@ if __name__ == "__main__":
     parser.add_argument("--audio_format", choices=["wav", "raw"], default="raw", help="Audio format to save as. Choices are 'wav' or 'raw'.")
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Port for receiving text input")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending audio output")
-    parser.add_argument("--duration", type=int, default=10, help="Duration of the audio in seconds")
     parser.add_argument("--model", type=str, required=False, default="facebook/musicgen-small", help="Text to music model to use")
-    parser.add_argument("--seconds", type=int, default=10, required=False, help="Seconds to create, default is 30")
+    parser.add_argument("--seconds", type=int, default=60, required=False, help="Seconds to create, default is 30")
     parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
     parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--guidance_scale", type=float, default=3.0, help="Guidance scale for the model")
     parser.add_argument("--seed", type=int, default=0, help="Seed for the model")
     parser.add_argument("--genre", type=str, default="Groovy 70s soul music", help="Genre for the model")
-    parser.add_argument("--latency", type=int, default=3, help="Latency in seconds to wait before sending music")
+    parser.add_argument("--latency", type=int, default=60, help="Latency in seconds to wait before sending music")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO
@@ -151,6 +150,7 @@ if __name__ == "__main__":
     # Set up the publisher
     sender = context.socket(zmq.PUSH)
     sender.connect(f"tcp://{args.output_host}:{args.output_port}")
+    logger.info("connected to ZMQ out: %s:%d" % (args.output_host, args.output_port))
 
     processor = AutoProcessor.from_pretrained(args.model)
     model = MusicgenForConditionalGeneration.from_pretrained(args.model)

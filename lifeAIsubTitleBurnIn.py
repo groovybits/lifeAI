@@ -222,18 +222,14 @@ def main():
             # measure length and time the sleep for the time to speak the words
             # 1 second per 10 words
             if args.framesync:
-                sleep_time = len(line_string.split(" ")) / 4
+                sleep_time = len(line_string.split(" ")) / 2
                 time.sleep(sleep_time)
 
         # send the original image with no text to clear the screen
         # sleep like 30 fps speed
         if args.clear:
             if args.framesync:
-                time.sleep(10)
-            if args.use_prompt and optimized_prompt.strip():            
-                image = add_text_to_image(image, optimized_prompt)
-            else:
-                image = add_text_to_image(image, line_string)
+                time.sleep(3)
                 
             # Convert PIL Image
             img_byte_arr = io.BytesIO()
@@ -257,7 +253,7 @@ if __name__ == "__main__":
     parser.add_argument("--format", type=str, default="PNG", help="Image format to save as. Choices are 'PNG' or 'JPEG'. Default is 'PNG'.")
     parser.add_argument("--width", type=int, default=1920, help="Width of the output image")
     parser.add_argument("--height", type=int, default=1080, help="Height of the output image")
-    parser.add_argument("--maxlines", type=int, default=20, help="Maximum number of lines per subtitle group")
+    parser.add_argument("--maxlines", type=int, default=1, help="Maximum number of lines per subtitle group")
     parser.add_argument("--linewidth", type=int, default=100, help="Maximum number of characters per line")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--framesync", action="store_true", default=False, help="Sync frames output to duration of spoken text")

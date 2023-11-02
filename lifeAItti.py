@@ -81,27 +81,27 @@ def main():
 
         logger.debug(f"Text to Image recieved optimized prompt:\n{header_message}.")
 
-        # 2. Forward embeddings and negative embeddings through text encoder
-        max_length = pipe.tokenizer.model_max_length
-
-        input_ids = pipe.tokenizer(optimized_prompt, return_tensors="pt").input_ids
-        input_ids = input_ids.to("mps")
-
-        negative_ids = pipe.tokenizer("", truncation=False, padding="max_length", max_length=input_ids.shape[-1], return_tensors="pt").input_ids                                                                                                     
-        negative_ids = negative_ids.to("mps")
-
-        concat_embeds = []
-        neg_embeds = []
-        for i in range(0, input_ids.shape[-1], max_length):
-            concat_embeds.append(pipe.text_encoder(input_ids[:, i: i + max_length])[0])
-            neg_embeds.append(pipe.text_encoder(negative_ids[:, i: i + max_length])[0])
-
-        prompt_embeds = torch.cat(concat_embeds, dim=1)
-        negative_prompt_embeds = torch.cat(neg_embeds, dim=1)
-
-        # 3. Forward
         image = None
         if last_image == None or time.time() - header_message["timestamp"] < args.latency:
+            # 2. Forward embeddings and negative embeddings through text encoder
+            max_length = pipe.tokenizer.model_max_length
+
+            # 3. Forward
+            input_ids = pipe.tokenizer(optimized_prompt, return_tensors="pt").input_ids
+            input_ids = input_ids.to("mps")
+
+            negative_ids = pipe.tokenizer("", truncation=False, padding="max_length", max_length=input_ids.shape[-1], return_tensors="pt").input_ids                                                                                                     
+            negative_ids = negative_ids.to("mps")
+
+            concat_embeds = []
+            neg_embeds = []
+            for i in range(0, input_ids.shape[-1], max_length):
+                concat_embeds.append(pipe.text_encoder(input_ids[:, i: i + max_length])[0])
+                neg_embeds.append(pipe.text_encoder(negative_ids[:, i: i + max_length])[0])
+
+            prompt_embeds = torch.cat(concat_embeds, dim=1)
+            negative_prompt_embeds = torch.cat(neg_embeds, dim=1)
+
             image = pipe(prompt_embeds=prompt_embeds, negative_prompt_embeds=negative_prompt_embeds).images[0]
 
             # Convert PIL Image to bytes
@@ -131,7 +131,7 @@ if __name__ == "__main__":
     parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("-m", "--model", type=str, default="runwayml/stable-diffusion-v1-5", help="Model ID to use")
-    parser.add_argument("--latency", type=int, default=3, help="Latency in seconds to wait for a message")
+    parser.add_argument("--latency", type=int, default=60, help="Latency in seconds to wait for a message")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO
