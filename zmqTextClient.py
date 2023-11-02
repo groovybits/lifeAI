@@ -47,6 +47,7 @@ def main():
         "message": args.message,
         "aipersonality": aipersonality,
         "ainame": ainame,
+        "episode": args.episode,
         "history": history,
         "text": args.text,
     }
@@ -72,6 +73,7 @@ if __name__ == "__main__":
     parser.add_argument("--text", type=str, required=False, default="As he walked down the street he saw a firehydrant. It reminded him of the past.", help="AI name")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--seconds", type=int, default=60, help="Seconds to wait between messages")
+    parser.add_argument("--episode", action="store_true", default=False, help="Episode mode")
     parser.add_argument("--pub", action="store_true", default=False, help="Publish to a topic")
     parser.add_argument("--bind_output", action="store_true", default=False, help="Bind to a topic")
 

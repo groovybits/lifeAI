@@ -56,7 +56,7 @@ def main():
             # Now, receive the binary audio data
             audio_samples = socket.recv()
 
-            if header_message['stream'] != "speech":
+            if header_message['stream'] != "speek":
                 logger.debug(f"Received non-speech stream {header_message['stream']}")
                 continue
 
@@ -114,7 +114,7 @@ if __name__ == "__main__":
 
     log_id = time.strftime("%Y%m%d-%H%M%S")
     logging.basicConfig(filename=f"logs/zmqTTSlisten-{log_id}.log", level=LOGLEVEL)
-    logger = logging.getLogger('GAIB')
+    logger = logging.getLogger('TTSlistener')
 
     ch = logging.StreamHandler()
     ch.setLevel(LOGLEVEL)

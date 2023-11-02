@@ -152,7 +152,7 @@ if __name__ == "__main__":
 
     log_id = time.strftime("%Y%m%d-%H%M%S")
     logging.basicConfig(filename=f"logs/zmqTTMlisten-{log_id}.log", level=LOGLEVEL)
-    logger = logging.getLogger('GAIB')
+    logger = logging.getLogger('TTMlistener')
 
     ch = logging.StreamHandler()
     ch.setLevel(LOGLEVEL)

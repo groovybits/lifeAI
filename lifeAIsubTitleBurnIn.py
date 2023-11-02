@@ -238,10 +238,11 @@ def main():
 
             header_message["text"] = text
             header_message["index"] = images_sent
+
             sender.send_json(header_message, zmq.SNDMORE)
             sender.send(image)
 
-        logger.info("Subtitle Burn-In: sent image #%s %s times" % (segment_number, images_sent))
+        logger.info(f"Subtitle Burn-In: sent {images_sent} Images #{segment_number} {header_message['timestamp']}.")
       
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -253,7 +254,7 @@ if __name__ == "__main__":
     parser.add_argument("--format", type=str, default="PNG", help="Image format to save as. Choices are 'PNG' or 'JPEG'. Default is 'PNG'.")
     parser.add_argument("--width", type=int, default=1920, help="Width of the output image")
     parser.add_argument("--height", type=int, default=1080, help="Height of the output image")
-    parser.add_argument("--maxlines", type=int, default=2, help="Maximum number of lines per subtitle group")
+    parser.add_argument("--maxlines", type=int, default=9999, help="Maximum number of lines per subtitle group")
     parser.add_argument("--linewidth", type=int, default=100, help="Maximum number of characters per line")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--framesync", action="store_true", default=False, help="Sync frames output to duration of spoken text")
@@ -273,7 +274,7 @@ if __name__ == "__main__":
 
     log_id = time.strftime("%Y%m%d-%H%M%S")
     logging.basicConfig(filename=f"logs/subtitleBurnIn-{log_id}.log", level=LOGLEVEL)
-    logger = logging.getLogger('GAIB')
+    logger = logging.getLogger('subTileBurnIn')
 
     ch = logging.StreamHandler()
     ch.setLevel(LOGLEVEL)

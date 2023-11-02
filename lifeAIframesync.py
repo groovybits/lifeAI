@@ -17,6 +17,7 @@ import time
 import queue
 import threading
 from queue import PriorityQueue
+import hashlib
 
 warnings.simplefilter(action='ignore', category=Warning)
 warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
@@ -102,7 +103,16 @@ def main():
         if "tokens" in header_message:
             tokens = header_message['tokens']
         
-        logger.info(f"Framesync: {mediaid}:{timestamp}#{segment_number}:{stream}:{duration} seconds {len(text)} characters {tokens} tokens: {text[:50]}")
+        # md5sum text
+        md5text = hashlib.md5(text.encode('utf-8')).hexdigest()
+        clean_text = text[:30].replace('\n', ' ').replace('\t','').strip()
+        md5sig = "none"
+        if 'md5sum' in header_message:
+            md5sig = header_message['md5sum']
+        segment_index = 0
+        if 'index' in header_message:
+            segment_index = header_message['index']
+        logger.info(f"Framesync: {stream} #{segment_number}/{segment_index} - {timestamp}: {mediaid} {duration} seconds {len(text)} characters {tokens} tokens {md5sig}/{md5text}: {clean_text}")
 
         if args.passthrough:
             sender.send_json(header_message, zmq.SNDMORE)
@@ -125,7 +135,7 @@ def main():
             timestamp = "%d" % int(header_message["timestamp"])
 
         type = header_message["stream"]
-        if type == "speech":
+        if type == "speek":
             is_audio = True
         elif type == "music":
             is_music = True

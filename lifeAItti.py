@@ -10,7 +10,6 @@
 
 import zmq
 import argparse
-from transformers import VitsModel, AutoTokenizer
 import io
 
 from diffusers import StableDiffusionPipeline
@@ -18,7 +17,6 @@ import torch
 from transformers import logging as trlogging
 import warnings
 import urllib3
-import inflect
 import re
 import logging
 import time
@@ -30,25 +28,28 @@ warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 trlogging.set_verbosity_error()
 
 def clean_text(text):
-    p = inflect.engine()
-
-    def num_to_words(match):
-        number = match.group()
-        try:
-            words = p.number_to_words(number)
-        except inflect.NumOutOfRangeError:
-            words = "[number too large]"
-        return words
-
-    text = re.sub(r'\b\d+(\.\d+)?\b', num_to_words, text)
-
-    # Add a pause after punctuation
-    text = text.replace('.', '. ')
-    text = text.replace(',', ', ')
-    text = text.replace('?', '? ')
-    text = text.replace('!', '! ')
-
-    return text[:300]
+    # Remove URLs
+    text = re.sub(r'http[s]?://\S+', '', text)
+    
+    # Remove image tags or Markdown image syntax
+    text = re.sub(r'\!\[.*?\]\(.*?\)', '', text)
+    text = re.sub(r'<img.*?>', '', text)
+    
+    # Remove HTML tags
+    text = re.sub(r'<.*?>', '', text)
+    
+    # Remove any inline code blocks
+    text = re.sub(r'`.*?`', '', text)
+    
+    # Remove any block code segments
+    text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
+    
+    # Remove special characters and digits (optional, be cautious)
+    text = re.sub(r'[^a-zA-Z0-9\s.?,!\n]', '', text)
+    
+    # Remove extra whitespace
+    text = ' '.join(text.split())
+    return text
 
 def main():
     last_image = None
@@ -56,17 +57,6 @@ def main():
     last_image_walltime = 0
     text_cache = []
     while True:
-        """ 
-          header_message = {
-            "segment_number": segment_number,
-            "mediaid": mediaid,
-            "mediatype": mediatype,
-            "username": username,
-            "source": source,
-            "message": message,
-            "text": text,
-            "optimized_text": optimized_text,
-        }"""
         # Receive a message
         header_message = receiver.recv_json()
 
@@ -79,10 +69,14 @@ def main():
             optimized_prompt = header_message["text"]
             logger.error(f"TTI: No optimized text, using original text.")
 
+        # Clean text
+        optimized_prompt = clean_text(optimized_prompt[:512])
+
         logger.debug(f"Text to Image recieved optimized prompt:\n{header_message}.")
+        logger.info(f"Text to Image recieved text #{segment_number}:\n - {optimized_prompt}")
 
         image = None
-        if last_image == None or time.time() - header_message["timestamp"] < args.latency:
+        if args.latency == 0 or last_image == None or time.time() - header_message["timestamp"] <= args.latency:
             # 2. Forward embeddings and negative embeddings through text encoder
             max_length = pipe.tokenizer.model_max_length
 
@@ -116,7 +110,7 @@ def main():
         sender.send_json(header_message, zmq.SNDMORE)
         sender.send(last_image)
 
-        logger.info(f"Text to Image sent image #{segment_number}:\n - {optimized_prompt}")
+        logger.info(f"Text to Image sent image #{segment_number} {header_message['timestamp']} of {len(last_image)} bytes.")
         last_image_walltime = time.time()
         last_image_timestamp = header_message["timestamp"]
 
@@ -131,7 +125,7 @@ if __name__ == "__main__":
     parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("-m", "--model", type=str, default="runwayml/stable-diffusion-v1-5", help="Model ID to use")
-    parser.add_argument("--latency", type=int, default=60, help="Latency in seconds to wait for a message")
+    parser.add_argument("--latency", type=int, default=0, help="Latency in seconds to wait for a message")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO
@@ -147,7 +141,7 @@ if __name__ == "__main__":
 
     log_id = time.strftime("%Y%m%d-%H%M%S")
     logging.basicConfig(filename=f"logs/tti-{log_id}.log", level=LOGLEVEL)
-    logger = logging.getLogger('GAIB')
+    logger = logging.getLogger('TTI')
 
     ch = logging.StreamHandler()
     ch.setLevel(LOGLEVEL)

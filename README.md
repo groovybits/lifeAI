@@ -8,12 +8,11 @@ That’s the goal, you’ll see I am listing the parts as I build them, sort of 
 
 ## This uses the following models from huggingface
 
-- <https://huggingface.co/facebook/mms-tts-eng> Facebook mms-tts-eng a model that is multilingual for TTS
-- <https://huggingface.co/TheBloke/zephyr-7B-alpha-GGUF> A 7B parameter GPT-like model fine-tuned on a mix of publicly available, synthetic datasets.
-- <https://huggingface.co/runwayml/stable-diffusion-v1-5> Stable Diffusion 1.5
-- <https://huggingface.co/facebook/musicgen-small> Facebook MusicGen Music generation model
+- <https://github.com/ggerganov/llama.cpp/tree/master/examples/server> LLM  llama.cpp (install and run server for API access locally)
+- <https://huggingface.co/TheBloke/zephyr-7B-beta-GGUF> Model 7B parameter GPT-like model fine-tuned on a mix of publicly available, synthetic datasets.
 - <https://github.com/MycroftAI/mimic3> Mimic3 Text to Speech (optionally in place of Facebook mms-tts-eng).
-- <https://github.com/ggerganov/llama.cpp/tree/master/examples/server> llama.cpp (install and run server for API access locally)
+- <https://huggingface.co/runwayml/stable-diffusion-v1-5> Text to Image Stable Diffusion 1.5
+- <https://huggingface.co/facebook/musicgen-small> Text to Music Facebook MusicGen Music generation model
 
 ## ZMQ modules from Input to Output
 
@@ -26,7 +25,7 @@ That’s the goal, you’ll see I am listing the parts as I build them, sort of 
 - [X Input](TODO.md)                       TODO: Any input via easy connection in a generic way.
 
 - [LLM Broker llama.cpp-API](lifeAIllmAPI.py)       Llama2 llama.cpp server local API service
-- [Prompt Optimizer](lifeAIpromptOptimizer.py)      Optimize prompt or turn text into a prompt.
+- [Prompt Optimizer](lifeAIpromptOptimizerAPI.py)      Optimize prompt or turn text into a prompt.
 
 - [TTS Producer](lifeAIttsMimic3.py)    Mimic3 TTS Text to Speech Conversion.
 - [TTM Producer](lifeAIttm.py)          Facebook Music Generation.
@@ -136,7 +135,6 @@ curl --request POST --url http://127.0.0.1:8080/completion  \
 # ZMQ Whisper speech to text Client (Coming soon)
 
 # LLM (requires llama.cpp server running)
-## ./lifeAIllm.py (python client, buggy)
 ./lifeAIllmAPI.py
 
 # TTS Speech audio
@@ -153,7 +151,7 @@ curl --request POST --url http://127.0.0.1:8080/completion  \
 ./lifeAIsubTitleBurnIn.py
 
 # Music generation
-./lifeAIpromptOptimize.py --input_port 2000 --output_port 4001 --qprompt MusicDescription --aprompt MusicPrompt --topic 'music generation'
+./lifeAIpromptOptimizeAPI.py --input_port 2000 --output_port 4001 --qprompt MusicDescription --aprompt MusicPrompt --topic 'music generation'
 ./lifeAIttm.py
 ./zmqTTMlisten.py --save_file
 

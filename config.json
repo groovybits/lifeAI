@@ -18,10 +18,10 @@
         "args": ["python", "lifeAIttm.py"]
     },
     "lifeAIpromptOptimizeMusic": {
-        "args": ["python", "lifeAIpromptOptimize.py", 
+        "args": ["python", "lifeAIpromptOptimizeAPU.py", 
             "--input_port", "2000", 
             "--output_port", "4001", 
-            "--topic", "music generation", 
+            "--topic", "music", 
             "--sub", 
             "--bind_out", 
             "--pub", 
@@ -51,13 +51,13 @@
         "args": ["python", "lifeAIframesync.py"]
     },
     "LLMllamacpp01": {
-        "args": ["server", "-m", "/Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf", "-t", "60", "-c", "0", "--mlock", "-ngl", "60", "--port", "8080"]
+        "args": ["server", "-m", "/Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf", "-c", "0", "--port", "8080"]
     },
     "LLMllamacpp02": {
-        "args": ["server", "-m", "/Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf", "-t", "60", "-c", "0", "--mlock", "-ngl", "60", "--port", "8081"]
+        "args": ["server", "-m", "/Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf", "-c", "0", "--port", "8081"]
     },
     "LLMllamacpp03": {
-        "args": ["server", "-m", "/Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf", "-t", "60", "-c", "0", "--mlock", "-ngl", "60", "--port", "8082"]
+        "args": ["server", "-m", "/Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf", "-c", "0", "--port", "8082"]
     },
     "Mimic3TTS": {
         "args": ["/opt/homebrew/bin/mimic3-server"]

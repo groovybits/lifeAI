@@ -15,6 +15,30 @@ import time
 # Suppress warnings
 warnings.simplefilter(action='ignore', category=Warning)
 
+def clean_text(text):
+    # Remove URLs
+    text = re.sub(r'http[s]?://\S+', '', text)
+    
+    # Remove image tags or Markdown image syntax
+    text = re.sub(r'\!\[.*?\]\(.*?\)', '', text)
+    text = re.sub(r'<img.*?>', '', text)
+    
+    # Remove HTML tags
+    text = re.sub(r'<.*?>', '', text)
+    
+    # Remove any inline code blocks
+    text = re.sub(r'`.*?`', '', text)
+    
+    # Remove any block code segments
+    text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
+    
+    # Remove special characters and digits (optional, be cautious)
+    text = re.sub(r'[^a-zA-Z0-9\s.?,!\n]', '', text)
+    
+    # Remove extra whitespace
+    text = ' '.join(text.split())
+    return text
+
 def get_tts_audio(text, voice=None, noise_scale=None, noise_w=None, length_scale=None, ssml=None, audio_target=None):
     params = {
         'text': text,
@@ -30,23 +54,24 @@ def get_tts_audio(text, voice=None, noise_scale=None, noise_w=None, length_scale
     response.raise_for_status()
     return response.content
 
-
 def main():
     while True:
         header_message = receiver.recv_json()
         segment_number = header_message["segment_number"]
         text = header_message["text"]
 
-         # clean text of end of line spaces after punctuation
+        # clean text of end of line spaces after punctuation
+        text = clean_text(text)
         text = re.sub(r'([.,!?;:])\s+', r'\1', text)
-
-        # add ssml tags
-        if args.ssml == 'true':
-            text = f"<speak><prosody pitch=\"{args.pitch}\" range=\"{args.range}\" rate=\"{args.rate}\">" + text + f"</prosody></speak>"
 
         logger.debug("Text to Speech received request:\n%s" % header_message)
         logger.info(f"Text to Speech received request #{segment_number}:\n{text}")
 
+        # add ssml tags
+        if args.ssml == 'true':
+            text = f"<speak><prosody pitch=\"{args.pitch}\" range=\"{args.range}\" rate=\"{args.rate}\">" + text + f"</prosody></speak>"
+            logger.info(f"Text to Speech: SSML enabled, using pitch={args.pitch}, range={args.range}, rate={args.rate}.")
+            logger.debug(f"Text to Speech: SSML text:\n{text}")
         try:
             audio_blob = get_tts_audio(
                 text,
@@ -68,7 +93,7 @@ def main():
 
         # Fill in the header
         header_message["duration"] = duration
-        header_message["stream"] = "speech"
+        header_message["stream"] = "speek"
 
         # Send the header and the audio
         sender.send_json(header_message, zmq.SNDMORE)
@@ -97,7 +122,7 @@ if __name__ == "__main__":
     parser.add_argument("--rate", type=str, default="default", help="Speech rate, slow, medium, fast")
     parser.add_argument("--range", type=str, default="high", help="Speech range, low, medium, high")
     parser.add_argument("--pitch", type=str, default="high", help="Speech pitch, low, medium, high")
-    parser.add_argument("--delay", type=int, default=3, help="Delay in seconds after timestamp before sending audio")
+    parser.add_argument("--delay", type=int, default=0, help="Delay in seconds after timestamp before sending audio")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO
@@ -113,7 +138,7 @@ if __name__ == "__main__":
 
     log_id = time.strftime("%Y%m%d-%H%M%S")
     logging.basicConfig(filename=f"logs/ttsMimic3-{log_id}.log", level=LOGLEVEL)
-    logger = logging.getLogger('GAIB')
+    logger = logging.getLogger('ttsMimic3')
 
     ch = logging.StreamHandler()
     ch.setLevel(LOGLEVEL)

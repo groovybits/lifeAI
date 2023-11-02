@@ -90,7 +90,7 @@ def main():
 
         # fill in the header
         header_message["duration"] = duration
-        header_message["stream"] = "speech"
+        header_message["stream"] = "speek"
 
         # send the header and the audio
         sender.send_json(header_message, zmq.SNDMORE)
@@ -127,7 +127,7 @@ if __name__ == "__main__":
 
     log_id = time.strftime("%Y%m%d-%H%M%S")
     logging.basicConfig(filename=f"logs/tts-{log_id}.log", level=LOGLEVEL)
-    logger = logging.getLogger('GAIB')
+    logger = logging.getLogger('TTS')
 
     ch = logging.StreamHandler()
     ch.setLevel(LOGLEVEL)

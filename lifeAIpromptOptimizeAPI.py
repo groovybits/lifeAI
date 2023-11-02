@@ -18,7 +18,7 @@ import traceback
 import logging
 import requests
 import json
-import traceback
+import re
 
 warnings.simplefilter(action='ignore', category=Warning)
 warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
@@ -26,42 +26,50 @@ from urllib3.exceptions import NotOpenSSLWarning
 warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 
 def clean_text(text):
-    # clean text so it works in JSON
-    text = text.replace('\\', '\\\\')  # Escape backslashes first
-    text = text.replace('"', '\\"')    # Escape double quotes
-    text = text.replace('\n', '\\n')   # Escape newlines
-    text = text.replace('\r', '\\r')   # Escape carriage returns
-    text = text.replace('\t', '\\t')   # Escape tabs
-    text = text.replace('/', '\\/')    # usually, this isn't necessary.
-
-    # Truncate the text to 300 characters if needed
-    return text[:args.maxtokens]
+    # Remove URLs
+    text = re.sub(r'http[s]?://\S+', '', text)
+    
+    # Remove image tags or Markdown image syntax
+    text = re.sub(r'\!\[.*?\]\(.*?\)', '', text)
+    text = re.sub(r'<img.*?>', '', text)
+    
+    # Remove HTML tags
+    text = re.sub(r'<.*?>', '', text)
+    
+    # Remove any inline code blocks
+    text = re.sub(r'`.*?`', '', text)
+    
+    # Remove any block code segments
+    text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
+    
+    # Remove special characters and digits (optional, be cautious)
+    text = re.sub(r'[^a-zA-Z0-9\s.?,!\n]', '', text)
+    
+    # Remove extra whitespace
+    text = ' '.join(text.split())
+    return text
 
 def get_api_response(api_url, completion_params):
-    logger.debug(f"--- stream_api_response(): POST to {api_url} with parameters {completion_params}")
+    logger.debug(f"promptOptimizerAPI LLM: POST to {api_url} with parameters {completion_params}")
 
     response = requests.request("POST", api_url, data=json.dumps(completion_params))
 
-    logger.debug(f"Response status code: {response.status_code}")
-    logger.debug(f"Response text: {response.text}")
+    logger.debug(f"LLM: Response status code: {response.status_code}")
+    logger.debug(f"LLM: Response text: {response.text}")
 
     if response.status_code != 200:
         logger.error(f"Request failed with status code {response.status_code}: {response.text}")
         return None
     
-    return response.text
+    return response.json()
 
 def run_llm(prompt, api_url, args):
+    optimized_prompt = ""
     try:
         prompt = clean_text(prompt)
         completion_params = {
-            'prompt': prompt,
+            'prompt': prompt[:args.context - len(prompt)],
             'temperature': args.temperature,
-            'top_k': 40,
-            'top_p': 0.9,
-            'n_keep': args.n_keep,
-            'cache_prompt': not args.no_cache_prompt,
-            'slot_id': -1,
             'stop': args.stoptokens.split(','),
             'stream': False,
         }
@@ -70,17 +78,12 @@ def run_llm(prompt, api_url, args):
             completion_params['n_predict'] = args.maxtokens
         
         response = None
-        tries = 0
-        max_tries = 10
-        while not response and tries < max_tries:
-            try:
-                response = get_api_response(api_url, completion_params)
-                response = json.loads(response)
-            except Exception as e:
-                traceback.print_exc()
-                logger.error(f"--- run_llm(): LLM exception: {str(e)}")
-            time.sleep(1)
-            tries += 1
+        try:
+            response = get_api_response(api_url, completion_params)
+            #response = json.loads(response)
+        except Exception as e:
+            logger.error(f"{traceback.print_exc()}")
+            logger.error(f"LLM exception: {str(e)}")
 
         """
         Response status code: 200
@@ -100,39 +103,27 @@ def run_llm(prompt, api_url, args):
         "prompt_per_token_ms":null},"tokens_cached":75,"tokens_evaluated":48,"tokens_predicted":27,"truncated":false}
         """
         # Confirm we have an image prompt
-        if 'content' in response:
-            optimized_prompt = response["content"]
-            logger.info(f"--- run_llm(): LLM generated prompt - \"{optimized_prompt}\"")
-            return optimized_prompt
+        if response and 'content' in response:
+            optimized_prompt = clean_text(response["content"])
+            logger.info(f"promptOptimizeAPI: LLM response: '{optimized_prompt}'")
         else:
-            logger.error(f"\nError! LLM prompt generation failed: \"{response}\"")
+            logger.error(f"Error! LLM prompt generation failed: '{response}'")
             optimized_prompt = ""
     except Exception as e:
-        traceback.print_exc()
-        logger.error(f"--- run_llm(): LLM exception: {str(e)}")
+        logger.error(f"{traceback.print_exc()}")
+        logger.error(f"LLM exception: {str(e)}")
 
-    return ""
+    return optimized_prompt
 
 def main():
-    prompt_template = "Create a description for {topic} that is short and summarized."
+    prompt_template = "Use the following Text to create a short and summarized short Description for the {topic} as a summary in words."
     prompt = prompt_template.format(topic=args.topic)
 
     current_text_array = []
-
-    last_timestamp = time.time()
+    combined_header_message = None
+    in_combine = False
 
     while True:
-        """ From LLM Source
-          header_message = {
-            "segment_number": segment_number,
-            "mediaid": mediaid,
-            "mediatype": mediatype,
-            "username": username,
-            "source": source,
-            "message": message,
-            "text": "",
-        }
-        """
         # Receive a message
         header_message = receiver.recv_json()
         if not header_message:
@@ -145,28 +136,44 @@ def main():
 
         if "text" in header_message:
             text = header_message["text"]
+        else:
+            logger.error(f"Error! No text in message: {header_message}")
+            continue
 
         if "message" in header_message:
             message = header_message["message"][:80]
 
-        logger.debug(f"\n---\nPrompt optimizer received {header_message}\n")
+        mediaid = header_message["mediaid"]
+        timestamp = header_message["timestamp"]
+        segment_number = header_message["segment_number"]
+        md5sum = header_message["md5sum"]
 
-        logger.info(f"Message: - {message}\nText: - {text}")
-
+        logger.debug(f"Prompt optimizer received header: {header_message}")
+        logger.info(f" Prompt optimizer for {mediaid} #{segment_number} {timestamp} {md5sum} '{message}' - {text}")
         # check if enabled and combine prompts, once we have enough then we send them combined
         if args.combine_count > 1:
             current_text_array.append(text)
             if len(current_text_array) < args.combine_count:
+                if not in_combine:
+                    combined_header_message = header_message.copy()
+                else:
+                    if 'merged_packets' in combined_header_message:
+                        combined_header_message["merged_count"] += 1
+                        combined_header_message["merged_packets"].append(header_message)
+                    else:
+                        combined_header_message["merged_count"] = 0
+                        combined_header_message["merged_packets"] = [header_message]
+                in_combine = True
                 continue
             else:
                 text = " ".join(current_text_array)
                 current_text_array = []
 
-        full_prompt = f"{prompt}\n\n{args.qprompt}: {message} - {text}\n{args.aprompt}:"
+        full_prompt = f"{prompt}\n\n{args.qprompt}: {message[:120]} - {text[:300]}\n{args.aprompt}:"
 
         optimized_prompt = ""
         try:
-            logger.info(f"Prompt optimizer: sending text to LLM - {text}")
+            logger.info(f"Prompt optimizer: sending text to LLM - {full_prompt}")
             optimized_prompt = run_llm(full_prompt, api_endpoint, args)
 
             if not optimized_prompt.strip():
@@ -179,7 +186,7 @@ def main():
 
         # Add optimized prompt
         if optimized_prompt:
-            header_message["optimized_text"] = optimized_prompt
+            header_message["optimized_text"] = clean_text(optimized_prompt)
 
         # if we combined text, then we need to send the original text as well
         if args.combine_count > 1:
@@ -188,11 +195,9 @@ def main():
         # Send the processed message
         sender.send_json(header_message)
 
-        logger.info(f"Text: - {text}\nPrompt: - {optimized_prompt}")
+        logger.info(f"Optimized: {mediaid} #{segment_number} {timestamp} {md5sum} - {optimized_prompt}")
 
 if __name__ == "__main__":
-    model = "models/zephyr-7b-alpha.Q2_K.gguf"
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--llm_port", type=int, default=8080)
     parser.add_argument("--llm_host", type=str, default="127.0.0.1")
@@ -200,28 +205,27 @@ if __name__ == "__main__":
     parser.add_argument("--input_port", type=int, default=2000)
     parser.add_argument("--output_host", type=str, default="127.0.0.1")
     parser.add_argument("--output_port", type=int, default=3001)
-    parser.add_argument("--topic", type=str, default="image generation", 
+    parser.add_argument("--topic", type=str, default="picture", 
                         help="Topic to use for image generation, default 'image generation'")
-    parser.add_argument("--maxtokens", type=int, default=200)
-    parser.add_argument("--context", type=int, default=1024)
-    parser.add_argument("--temperature", type=float, default=0.4)
-    parser.add_argument("--model", type=str, default=model)
+    parser.add_argument("--maxtokens", type=int, default=80)
+    parser.add_argument("--context", type=int, default=4096)
+    parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("-d", "--debug", action="store_true", default=False)
-    parser.add_argument("--qprompt", type=str, default="Question:", 
-                        help="Prompt to use for image generation, default ImageDescription")
-    parser.add_argument("--aprompt", type=str, default="Answer:", 
-                        help="Prompt to use for image generation, default ImagePrompt")
+    parser.add_argument("--qprompt", type=str, default="Text", 
+                        help="Prompt to use for image generation, default Text")
+    parser.add_argument("--aprompt", type=str, default="Description", 
+                        help="Prompt to use for image generation, default Description")
     parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
     parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--n_keep", type=int, default=0, help="Number of tokens to keep for the context.")
-    parser.add_argument("-sts", "--stoptokens", type=str, default="Question:", help="Stop tokens to use, do not change unless you know what you are doing!")
+    parser.add_argument("-sts", "--stoptokens", type=str, default="Text:", help="Stop tokens to use, do not change unless you know what you are doing!")
     parser.add_argument("--no_cache_prompt", action='store_true', help="Flag to disable caching of prompts.")
     parser.add_argument("--sub", action="store_true", default=False, help="Publish to a topic")
     parser.add_argument("--pub", action="store_true", default=False, help="Publish to a topic")
     parser.add_argument("--bind_output", action="store_true", default=False, help="Bind to a topic")
     parser.add_argument("--bind_input", action="store_true", default=False, help="Bind to a topic")
-    parser.add_argument("--combine_count", type=int, default=3, help="Number of messages to combine into one prompt.")
+    parser.add_argument("--combine_count", type=int, default=0, help="Number of messages to combine into one prompt.")
 
     args = parser.parse_args()
 
@@ -240,7 +244,7 @@ if __name__ == "__main__":
 
     log_id = time.strftime("%Y%m%d-%H%M%S")
     logging.basicConfig(filename=f"logs/promptOptimizeAPI-{log_id}.log", level=LOGLEVEL)
-    logger = logging.getLogger('GAIB')
+    logger = logging.getLogger('promptOptimizeAPI')
 
     ch = logging.StreamHandler()
     ch.setLevel(LOGLEVEL)

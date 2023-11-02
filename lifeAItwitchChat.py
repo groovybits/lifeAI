@@ -27,6 +27,30 @@ chat_db = "db/chat.db"
 
 personalities = {}
 
+def clean_text(text):
+    # Remove URLs
+    text = re.sub(r'http[s]?://\S+', '', text)
+    
+    # Remove image tags or Markdown image syntax
+    text = re.sub(r'\!\[.*?\]\(.*?\)', '', text)
+    text = re.sub(r'<img.*?>', '', text)
+    
+    # Remove HTML tags
+    text = re.sub(r'<.*?>', '', text)
+    
+    # Remove any inline code blocks
+    text = re.sub(r'`.*?`', '', text)
+    
+    # Remove any block code segments
+    text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
+    
+    # Remove special characters and digits (optional, be cautious)
+    text = re.sub(r'[^a-zA-Z0-9\s.?,!\n]', '', text)
+    
+    # Remove extra whitespace
+    text = ' '.join(text.split())
+    return text
+
 ## Twitch chat responses
 class AiTwitchBot(commands.Cog):
     ai_name = ""
@@ -84,7 +108,7 @@ class AiTwitchBot(commands.Cog):
 
             # Remove unwanted characters
             translation_table = str.maketrans('', '', ':,')
-            cleaned_question = question.translate(translation_table)
+            cleaned_question = clean_text(question.translate(translation_table))
 
             # Split the cleaned question into words and get the first word
             ainame_request = cleaned_question.split()[0] if cleaned_question else None
@@ -131,8 +155,14 @@ class AiTwitchBot(commands.Cog):
             cursor.execute("SELECT content FROM messages WHERE user = ? ORDER BY timestamp", (name,))
             dbdata = cursor.fetchall()
             history = [ChatCompletionMessage(role="user", content=d[0]) for d in dbdata]
+            # flatten history into a string representation
+            history = " ".join([str(h) for h in history])
 
             db_conn.close()
+
+            is_episode = "false"
+            if 'episode' in question.lower() or 'story' in question.lower():
+                is_episode = "true"
 
             # Send the message
             client_request = {
@@ -142,6 +172,7 @@ class AiTwitchBot(commands.Cog):
                 "username": name,
                 "source": "Twitch",
                 "message": question,
+                "episode": is_episode,
                 "aipersonality": aipersonality,
                 "ainame": ainame,
                 "history": history,
@@ -164,7 +195,8 @@ class AiTwitchBot(commands.Cog):
             if personality not in personalities:
                 logger.error(f"{ctx.message.author.name} tried to alter the personality to {personality} yet is not in the list of personalities.")
                 await ctx.send(f"{ctx.message.author.name} the personality you have chosen is not in the list of personalities, please choose a personality that is in the list of personalities.")
-                await ctx.send(f"Personalities:\n{json.dumps(personalities, indent=2, sort_keys=True)}\n")
+                for name, personality in personalities.items():
+                    await ctx.send(f"{name}: {personality[:50]}...")    
                 return
             await ctx.send(f"{ctx.message.author.name} switched personality to {personality}")
             # set our personality to the content
@@ -191,7 +223,7 @@ class AiTwitchBot(commands.Cog):
                 "mediatype": "chat",
                 "username": name,
                 "source": "Twitch",
-                "message": prompt,
+                "message": clean_text(prompt),
                 "aipersonality": "a musician and will compose an amazing piece of music for us.",
                 "ainame": "MusicGen",
             }
@@ -232,7 +264,8 @@ class AiTwitchBot(commands.Cog):
                 "mediatype": "chat",
                 "username": name,
                 "source": "Twitch",
-                "message": prompt,
+                "episode": "false",
+                "message": clean_text(prompt),
                 "aipersonality": "a digital artist and phtographer, you will compose an amazing piece of art or take an amazing photo image for us.",
                 "ainame": "ImageGen",
             }
@@ -321,7 +354,7 @@ if __name__ == "__main__":
 
     log_id = time.strftime("%Y%m%d-%H%M%S")
     logging.basicConfig(filename=f"logs/twitchChat-{log_id}.log", level=LOGLEVEL)
-    logger = logging.getLogger('GAIB')
+    logger = logging.getLogger('twitchChat')
 
     ch = logging.StreamHandler()
     ch.setLevel(LOGLEVEL)

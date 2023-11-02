@@ -65,13 +65,30 @@ def get_news(offset=0, keywords="ai anime buddhism cats", categories="technology
         return None
 
 def clean_text(text):
-    # This regular expression pattern will match any character that is NOT a lowercase or uppercase letter or a space.
-    pattern = re.compile(r'[^a-zA-Z\s1-9\.,\?!\-]')
-    # re.sub will replace these characters with an empty string, effectively removing them.
-    cleaned_text = re.sub(pattern, '', text)
     # truncate to 800 characters max
-    cleaned_text = cleaned_text[:800]
-    return cleaned_text
+    text = text[:300]
+    # Remove URLs
+    text = re.sub(r'http[s]?://\S+', '', text)
+    
+    # Remove image tags or Markdown image syntax
+    text = re.sub(r'\!\[.*?\]\(.*?\)', '', text)
+    text = re.sub(r'<img.*?>', '', text)
+    
+    # Remove HTML tags
+    text = re.sub(r'<.*?>', '', text)
+    
+    # Remove any inline code blocks
+    text = re.sub(r'`.*?`', '', text)
+    
+    # Remove any block code segments
+    text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
+    
+    # Remove special characters and digits (optional, be cautious)
+    text = re.sub(r'[^a-zA-Z0-9\s.?,!\n]', '', text)
+    
+    # Remove extra whitespace
+    text = ' '.join(text.split())
+    return text
 
 def main():
 
@@ -137,19 +154,19 @@ def main():
                     description = ""
                     title = ""
                     if 'description' in story and story['description'] != None:
-                        description =  clean_text(story['description'])
+                        description =  clean_text(story['description'].replace('\n',''))
                     if 'author' in story and story['author'] != None:
-                        username = story['author'].replace(' ','_')
+                        username = clean_text(story['author'].replace(' ','_').replace('\n',''))
                     if 'title' in story and story['title'] != None:
-                        title = story['title']
+                        title = clean_text(story['title'].replace('\n',''))
 
                     if title == "" and description == "":
                         logger.error(f"Empty news story! Skipping... {json.dumps(news_json)}")
                         continue
 
-                    message = f"{args.prompt}{username} reported \"{title}\" - {description}\n\n"
-                    logger.debug(f"Sending message {message}")
-                    logger.info(f"Sending story {story} by {username} - {description[:60]}")
+                    message = f"\"{title}\" - {description[:500]}"
+                    logger.info(f"Sending message {message}")
+                    logger.debug(f"Sending story {story} by {username} - {description}")
 
                     # Send the message
                     client_request = {
@@ -158,10 +175,11 @@ def main():
                         "mediatype": "news",
                         "username": username,
                         "source": "lifeAI",
-                        "message": message,
+                        "episode": "false",
+                        "message": args.prompt,
+                        "history": message,
                         "aipersonality": args.aipersonality,
-                        "ainame": args.ainame,
-                        "history": [],
+                        "ainame": args.ainame
                     }
                     socket.send_json(client_request)
                 else:
@@ -172,7 +190,7 @@ def main():
         pagination += 100
 
 if __name__ == "__main__":
-    default_personality = "You are news reporter getting stories and analyzing them and presenting various thoughts and relations of them with a joyful compassionate wise perspective. Make the news fun and silly, joke and make comedy out of the world. Speak in a conversational tone referencing yourself and the person who asked the question if given.  Maintain your role without revealing that you're an AI Language model or your inability to access real-time information. Do not mention the text or sources used, treat the contextas something you are using as internal thought to generate responses as your role."
+    default_personality = "You Life AI's Groovy AI Bot GAIB. You are acting as a news reporter getting stories and analyzing them and presenting various thoughts and relations of them with a joyful compassionate wise perspective. Make the news fun and silly, joke and make comedy out of the world. Speak in a conversational tone referencing yourself and the person who asked the question if given.  Maintain your role without revealing that you're an AI Language model or your inability to access real-time information. Do not mention the text or sources used, treat the contextas something you are using as internal thought to generate responses as your role."
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--interval", type=int, default=60, required=False, help="interval to send messages in seconds, default is 120")
@@ -181,9 +199,9 @@ if __name__ == "__main__":
     parser.add_argument("--username", type=str, required=False, default="NewsAnchor", help="Username of sender")
     parser.add_argument("--keywords", type=str, required=False, default="ai anime buddhism cats artificial intelligence gpt openai elon musk", help="Keywords for news stories")
     parser.add_argument("--categories", type=str, required=False, default="technology,science,entertainment", help="News stories categories")
-    parser.add_argument("--prompt", type=str, required=False, default="News Story just in... ",
+    parser.add_argument("--prompt", type=str, required=False, default="Report on the news story in the context of the prompt in character giving a funny informative technically accurate and entertaining news story. Change into various famous people and anime characters and make it fun and silly.",
                         help="Prompt to give context as a newstory feed")
-    parser.add_argument("--aipersonality", type=str, required=False, default=f"GAIB the AI Bot of Life AI, I am sending an interesting news article for analysis. {default_personality}", help="AI personality")
+    parser.add_argument("--aipersonality", type=str, required=False, default=f"{default_personality}", help="AI personality")
     parser.add_argument("--ainame", type=str, required=False, default="GAIB", help="AI name")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
 
@@ -201,8 +219,8 @@ if __name__ == "__main__":
         LOGLEVEL = logging.INFO
 
     log_id = time.strftime("%Y%m%d-%H%M%S")
-    logging.basicConfig(filename=f"logs/newCast-{log_id}.log", level=LOGLEVEL)
-    logger = logging.getLogger('GAIB')
+    logging.basicConfig(filename=f"logs/newsCast-{log_id}.log", level=LOGLEVEL)
+    logger = logging.getLogger('newsCast')
 
     ch = logging.StreamHandler()
     ch.setLevel(LOGLEVEL)
