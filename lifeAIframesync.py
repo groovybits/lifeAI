@@ -36,15 +36,21 @@ def sync_media_buffers(audio_buffer, music_buffer, image_buffer, sender, logger,
                 sender.send(music_asset)
                 logger.info(f"Sent music segment #{music_message['segment_number']} at timestamp {music_message['timestamp']}")
 
+            if not image_buffer.empty():
+                image_message, image_asset = image_buffer.get()
+                if media_type == 'image':
+                    sender.send_json(message, zmq.SNDMORE)
+                    sender.send(asset)
+                    logger.info(f"Sent {media_type} segment #{message['segment_number']} at timestamp {message['timestamp']}")
+                    master_clock = message['timestamp']
+
+
             # Process audio and image buffers
-            if not mux_pq.empty() or (not audio_buffer.empty() and not image_buffer.empty()):
+            if not mux_pq.empty() or (not audio_buffer.empty()):
                 if not audio_buffer.empty():
                     audio_message, audio_asset = audio_buffer.get()
                     mux_pq.put((audio_message['timestamp'], ('audio', audio_message, audio_asset)))
-                if not image_buffer.empty():
-                    image_message, image_asset = image_buffer.get()
-                    mux_pq.put((image_message['timestamp'], ('image', image_message, image_asset)))
-
+              
                 # Send out assets in timestamp order, waiting for images to catch up to audio
                 if not mux_pq.empty():
                     _, (media_type, message, asset) = mux_pq.get()
@@ -55,16 +61,14 @@ def sync_media_buffers(audio_buffer, music_buffer, image_buffer, sender, logger,
                         sender.send(asset)
                         logger.info(f"Sent {media_type} segment #{message['segment_number']} at timestamp {message['timestamp']}")
                         master_clock = message['timestamp']
-
-                    elif media_type == 'image' and (master_clock is None or message['timestamp'] <= master_clock):
-                        sender.send_json(message, zmq.SNDMORE)
-                        sender.send(asset)
-                        logger.info(f"Sent {media_type} segment #{message['segment_number']} at timestamp {message['timestamp']}")
-                        master_clock = message['timestamp']
+                        continue
 
                     # Check for delay
                     if current_time - message['timestamp'] > max_delay:
                         logger.warning(f"Dropping {media_type} segment #{message['segment_number']} due to high delay.")
+                    else:
+                        # queue the audio again
+                        mux_pq.put((message['timestamp'], (media_type, message, asset)))
 
                     time.sleep(0.01)  # Sleep to prevent CPU overuse
 
