@@ -35,6 +35,8 @@ That’s the goal, you’ll see I am listing the parts as I build them, sort of 
 
 - [Subtitle Burner](lifeAIsubTitleBurnIn.py) Burn-In subtitles in Anime style white/black bold.
 
+- [Life AI Player](lifeAIplayer.py)          Life AI Main player for A/V (Music still requires TTM Listener for now)
+
 - [TTS Listener](zmqTTSlisten.py) Listen for TTS Audio WAV file output and Playback/Save.
 - [TTM Listener](zmqTTMlisten.py) Listen for TTM Audio WAV file output and Playback/Save.
 - [TTI Listener](zmqTTIlisten.py) Listen for TTI Image PIL file output and Playback/Save.
