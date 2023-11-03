@@ -35,14 +35,8 @@
             "--pub", 
             "--llm_port", "8082"]
     },
-    "lifeAIsubtitleBurn": {
-        "args": ["python", "lifeAIsubtitleBurn.py"]
-    },
-    "zmqTTIlisten": {
-        "args": ["python", "zmqTTIlisten.py"]
-    }, 
-    "zmqTTSlisten": {
-        "args": ["python", "zmqTTSlisten.py"]
+    "lifeAIplayer": {
+        "args": ["python", "lifeAIplayer.py"]
     },
     "zmqTTMlisten": {
         "args": ["python", "zmqTTMlisten.py"]

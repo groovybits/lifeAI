@@ -120,7 +120,7 @@ def main():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_port", type=int, default=3001, required=False, help="Port for receiving text input")
-    parser.add_argument("--output_port", type=int, default=3002, required=False, help="Port for sending image output")
+    parser.add_argument("--output_port", type=int, default=6002, required=False, help="Port for sending image output")
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Port for receiving text input")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending image output")
     parser.add_argument("--nsfw", action="store_true", default=False, help="Disable NSFW filters, caution!!!")
@@ -179,9 +179,8 @@ if __name__ == "__main__":
     receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
     receiver.setsockopt_string(zmq.SUBSCRIBE, "")
 
-    sender = context.socket(zmq.PUB)
+    sender = context.socket(zmq.PUSH)
     logger.info("binded to ZMQ out: %s:%d" % (args.output_host, args.output_port))
-    sender.bind(f"tcp://{args.output_host}:{args.output_port}")
-
+    sender.connect(f"tcp://{args.output_host}:{args.output_port}")
     main()
 
