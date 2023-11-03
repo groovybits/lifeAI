@@ -75,10 +75,20 @@ def send_data(zmq_sender, message):
     # Placeholder for the ZMQ send function, which should be defined to match your ZMQ setup.
     zmq_sender.send_json(message)
 
+def find_break_point(text, start, end):
+    # Reverse search for sentence end within the last 20% of the limit
+    for i in range(end, start, -1):
+        if text[i] in '.!?\n':
+            return i + 1  # Include the punctuation in the chunk
+    # No sentence end found; look for the next space or comma after the limit
+    for i in range(end, len(text)):
+        if text[i] in ' ,':
+            return i
+    return end  # No suitable break point found; use the end limit
+
 def stream_api_response(header_message, api_url, completion_params, zmq_sender, characters_per_line, sentence_count):
     accumulated_text = ""
-
-    logger.info(f"LLM streaming API response. to {api_url} with completion_params: {completion_params}")
+    logger.info(f"LLM streaming API response to {api_url} with completion_params: {completion_params}")
 
     tokens = 0
     current_tokens = 0
@@ -101,9 +111,19 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
                         accumulated_text += content
                         header_message["tokens"] = current_tokens
 
+                        # Check for break point
                         if len(clean_text(accumulated_text)) >= characters_per_line:
-                            header_message = clean_and_send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count)
-                            accumulated_text = ""  # Reset the accumulator
+                            last_20_percent_index = max(0, len(accumulated_text) - int(characters_per_line * 0.2))
+                            break_point = find_break_point(accumulated_text, last_20_percent_index, len(accumulated_text) - 1)
+
+                            # Check if we've exceeded 1.5 times the character limit and need to force a break
+                            if len(clean_text(accumulated_text)) > int(characters_per_line * 1.5):
+                                break_point = min(break_point, len(accumulated_text))
+
+                            chunk_to_send = accumulated_text[:break_point]
+                            accumulated_text = accumulated_text[break_point:]  # Remainder
+
+                            header_message = clean_and_send_group(chunk_to_send, zmq_sender, header_message.copy(), sentence_count)
                             current_tokens = 0
                             header_message["tokens"] = 0
                             header_message["text"] = ""
@@ -111,13 +131,8 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
     # If there's any remaining text after the loop, send it as well
     if accumulated_text:
         header_message = clean_and_send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count)
-        accumulated_text = ""  # Reset the accumulator
-        current_tokens = 0
-        header_message["tokens"] = 0
-        header_message["text"] = ""
 
     logger.info(f"LLM streamed API response: {tokens} tokens, {characters} characters.")
-
     return header_message
 
 def clean_and_send_group(text, zmq_sender, header_message, sentence_count):

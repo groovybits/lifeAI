@@ -27,6 +27,7 @@ from queue import PriorityQueue
 from PIL import Image, ImageDraw, ImageFont
 import cv2
 import textwrap
+import json
 
 ## Japanese writing on images
 def draw_japanese_text_on_image(image_np, text, position, font_path, font_size):
@@ -154,17 +155,14 @@ def add_text_to_image(image, text):
 
     return image  # returning the modified image
 
-def play_audio(audio_samples):
-    pygame.mixer.init(frequency=args.freq, size=-16, channels=args.channels, buffer=1024)
-    pygame.init()
-     
+def play_audio(audio_samples, pygame_player):  
     audiobuf = io.BytesIO(audio_samples)
     if audiobuf:
         ## Speak WAV TTS Output using pygame
-        pygame.mixer.music.load(audiobuf)
-        pygame.mixer.music.play()
-        while pygame.mixer.music.get_busy():
-            pygame.time.Clock().tick(10)
+        pygame_player.mixer.music.load(audiobuf)
+        pygame_player.mixer.music.play()
+        while pygame_player.mixer.music.get_busy():
+            pygame_player.time.Clock().tick(10)
 
 def image_to_ascii(image):
     image = image.resize((args.width, int((image.height/image.width) * args.width * 0.55)), Image.LANCZOS)
@@ -193,14 +191,78 @@ def render(image):
     elif k == ord('q') or k == 27:
         cv2.destroyAllWindows()
 
+def save_json(header, mediaid):
+    assets_dir = "assets"
+    os.makedirs(assets_dir, exist_ok=True)
+    with open(f"{assets_dir}/{mediaid}.json", 'w') as json_file:
+        json.dump(header, json_file, indent=4)
+
+def save_asset(asset, mediaid, segment_number, asset_type):
+    directory = f"{asset_type}/{mediaid}"
+    os.makedirs(directory, exist_ok=True)
+    file_path = f"{directory}/{segment_number}"
+
+    if asset_type == "audio":
+        file_path += ".wav"
+        with open(file_path, 'wb') as file:
+            file.write(asset)
+    elif asset_type == "images":
+        file_path += ".png"
+        cv2.imwrite(file_path, asset)
+    elif asset_type == "music":
+        file_path += ".wav"
+        with open(file_path, 'wb') as file:
+            file.write(asset)
+
+def music_playback_thread(music_queue, music_player):
+    fade_duration = 3000  # 3 seconds fade in/out
+    while True:
+        if not music_queue.empty():
+            header, music_asset = music_queue.get()
+            music_id = header["mediaid"]
+            segment_number = header["segment_number"]
+            music_path = f"audio/{music_id}/{segment_number}.wav"
+            # Implement a method to save the music asset if not already saved
+            save_asset(music_asset, music_id, segment_number, "music")
+            # Load and play music with fade in/out at loop points
+            music_player.mixer.music.load(music_path)
+            music_player.mixer.music.play(-1)  # -1 for infinite loop
+            music_player.mixer.music.set_volume(0.5)  # Adjust volume as needed
+            # Smooth loop with fade out at the end of track and fade in at the start
+            while music_player.mixer.music.get_busy():
+                # Check for command to change track or stop
+                # ... (you can use another queue to receive these commands)
+                time.sleep(1)  # Reduce CPU usage
+            music_player.mixer.music.fadeout(fade_duration)
+        time.sleep(0.1)  # Sleep briefly to reduce CPU usage when queue is empty
+
+
+def playback(image, audio, pygame_player):
+    # play both audio and display image with audio blocking till finished
+    render(image)
+    play_audio(audio, pygame_player)
+
 def main():
+    ## Main routine
+    pygame_speek = pygame
+    pygame_speek.mixer.init(frequency=22500, size=-16, channels=1, buffer=1024)
+    pygame_speek.init()
+    pygame_music = pygame
+    pygame_music.mixer.init(frequency=16000, size=-16, channels=1, buffer=1024)
+    pygame_music.init()
+
     last_image_header = None
     last_audio_header = None
     last_image_segment = None
     last_audio_segment = None
+
+    music_thread = threading.Thread(target=music_playback_thread, args=(music_buffer, pygame_music))
+    music_thread.daemon = True  # Daemonize thread to close when the main program exits
+    music_thread.start()
+
     while True:
         header_message = socket.recv_json()
-      
+
         segment_number = header_message["segment_number"]
         timestamp = header_message["timestamp"]
         mediaid = header_message["mediaid"]
@@ -220,10 +282,8 @@ def main():
             # Print the header
             print(f"Received music segment {type} #{segment_number} {timestamp}: {mediaid} {len(text)} characters")
 
-            #play_audio(music)
-
-            # queue the header and audio together
-            #music_buffer.put((header_message, audio))
+            # queue the header and music together
+            #music_buffer.put((header_message, music))
 
         if type == "speek":
             # Now, receive the binary audio data
@@ -231,8 +291,6 @@ def main():
 
             # Print the header
             print(f"Received audio segment {type} #{segment_number} {timestamp}: {mediaid} {len(text)} characters")
-
-            #play_audio(audio)
 
             # queue the header and audio together
             audio_buffer.put((header_message, audio))
@@ -250,8 +308,6 @@ def main():
                 image = Image.open(io.BytesIO(image))
 
                 print(f"Image Prompt: {optimized_prompt}\Original Text: {text}\nOriginal Question:{message}")
-
-                #render(image)
 
                 # queue the header and image together
                 image_buffer.put((header_message, image))
@@ -293,9 +349,21 @@ def main():
             else:
                 image_np = add_text_to_image(image_asset, text)
 
-            # play both audio and display image with audio blocking till finished
-            render(image_np)
-            play_audio(audio_asset)
+            ## write out json into a directory assets/{mediaid}.json with it pretty pretty printed, 
+            ## write out assets to file locations audio/ and images/ as mediaid/segment_number.wav 
+            ## and mediaid/segment_number.png too.
+            ## audio_message and image_message are the headers, image_np and audio_asset are the assets
+            # Save JSON header
+            save_json(audio_message, mediaid)  # or image_message, if it's the one to be saved
+
+            # Save audio asset
+            save_asset(audio_asset, mediaid, segment_number, "audio")
+
+            # Save image asset
+            save_asset(image_np, mediaid, segment_number, "images")
+
+            # Play audio and display image
+            playback(image_np, audio_asset, pygame_speek)
 
 
 if __name__ == "__main__":
@@ -322,8 +390,8 @@ if __name__ == "__main__":
         LOGLEVEL = logging.INFO
 
     log_id = time.strftime("%Y%m%d-%H%M%S")
-    logging.basicConfig(filename=f"logs/zmqTTIlisten-{log_id}.log", level=LOGLEVEL)
-    logger = logging.getLogger('TTIlistener')
+    logging.basicConfig(filename=f"logs/lifeAIplayer-{log_id}.log", level=LOGLEVEL)
+    logger = logging.getLogger('lifeAIplayer')
 
     ch = logging.StreamHandler()
     ch.setLevel(LOGLEVEL)

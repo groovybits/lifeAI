@@ -23,7 +23,7 @@ import logging
 load_dotenv()
 
 ## Get the news
-def get_news(offset=0, keywords="ai anime buddhism cats", categories="technology,science,entertainment"):
+def get_news(offset=0, keywords="ai", categories="technology,science,entertainment"):
     conn = http.client.HTTPConnection('api.mediastack.com')
 
     params = urllib.parse.urlencode({
@@ -177,8 +177,8 @@ def main():
                         "source": "lifeAI",
                         "episode": "false",
                         "message": args.prompt,
-                        "history": message,
-                        "aipersonality": args.aipersonality,
+                        "history": f"Breaking news just in... {title}",
+                        "aipersonality": f"{args.aipersonality}\n{args.prompt}",
                         "ainame": args.ainame
                     }
                     socket.send_json(client_request)
@@ -190,14 +190,14 @@ def main():
         pagination += 100
 
 if __name__ == "__main__":
-    default_personality = "You Life AI's Groovy AI Bot GAIB. You are acting as a news reporter getting stories and analyzing them and presenting various thoughts and relations of them with a joyful compassionate wise perspective. Make the news fun and silly, joke and make comedy out of the world. Speak in a conversational tone referencing yourself and the person who asked the question if given.  Maintain your role without revealing that you're an AI Language model or your inability to access real-time information. Do not mention the text or sources used, treat the contextas something you are using as internal thought to generate responses as your role."
+    default_personality = "You are Life AI's Groovy AI Bot GAIB. You are acting as a news reporter getting stories and analyzing them and presenting various thoughts and relations of them with a joyful compassionate wise perspective. Make the news fun and silly, joke and make comedy out of the world. Speak in a conversational tone referencing yourself and the person who asked the question if given.  Maintain your role without revealing that you're an AI Language model or your inability to access real-time information. Do not mention the text or sources used, treat the contextas something you are using as internal thought to generate responses as your role."
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--interval", type=int, default=90, required=False, help="interval to send messages in seconds, default is 90")
     parser.add_argument("--output_port", type=int, default=1500, required=False, help="Port to send message to")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Host for sending message to.")
     parser.add_argument("--username", type=str, required=False, default="NewsAnchor", help="Username of sender")
-    parser.add_argument("--keywords", type=str, required=False, default="ai anime buddhism cats artificial intelligence gpt openai elon musk", help="Keywords for news stories")
+    parser.add_argument("--keywords", type=str, required=False, default="ai anime manga llm buddhism cats artificial intelligence llama2 openai elon musk psychedelics", help="Keywords for news stories")
     parser.add_argument("--categories", type=str, required=False, default="technology,science,entertainment", help="News stories categories")
     parser.add_argument("--prompt", type=str, required=False, default="Report on the news story in the context of the prompt in character giving a funny informative technically accurate and entertaining news story. Change into various famous people and anime characters and make it fun and silly.",
                         help="Prompt to give context as a newstory feed")
