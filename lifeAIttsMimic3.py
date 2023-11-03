@@ -102,6 +102,9 @@ def main():
         logger.debug(f"Text to Speech: sent audio #{segment_number}\n{header_message}")
         logger.info(f"Text to Speech: sent audio #{segment_number} of {duration} duration.\n{text}")
 
+        header_message = None
+        text = ""
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_port", type=int, default=2000, required=False, help="Port for receiving text input")

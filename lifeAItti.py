@@ -70,7 +70,7 @@ def main():
             logger.error(f"TTI: No optimized text, using original text.")
 
         # Clean text
-        optimized_prompt = clean_text(optimized_prompt[:512])
+        optimized_prompt = clean_text(optimized_prompt[:300])
 
         logger.debug(f"Text to Image recieved optimized prompt:\n{header_message}.")
         logger.info(f"Text to Image recieved text #{segment_number}:\n - {optimized_prompt}")
@@ -78,25 +78,28 @@ def main():
         image = None
         if args.latency == 0 or last_image == None or time.time() - header_message["timestamp"] <= args.latency:
             # 2. Forward embeddings and negative embeddings through text encoder
-            max_length = pipe.tokenizer.model_max_length
+            if args.extend_prompt:
+                max_length = pipe.tokenizer.model_max_length
 
-            # 3. Forward
-            input_ids = pipe.tokenizer(optimized_prompt, return_tensors="pt").input_ids
-            input_ids = input_ids.to("mps")
+                # 3. Forward
+                input_ids = pipe.tokenizer(optimized_prompt, return_tensors="pt").input_ids
+                input_ids = input_ids.to("mps")
 
-            negative_ids = pipe.tokenizer("", truncation=False, padding="max_length", max_length=input_ids.shape[-1], return_tensors="pt").input_ids                                                                                                     
-            negative_ids = negative_ids.to("mps")
+                negative_ids = pipe.tokenizer("", truncation=False, padding="max_length", max_length=input_ids.shape[-1], return_tensors="pt").input_ids                                                                                                     
+                negative_ids = negative_ids.to("mps")
 
-            concat_embeds = []
-            neg_embeds = []
-            for i in range(0, input_ids.shape[-1], max_length):
-                concat_embeds.append(pipe.text_encoder(input_ids[:, i: i + max_length])[0])
-                neg_embeds.append(pipe.text_encoder(negative_ids[:, i: i + max_length])[0])
+                concat_embeds = []
+                neg_embeds = []
+                for i in range(0, input_ids.shape[-1], max_length):
+                    concat_embeds.append(pipe.text_encoder(input_ids[:, i: i + max_length])[0])
+                    neg_embeds.append(pipe.text_encoder(negative_ids[:, i: i + max_length])[0])
 
-            prompt_embeds = torch.cat(concat_embeds, dim=1)
-            negative_prompt_embeds = torch.cat(neg_embeds, dim=1)
+                prompt_embeds = torch.cat(concat_embeds, dim=1)
+                negative_prompt_embeds = torch.cat(neg_embeds, dim=1)
 
-            image = pipe(prompt_embeds=prompt_embeds, negative_prompt_embeds=negative_prompt_embeds).images[0]
+                image = pipe(prompt_embeds=prompt_embeds, negative_prompt_embeds=negative_prompt_embeds).images[0]
+            else:
+                image = pipe(clean_text(optimized_prompt)).images[0]
 
             # Convert PIL Image to bytes
             img_byte_arr = io.BytesIO()
@@ -126,6 +129,7 @@ if __name__ == "__main__":
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("-m", "--model", type=str, default="runwayml/stable-diffusion-v1-5", help="Model ID to use")
     parser.add_argument("--latency", type=int, default=0, help="Latency in seconds to wait for a message")
+    parser.add_argument("--extend_prompt", action="store_true", help="Extend prompt past 77 token limit.")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO

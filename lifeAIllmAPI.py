@@ -171,6 +171,7 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
             'prompt': header_message["llm_prompt"],
             'temperature': args.temperature,
             'stop': args.stoptokens.split(','),
+            'max_tokens': args.maxtokens,
             'stream': True,
         }
 
@@ -312,7 +313,7 @@ if __name__ == "__main__":
     parser.add_argument("--input_port", type=int, default=1500)
     parser.add_argument("--output_host", type=str, default="127.0.0.1")
     parser.add_argument("--output_port", type=int, default=2000)
-    parser.add_argument("--maxtokens", type=int, default=0)
+    parser.add_argument("--maxtokens", type=int, default=800)
     parser.add_argument("--context", type=int, default=32768)
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("-d", "--debug", action="store_true", default=False)
@@ -323,14 +324,14 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--personality", type=str, default="friendly helpful compassionate bodhisattva guru.", help="Personality of the AI, choices are 'friendly' or 'mean'.")
     parser.add_argument("-sts", "--stoptokens", type=str, default="Question:,Context:,Personality:", help="Stop tokens to use, do not change unless you know what you are doing!")
     parser.add_argument("-tp", "--characters_per_line", type=int, default=300, help="Minimum number of characters per buffer, buffer window before output.")
-    parser.add_argument("-sc", "--sentence_count", type=int, default=2, help="Number of sentences per line.")
+    parser.add_argument("-sc", "--sentence_count", type=int, default=3, help="Number of sentences per line.")
     parser.add_argument("-ag", "--autogenerate", action="store_true", default=False, help="Carry on long conversations, remove stop tokens.")
     parser.add_argument("--simplesplit", action="store_true", default=False, help="Simple split of text into lines, no sentence tokenization.")
     parser.add_argument("--timeout", type=int, default=300, help="Timeout in seconds for LLM to respond.")
     parser.add_argument("--metal", action="store_true", default=False, help="Offload to metal MPS GPU")
     parser.add_argument("--cuda", action="store_true", default=False, help="Offload to CUDA GPU")
     parser.add_argument("--purgecontext", action="store_true", default=False, help="Purge context if it gets too large")
-    parser.add_argument("--n_keep", type=int, default=-1, help="Number of tokens to keep for the context.")
+    parser.add_argument("--n_keep", type=int, default=0, help="Number of tokens to keep for the context.")
     parser.add_argument("--no_cache_prompt", action='store_true', help="Flag to disable caching of prompts.")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--sub", action="store_true", default=False, help="Publish to a topic")

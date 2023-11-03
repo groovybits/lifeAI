@@ -71,6 +71,7 @@ def run_llm(prompt, api_url, args):
             'prompt': prompt[:args.context - len(prompt)],
             'temperature': args.temperature,
             'stop': args.stoptokens.split(','),
+            'max_tokens': args.maxtokens,
             'stream': False,
         }
 
@@ -207,7 +208,7 @@ if __name__ == "__main__":
     parser.add_argument("--output_port", type=int, default=3001)
     parser.add_argument("--topic", type=str, default="picture", 
                         help="Topic to use for image generation, default 'image generation'")
-    parser.add_argument("--maxtokens", type=int, default=80)
+    parser.add_argument("--maxtokens", type=int, default=77)
     parser.add_argument("--context", type=int, default=4096)
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("-d", "--debug", action="store_true", default=False)
