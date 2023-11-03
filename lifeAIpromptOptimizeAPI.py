@@ -169,7 +169,7 @@ def main():
                 text = " ".join(current_text_array)
                 current_text_array = []
 
-        full_prompt = f"{prompt}\n\n{args.qprompt}: {message[:120]} - {text[:300]}\n{args.aprompt}:"
+        full_prompt = f"Request: {prompt}\n\n{args.qprompt}: {message[:120]} - {text[:300]}\n{args.aprompt}:"
 
         optimized_prompt = ""
         try:
@@ -219,7 +219,7 @@ if __name__ == "__main__":
     parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--n_keep", type=int, default=0, help="Number of tokens to keep for the context.")
-    parser.add_argument("-sts", "--stoptokens", type=str, default="Text:", help="Stop tokens to use, do not change unless you know what you are doing!")
+    parser.add_argument("-sts", "--stoptokens", type=str, default="Text:,Request:", help="Stop tokens to use, do not change unless you know what you are doing!")
     parser.add_argument("--no_cache_prompt", action='store_true', help="Flag to disable caching of prompts.")
     parser.add_argument("--sub", action="store_true", default=False, help="Publish to a topic")
     parser.add_argument("--pub", action="store_true", default=False, help="Publish to a topic")

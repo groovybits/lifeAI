@@ -301,7 +301,7 @@ def main(args):
 if __name__ == "__main__":
     role_enforcer = ("Give an {A} for the message from {user} listed as a {Q} at the prompt below. "
                      "Stay in the role of {assistant} using the Context if present to help generate the {output}.\n")
-    prompt_template = "{assistant}: {personality}{instructions}%s\n\n{context}{Q}: {question}\n{A}:" % role_enforcer
+    prompt_template = "Personality: As {assistant} {personality}{instructions}%s\n\n{context}{Q}: {question}\n{A}:" % role_enforcer
     qprompt = "Question"
     aprompt = "Answer"
     oprompt = "response"
@@ -321,7 +321,7 @@ if __name__ == "__main__":
     parser.add_argument("-pc", "--promptcompletion", type=str, default=prompt_template, help=f"Prompt Template, default is {prompt_template}.")
     parser.add_argument("-e", "--episode", action="store_true", default=False, help="Episode mode, Output a TV Episode format script.")
     parser.add_argument("-p", "--personality", type=str, default="friendly helpful compassionate bodhisattva guru.", help="Personality of the AI, choices are 'friendly' or 'mean'.")
-    parser.add_argument("-sts", "--stoptokens", type=str, default="Question:", help="Stop tokens to use, do not change unless you know what you are doing!")
+    parser.add_argument("-sts", "--stoptokens", type=str, default="Question:,Context:,Personality:", help="Stop tokens to use, do not change unless you know what you are doing!")
     parser.add_argument("-tp", "--characters_per_line", type=int, default=300, help="Minimum number of characters per buffer, buffer window before output.")
     parser.add_argument("-sc", "--sentence_count", type=int, default=2, help="Number of sentences per line.")
     parser.add_argument("-ag", "--autogenerate", action="store_true", default=False, help="Carry on long conversations, remove stop tokens.")
