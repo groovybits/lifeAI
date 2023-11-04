@@ -87,7 +87,7 @@ def main():
 
         # look up in chroma db
         logger.info(f"looking up {message} in chroma db...\n")
-        res = qa(message)
+        res = qa(message[:800])
         if res is None:
             logger.error(f"Error getting answer from Chroma DB: {res}")
             return None
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Port for receiving text input")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending image output")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
-    parser.add_argument("--max_size", type=int, default=800, required=False, help="Maximum size of text to process")
+    parser.add_argument("--max_size", type=int, default=32768, required=False, help="Maximum size of text to process")
     parser.add_argument("--max_tokens", type=int, default=4096, required=False, help="Maximum tokens to process")
     args = parser.parse_args()
 
