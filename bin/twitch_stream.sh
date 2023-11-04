@@ -17,10 +17,11 @@ ffmpeg -y -hide_banner \
     -vcodec h264_videotoolbox \
     -preset slow \
     -b:v 3000k \
+    -tune animation \
     -acodec aac -ar 48000 \
     -b:a 192k -ac 2 \
     -maxrate 3000k -minrate 3000k -bufsize 3000k \
-    -g 60 \
+    -g 120 \
     -keyint_min 30 \
     -flags:v +global_header \
     -flags:a +global_header \
