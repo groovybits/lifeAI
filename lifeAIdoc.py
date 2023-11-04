@@ -49,7 +49,7 @@ def clean_text(text):
     text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
     
     # Remove special characters and digits (optional, be cautious)
-    text = re.sub(r'[^a-zA-Z0-9\s.?,!\n]', '', text)
+    text = re.sub(r'[^a-zA-Z0-9\s.?,!]', '', text)
     
     # Remove extra whitespace
     text = ' '.join(text.split())
@@ -103,7 +103,7 @@ def main():
             logger.debug(f"got document: {document.metadata}\n")
             source_doc = document.metadata["source"]
             context_add = f" {document.page_content}"
-            history += context_add
+            history += f"{context_add}"
 
         logger.info(f"got answer: {answer} in context: {history}\n")
         header_message['history'] = clean_text(history)
