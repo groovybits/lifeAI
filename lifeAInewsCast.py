@@ -176,9 +176,9 @@ def main():
                         "username": username,
                         "source": "lifeAI",
                         "episode": "false",
-                        "message": args.prompt,
+                        "message": f"{args.prompt} {title}",
                         "history": f"Breaking news just in... {title}",
-                        "aipersonality": f"{args.aipersonality}\n{args.prompt}",
+                        "aipersonality": f"{args.aipersonality}",
                         "ainame": args.ainame
                     }
                     socket.send_json(client_request)
@@ -199,7 +199,7 @@ if __name__ == "__main__":
     parser.add_argument("--username", type=str, required=False, default="NewsAnchor", help="Username of sender")
     parser.add_argument("--keywords", type=str, required=False, default="ai anime manga llm buddhism cats artificial intelligence llama2 openai elon musk psychedelics", help="Keywords for news stories")
     parser.add_argument("--categories", type=str, required=False, default="technology,science,entertainment", help="News stories categories")
-    parser.add_argument("--prompt", type=str, required=False, default="Report on the news story in the context of the prompt in character giving a funny informative technically accurate and entertaining news story. Change into various famous people and anime characters and make it fun and silly.",
+    parser.add_argument("--prompt", type=str, required=False, default="Tell us about the news story in the context with humor and joy...",
                         help="Prompt to give context as a newstory feed")
     parser.add_argument("--aipersonality", type=str, required=False, default=f"{default_personality}", help="AI personality")
     parser.add_argument("--ainame", type=str, required=False, default="GAIB", help="AI name")

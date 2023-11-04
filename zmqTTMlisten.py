@@ -31,7 +31,7 @@ def get_audio_duration(audio_samples):
 class BackgroundMusic(threading.Thread):
     def __init__(self):
         super().__init__()
-        pygame.mixer.init(frequency=16000, size=-16, channels=1, buffer=1024)
+        pygame.mixer.init(frequency=32000, size=-16, channels=1, buffer=1024)
         pygame.init()
         self.audio_buffer = None
         self.running = True

@@ -208,34 +208,49 @@ def save_asset(asset, mediaid, segment_number, asset_type):
             file.write(asset)
     elif asset_type == "images":
         file_path += ".png"
-        cv2.imwrite(file_path, asset)
+        img_byte_arr = io.BytesIO()
+        asset.save(img_byte_arr, format="PNG")  # Save it as PNG or JPEG depending on your preference
+        asset = img_byte_arr.getvalue()
+
+        with open(file_path, 'wb') as f:
+            f.write(asset)
     elif asset_type == "music":
         file_path += ".wav"
         with open(file_path, 'wb') as file:
             file.write(asset)
 
-def music_playback_thread(music_queue, music_player):
-    fade_duration = 3000  # 3 seconds fade in/out
-    while True:
-        if not music_queue.empty():
-            header, music_asset = music_queue.get()
-            music_id = header["mediaid"]
-            segment_number = header["segment_number"]
-            music_path = f"audio/{music_id}/{segment_number}.wav"
-            # Implement a method to save the music asset if not already saved
-            save_asset(music_asset, music_id, segment_number, "music")
-            # Load and play music with fade in/out at loop points
-            music_player.mixer.music.load(music_path)
-            music_player.mixer.music.play(-1)  # -1 for infinite loop
-            music_player.mixer.music.set_volume(0.5)  # Adjust volume as needed
-            # Smooth loop with fade out at the end of track and fade in at the start
-            while music_player.mixer.music.get_busy():
-                # Check for command to change track or stop
-                # ... (you can use another queue to receive these commands)
-                time.sleep(1)  # Reduce CPU usage
-            music_player.mixer.music.fadeout(fade_duration)
-        time.sleep(0.1)  # Sleep briefly to reduce CPU usage when queue is empty
+class BackgroundMusic(threading.Thread):
+    def __init__(self):
+        super().__init__()
+        pygame.mixer.init(frequency=32000, size=-16, channels=1, buffer=1024)
+        pygame.init()
+        self.audio_buffer = None
+        self.running = True
+        self.lock = threading.Lock()  # Lock to synchronize access to audio_buffer
 
+    def run(self):
+        while self.running:
+            with self.lock:
+                if self.audio_buffer:
+                    self.play_audio(self.audio_buffer)
+                    self.audio_buffer = None  # Reset audio_buffer to prevent replaying the same buffer
+            pygame.time.Clock().tick(1)  # Limit the while loop to 1 iteration per second
+
+    def play_audio(self, audio_samples):
+        audiobuf = io.BytesIO(audio_samples)
+        if audiobuf:
+            pygame.mixer.music.load(audiobuf)
+            pygame.mixer.music.set_volume(args.volume)  # Set the volume
+            pygame.mixer.music.play(-1)  # -1 instructs Pygame to loop the audio indefinitely
+
+    def change_track(self, audio_buffer):
+        with self.lock:
+            pygame.mixer.music.stop()  # Stop the currently playing audio
+            self.audio_buffer = audio_buffer
+
+    def stop(self):
+        self.running = False
+        pygame.mixer.music.stop()
 
 def playback(image, audio, pygame_player):
     # play both audio and display image with audio blocking till finished
@@ -247,18 +262,15 @@ def main():
     pygame_speek = pygame
     pygame_speek.mixer.init(frequency=22500, size=-16, channels=1, buffer=1024)
     pygame_speek.init()
-    pygame_music = pygame
-    pygame_music.mixer.init(frequency=16000, size=-16, channels=1, buffer=1024)
-    pygame_music.init()
 
     last_image_header = None
     last_audio_header = None
     last_image_segment = None
     last_audio_segment = None
 
-    music_thread = threading.Thread(target=music_playback_thread, args=(music_buffer, pygame_music))
-    music_thread.daemon = True  # Daemonize thread to close when the main program exits
-    music_thread.start()
+    # Instantiate and start the background music thread
+    bg_music = BackgroundMusic()
+    bg_music.start()
 
     while True:
         header_message = socket.recv_json()
@@ -281,9 +293,14 @@ def main():
 
             # Print the header
             print(f"Received music segment {type} #{segment_number} {timestamp}: {mediaid} {len(text)} characters")
+            
+            save_json(message, mediaid)  # or image_message, if it's the one to be saved
 
+            # Save audio asset
+            save_asset(music, mediaid, segment_number, "music")
+        
             # queue the header and music together
-            #music_buffer.put((header_message, music))
+            bg_music.change_track(music)
 
         if type == "speek":
             # Now, receive the binary audio data
@@ -406,7 +423,6 @@ if __name__ == "__main__":
     socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
     audio_buffer = queue.Queue()
-    music_buffer = queue.Queue()
     image_buffer = queue.Queue()
 
     main()

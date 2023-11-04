@@ -75,17 +75,6 @@ def send_data(zmq_sender, message):
     # Placeholder for the ZMQ send function, which should be defined to match your ZMQ setup.
     zmq_sender.send_json(message)
 
-def find_break_point(text, start, end):
-    # Reverse search for sentence end within the last 20% of the limit
-    for i in range(end, start, -1):
-        if text[i] in '.!?\n':
-            return i + 1  # Include the punctuation in the chunk
-    # No sentence end found; look for the next space or comma after the limit
-    for i in range(end, len(text)):
-        if text[i] in ' ,':
-            return i
-    return end  # No suitable break point found; use the end limit
-
 def stream_api_response(header_message, api_url, completion_params, zmq_sender, characters_per_line, sentence_count):
     accumulated_text = ""
     logger.info(f"LLM streaming API response to {api_url} with completion_params: {completion_params}")
@@ -111,22 +100,15 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
                         accumulated_text += content
                         header_message["tokens"] = current_tokens
 
-                        # Check for break point
-                        if len(clean_text(accumulated_text)) >= characters_per_line:
-                            last_20_percent_index = max(0, len(accumulated_text) - int(characters_per_line * 0.2))
-                            break_point = find_break_point(accumulated_text, last_20_percent_index, len(accumulated_text) - 1)
+                        cleaned_accumulated_text = clean_text(accumulated_text)
 
-                            # Check if we've exceeded 1.5 times the character limit and need to force a break
-                            if len(clean_text(accumulated_text)) > int(characters_per_line * 1.5):
-                                break_point = min(break_point, len(accumulated_text))
-
-                            chunk_to_send = accumulated_text[:break_point]
-                            accumulated_text = accumulated_text[break_point:]  # Remainder
-
-                            header_message = clean_and_send_group(chunk_to_send, zmq_sender, header_message.copy(), sentence_count)
+                        # When checking for the break point, make sure to use the same text cleaning method for consistency
+                        if len(cleaned_accumulated_text) >= characters_per_line and ('.' in content or '?' in content or '!' in content or '\n' in content):
+                            header_message = clean_and_send_group(cleaned_accumulated_text, zmq_sender, header_message.copy(), sentence_count)
                             current_tokens = 0
                             header_message["tokens"] = 0
                             header_message["text"] = ""
+                            accumulated_text = ""
 
     # If there's any remaining text after the loop, send it as well
     if accumulated_text:
@@ -338,11 +320,10 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--episode", action="store_true", default=False, help="Episode mode, Output a TV Episode format script.")
     parser.add_argument("-p", "--personality", type=str, default="friendly helpful compassionate bodhisattva guru.", help="Personality of the AI, choices are 'friendly' or 'mean'.")
     parser.add_argument("-sts", "--stoptokens", type=str, default="Question:,Context:,Personality:", help="Stop tokens to use, do not change unless you know what you are doing!")
-    parser.add_argument("-tp", "--characters_per_line", type=int, default=130, help="Minimum number of characters per buffer, buffer window before output.")
-    parser.add_argument("-sc", "--sentence_count", type=int, default=3, help="Number of sentences per line.")
+    parser.add_argument("-tp", "--characters_per_line", type=int, default=180, help="Minimum number of characters per buffer, buffer window before output.")
+    parser.add_argument("-sc", "--sentence_count", type=int, default=2, help="Number of sentences per line.")
     parser.add_argument("-ag", "--autogenerate", action="store_true", default=False, help="Carry on long conversations, remove stop tokens.")
     parser.add_argument("--simplesplit", action="store_true", default=False, help="Simple split of text into lines, no sentence tokenization.")
-    parser.add_argument("--timeout", type=int, default=300, help="Timeout in seconds for LLM to respond.")
     parser.add_argument("--metal", action="store_true", default=False, help="Offload to metal MPS GPU")
     parser.add_argument("--cuda", action="store_true", default=False, help="Offload to CUDA GPU")
     parser.add_argument("--purgecontext", action="store_true", default=False, help="Purge context if it gets too large")
