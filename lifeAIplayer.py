@@ -28,6 +28,110 @@ from PIL import Image, ImageDraw, ImageFont
 import cv2
 import textwrap
 import json
+from collections import deque
+from pydub import AudioSegment
+
+# Queue to store the last images
+past_images_queue = deque(maxlen=8)  # Assuming 6 images for each side
+
+def create_16_9_image(center_image, side_images, target_width, target_height):
+    # Scale the main image to fit the height of the 16:9 image
+    main_image_scaled = center_image.resize((target_height, target_height), Image.LANCZOS)
+
+    # Create a new image with the target 16:9 dimensions
+    final_image = Image.new('RGB', (target_width, target_height))
+
+    # Calculate the total width of the side images (on one side)
+    side_width_total = (target_width - target_height) // 2
+
+    # Resize side images to 2/3 of their original 512x512 size
+    small_side_size = int(512 * 2 / 3)
+    resized_side_images = [img.resize((small_side_size, small_side_size), Image.LANCZOS) for img in side_images]
+
+    # Calculate the number of small images that can fit on each side
+    # This assumes that you can fit 3 images stacked vertically
+    num_side_images = 3
+
+    # Paste the side images to fill the sides
+    for i in range(num_side_images):
+        # Calculate the vertical position for each small image
+        y_position = i * small_side_size
+
+        # Paste on the left side
+        final_image.paste(resized_side_images[i], (0, y_position))
+
+        # Paste on the right side
+        final_image.paste(resized_side_images[i], (target_width - small_side_size, y_position))
+
+    # Paste the scaled main image in the center
+    final_image.paste(main_image_scaled, (side_width_total, 0))
+
+    return final_image
+
+def create_16_9_nonlinear_image(center_image, side_images, target_width, target_height):
+    # Scale the main image to fit the height of the 16:9 image
+    main_image_scaled = center_image.resize((target_height, target_height), Image.LANCZOS)
+
+    # Create a new image with the target 16:9 dimensions
+    final_image = Image.new('RGB', (target_width, target_height))
+
+    # Calculate the total width of the side images (on one side)
+    side_width_total = (target_width - target_height) // 2
+
+    # Paste the side images to fill the sides
+    for index, side_image in enumerate(side_images):
+        # Calculate the position of each side image (3 on each side)
+        x_position = (index % 3) * side_image.width if index < 6 else target_width - (index % 3 + 1) * side_image.width
+        y_position = (index // 6) * side_image.height
+
+        # Paste the side image into the final image
+        final_image.paste(side_image, (x_position, y_position))
+
+    # Paste the scaled main image in the center
+    final_image.paste(main_image_scaled, (side_width_total, 0))
+
+    return final_image
+
+def create_filmstrip_middle_image(center_image, side_images):
+    # Assuming side_images is a list of 6 images, 3 for left and 3 for right
+    left_images = side_images[:3]
+    right_images = side_images[3:]
+    
+    # Combine the left images, the center image, and the right images horizontally
+    images_to_combine = left_images + [center_image] + right_images
+    combined_width = sum(img.size[0] for img in images_to_combine)
+    combined_height = max(img.size[1] for img in images_to_combine)
+
+    # Create a new image with the combined dimensions
+    wide_image = Image.new('RGB', (combined_width, combined_height))
+
+    # Paste the images into the wide_image
+    x_offset = 0
+    for img in images_to_combine:
+        wide_image.paste(img, (x_offset, 0))
+        x_offset += img.size[0]
+    
+    return wide_image
+
+# Main function to process the new image
+def process_new_image(new_image, text, args):
+    target_width = args.width  # This should be set to the desired width for 16:9 aspect ratio
+    target_height = args.height  # This should be set to the height corresponding to the 16:9 aspect ratio
+    
+    # Check if we have enough images to fill the sides
+    if len(past_images_queue) >= 8:
+        # Use the 6 most recent images for each side
+        side_images = list(past_images_queue)
+        final_image = create_16_9_image(new_image, side_images, target_width, target_height)
+        final_image = add_text_to_image(final_image, text)
+    else:
+        # Not enough images, just add text to the new_image
+        final_image = add_text_to_image(new_image, text)
+
+    # Add the new image to the queue for future use
+    past_images_queue.appendleft(new_image)
+
+    return final_image
 
 ## Japanese writing on images
 def draw_japanese_text_on_image(image_np, text, position, font_path, font_size):
@@ -60,7 +164,6 @@ def draw_japanese_text_on_image(image_np, text, position, font_path, font_size):
     image_np = cv2.cvtColor(np.array(image_pil), cv2.COLOR_RGB2BGR)
 
     return image_np
-
 
 def add_text_to_image(image, text):
     if image is not None:
@@ -222,8 +325,9 @@ def save_asset(asset, mediaid, segment_number, asset_type):
 class BackgroundMusic(threading.Thread):
     def __init__(self):
         super().__init__()
-        pygame.mixer.init(frequency=32000, size=-16, channels=1, buffer=1024)
-        pygame.init()
+        self.pygame = pygame
+        self.pygame.mixer.init(frequency=32000, size=-16, channels=1, buffer=1024)
+        self.pygame.init()
         self.audio_buffer = None
         self.running = True
         self.lock = threading.Lock()  # Lock to synchronize access to audio_buffer
@@ -234,23 +338,39 @@ class BackgroundMusic(threading.Thread):
                 if self.audio_buffer:
                     self.play_audio(self.audio_buffer)
                     self.audio_buffer = None  # Reset audio_buffer to prevent replaying the same buffer
-            pygame.time.Clock().tick(1)  # Limit the while loop to 1 iteration per second
+            self.pygame.time.Clock().tick(1)  # Limit the while loop to 1 iteration per second
+
+    def get_audio_duration(audio_samples):
+        audio_segment = AudioSegment.from_file(io.BytesIO(audio_samples), format="wav")
+        duration_ms = len(audio_segment)  # Duration in milliseconds
+        duration_s = duration_ms / 1000.0  # Convert to seconds
+        return duration_s
 
     def play_audio(self, audio_samples):
         audiobuf = io.BytesIO(audio_samples)
+        duration = self.get_audio_duration(audio_samples)
         if audiobuf:
-            pygame.mixer.music.load(audiobuf)
-            pygame.mixer.music.set_volume(args.volume)  # Set the volume
-            pygame.mixer.music.play(-1)  # -1 instructs Pygame to loop the audio indefinitely
+            try:
+                self.pygame.mixer.music.load(audiobuf)
+                #self.pygame.mixer.music.set_volume(args.volume)  # Set the volume
+                self.pygame.mixer.music.play(-1)  # -1 instructs Pygame to loop the audio indefinitely
+                #while self.pygame.mixer.music.get_busy():
+                #    self.pygame.time.Clock().tick(10)
+                #time.sleep(duration)
+            except Exception as e:
+                logger.error(f"Error playing audio: {e}")
 
-    def change_track(self, audio_buffer):
+    def change_track(self, audio):
         with self.lock:
-            pygame.mixer.music.stop()  # Stop the currently playing audio
-            self.audio_buffer = audio_buffer
+            try:
+                self.pygame.mixer.music.stop()  # Stop the currently playing audio
+                self.audio_buffer = audio
+            except Exception as e:
+                logger.error(f"Error changing track: {e}")
 
     def stop(self):
         self.running = False
-        pygame.mixer.music.stop()
+        self.pygame.mixer.music.stop()
 
 def playback(image, audio, pygame_player):
     # play both audio and display image with audio blocking till finished
@@ -360,9 +480,12 @@ def main():
             image_np = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
 
             if args.burn_prompt:
-                image_np = add_text_to_image(image_asset, optimized_prompt)
+                #image_np = add_text_to_image(image_asset, optimized_prompt)
+                image_np = process_new_image(image_asset, optimized_prompt)
             else:
-                image_np = add_text_to_image(image_asset, text)
+                #image_np = add_text_to_image(image_asset, text)
+                image_np = process_new_image(image_asset, text, args)
+
 
             ## write out json into a directory assets/{mediaid}.json with it pretty pretty printed, 
             ## write out assets to file locations audio/ and images/ as mediaid/segment_number.wav 
