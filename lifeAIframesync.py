@@ -105,7 +105,11 @@ def main():
         segment_index = 0
         if 'index' in header_message:
             segment_index = header_message['index']
-        logger.info(f"Framesync: {stream} #{segment_number}/{segment_index} - {timestamp}: {mediaid} {duration} seconds {len(text)} characters {tokens} tokens {md5sig}/{md5text}: {clean_text}")
+
+        latency_delta = 0
+        if timestamp != 0:
+            latency_delta = int(round(time.time()*1000)) - int(timestamp)
+        logger.info(f"Framesync: {stream} [{latency_delta}] ms delay #{segment_number}/{segment_index} - {timestamp}: {mediaid} {duration} seconds {len(text)} characters {tokens} tokens {md5sig}/{md5text}: {clean_text}")
 
         if args.passthrough:
             sender.send_json(header_message, zmq.SNDMORE)
