@@ -50,9 +50,15 @@ def main():
     last_image_timestamp = 0
     last_image_walltime = 0
     text_cache = []
+    retry = False
+    header_message = None
     while True:
         # Receive a message
-        header_message = receiver.recv_json()
+        if retry:
+            logger.error(f"Retrying...")
+            retry = False
+        else:
+            header_message = receiver.recv_json()
 
         # get variables from header
         segment_number = header_message["segment_number"]
@@ -99,6 +105,12 @@ def main():
             img_byte_arr = io.BytesIO()
             image.save(img_byte_arr, format='PNG')  # Save it as PNG or JPEG depending on your preference
             image = img_byte_arr.getvalue()
+
+            # check if image is more than 75k
+            if len(image) < 75000:
+                logger.error(f"Image is too small, retrying...")
+                retry = True
+                continue
 
             last_image = image
 
