@@ -1,5 +1,9 @@
 # Life AI - Bring your words to life using AI
 
+Try it <https://twitch.tv/groovyaibot> allows full interactive usage of Groovy Life AI.
+
+The Groovy Life AI community <https://groovylife.ai> for support and find others to discuss AI with.
+
 Modular python processes using zeromq to communicate between them. This allows mutiple chat models together and mixing of them into a mixer and out to twitch or where ever with ffmpeg/rtmp or anything ffmpeg can do. the nice part is using ffmpeg and packing audio/video into rtmp directly without OBS, and avoid all the overhead of need to decode it locally for broadcasting/streaming 😉.
 
 Can build out endless prompt injection sources, news/twitch/voice-whisper listener/commandline/javascript web interface (that could have the video stream back and shared like youtube).
