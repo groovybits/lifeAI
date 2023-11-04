@@ -16,7 +16,7 @@ ffmpeg -y -hide_banner \
     -pix_fmt yuv420p \
     -vcodec h264_videotoolbox \
     -preset slow \
-    -b:v 3000k \
+    -b:v 5000k \
     -tune animation \
     -acodec aac -ar 48000 \
     -b:a 192k -ac 2 \
