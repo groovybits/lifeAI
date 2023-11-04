@@ -70,8 +70,16 @@ def main():
         header_message = receiver.recv_json()
 
         # context
-        history = json.dumps(header_message['history'])
-        message = header_message['message']
+        history = ""
+        if 'history' in header_message:
+            history = json.dumps(header_message['history'])
+        else:
+            history = ""
+        message = ""
+        if 'message' in header_message:
+            message = header_message['message']
+        else:
+            message = ""
 
         message = clean_text(message)
 
