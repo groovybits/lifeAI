@@ -235,7 +235,8 @@ def main(args):
     # Set up the ZMQ receiver
     receiver = zmq_context.socket(zmq.PULL)
     logger.info(f"Connected to ZMQ at {args.input_host}:{args.input_port}")
-    receiver.bind(f"tcp://{args.input_host}:{args.input_port}")
+    receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
+    #receiver.subscribe("")
 
     # Set up the ZMQ sender
     sender = zmq_context.socket(zmq.PUB)
@@ -286,6 +287,7 @@ def main(args):
             segment_number = header_message["segment_number"]
             timestamp = header_message["timestamp"]
             mediaid = header_message["mediaid"]
+            header_message['client_request'] = client_request
             logger.info(f"LLM: job #{mediaid} completed at {timestamp} segment number #{segment_number}.")
 
             logger.debug(f"LLM: completed with response: - {json.dumps(header_message)}\n")
@@ -310,7 +312,7 @@ if __name__ == "__main__":
     parser.add_argument("--input_port", type=int, default=1500)
     parser.add_argument("--output_host", type=str, default="127.0.0.1")
     parser.add_argument("--output_port", type=int, default=2000)
-    parser.add_argument("--maxtokens", type=int, default=800)
+    parser.add_argument("--maxtokens", type=int, default=2000)
     parser.add_argument("--context", type=int, default=32768)
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("-d", "--debug", action="store_true", default=False)

@@ -194,7 +194,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--interval", type=int, default=90, required=False, help="interval to send messages in seconds, default is 90")
-    parser.add_argument("--output_port", type=int, default=1500, required=False, help="Port to send message to")
+    parser.add_argument("--output_port", type=int, default=8000, required=False, help="Port to send message to")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Host for sending message to.")
     parser.add_argument("--username", type=str, required=False, default="NewsAnchor", help="Username of sender")
     parser.add_argument("--keywords", type=str, required=False, default="ai anime manga llm buddhism cats artificial intelligence llama2 openai elon musk psychedelics", help="Keywords for news stories")

@@ -155,6 +155,8 @@ class AiTwitchBot(commands.Cog):
             cursor.execute("SELECT content FROM messages WHERE user = ? ORDER BY timestamp", (name,))
             dbdata = cursor.fetchall()
             history = [ChatCompletionMessage(role="user", content=d[0]) for d in dbdata]
+            # truncate history array to 10 entries
+            history = history[-10:]
             # flatten history into a string representation
             history = " ".join([str(h) for h in history])
 
@@ -330,7 +332,7 @@ if __name__ == "__main__":
     default_id = uuid.uuid4().hex[:8]
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output_port", type=int, default=1500, required=False, help="Port to send message to")
+    parser.add_argument("--output_port", type=int, default=8000, required=False, help="Port to send message to")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Host for sending message to.")
     parser.add_argument("--ai_name", type=str, required=False, default="GAIB", help="Name of the bot")
     parser.add_argument("--ai_personality", type=str,

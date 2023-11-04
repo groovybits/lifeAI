@@ -35,6 +35,8 @@ That’s the goal, you’ll see I am listing the parts as I build them, sort of 
 - [TTM Producer](lifeAIttm.py)          Facebook Music Generation.
 - [TTI Producer](lifeAItti.py)          Stable Diffusion Text to Image Generation. (extended prompt + NSFW off option)
 
+- [Document Injector](lifeAIdoc.py)     VectorDB Document Retrieval using ChromaDB and Gpt4All embeddings. (requires the privateGPT git to run within as the env, WIP)
+
 - [Frame Sync](lifeAIframesync.py)      sync frames, add frames, remove frames...
 
 - [Subtitle Burner](lifeAIsubTitleBurnIn.py) Burn-In subtitles in Anime style white/black bold.

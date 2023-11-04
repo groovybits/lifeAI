@@ -15,16 +15,10 @@ import soundfile as sf
 from transformers import logging as trlogging
 from transformers import AutoProcessor, MusicgenForConditionalGeneration, set_seed
 import torch
-import warnings
-import urllib3
 import logging
 import time
 import numpy as np
 
-warnings.simplefilter(action='ignore', category=Warning)
-warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
-from urllib3.exceptions import NotOpenSSLWarning
-warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 trlogging.set_verbosity_error()
 
 def generate_audio(prompt, negative_prompt, guidance_scale=3, audio_length_in_s=10, seed=0):

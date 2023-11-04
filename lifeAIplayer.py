@@ -264,9 +264,7 @@ def main():
     pygame_speek.init()
 
     last_image_header = None
-    last_audio_header = None
     last_image_segment = None
-    last_audio_segment = None
 
     # Instantiate and start the background music thread
     bg_music = BackgroundMusic()

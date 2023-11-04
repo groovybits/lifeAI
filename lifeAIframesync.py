@@ -10,19 +10,12 @@
 
 import zmq
 import argparse
-import warnings
-import urllib3
 import logging
 import time
 import queue
 import threading
 from queue import PriorityQueue
 import hashlib
-
-warnings.simplefilter(action='ignore', category=Warning)
-warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
-from urllib3.exceptions import NotOpenSSLWarning
-warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 
 def sync_media_buffers(audio_buffer, music_buffer, image_buffer, sender, logger, max_delay):
     master_clock = None  # Initialize the master clock to None

@@ -5,6 +5,9 @@
     "lifeAInewsCast": {
         "args": ["python", "lifeAInewsCat.py"]
     },
+    "lifeAIdoc": {
+        "args": ["python", "lifeAIdoc.py"]
+    },
     "lifeAIllmAPI": {
         "args": ["python", "lifeAIllmAPI.py"]
     },

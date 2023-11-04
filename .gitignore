@@ -7,3 +7,5 @@ db/*
 models/*
 images/*
 Logs/*
+assets/*
+source_documents/*

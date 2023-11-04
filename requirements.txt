@@ -19,3 +19,8 @@ python-dotenv
 twitchio
 pydub
 nltk
+gpt4all
+chromadb
+langchainhub
+sentence-transformers
+PyMuPDF==1.23.1

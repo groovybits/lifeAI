@@ -12,18 +12,11 @@ import zmq
 import argparse
 import json
 import time
-import warnings
-import urllib3
 import traceback
 import logging
 import requests
 import json
 import re
-
-warnings.simplefilter(action='ignore', category=Warning)
-warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
-from urllib3.exceptions import NotOpenSSLWarning
-warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 
 def clean_text(text):
     # Remove URLs
