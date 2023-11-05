@@ -10,6 +10,10 @@ Can build out endless prompt injection sources, news/twitch/voice-whisper listen
 
 That’s the goal, you’ll see I am listing the parts as I build them, sort of have the core with llm/tts/stableDiffusion done + image subtitle burn in and prompt groomer for image gen, and generic for music usage (adding music tomorrow). twitch should be easy, I am parting out the parts of the consciousChat <https://github.com/groovybits/consciousChat> that seems more of a poc and experiment, nice, but this will remove the overhead and monolith design. It started to become too much to deal with putting it all into one app and threading everything. now each of these modules/programs are easy to understand for anyone and bypass python threading limitaitons.
 
+Diagram:
+
+![Groovy Life AI](https://storage.googleapis.com/gaib/2/documentation/GroovyLifeAI.png)
+
 ## This uses the following models from huggingface
 
 - <https://github.com/ggerganov/llama.cpp/tree/master/examples/server> LLM  llama.cpp (install and run server for API access locally)
