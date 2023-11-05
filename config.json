@@ -25,27 +25,21 @@
             "--input_port", "2000", 
             "--output_port", "4001", 
             "--topic", "music", 
-            "--sub", 
-            "--bind_out", 
-            "--pub", 
             "--llm_port", "8081"]
     },
      "lifeAIpromptOptimizeImages": {
         "args": ["python", "lifeAIpromptOptimize.py", 
             "--topic", "image generation", 
-            "--sub", 
-            "--bind_out", 
-            "--pub", 
             "--llm_port", "8082"]
     },
     "lifeAIplayer": {
-        "args": ["python", "lifeAIplayer.py"]
+        "args": ["python", "lifeAIplayer.py", "--nomusic"]
     },
     "zmqTTMlisten": {
         "args": ["python", "zmqTTMlisten.py"]
     },
     "lifeAIframesync": {
-        "args": ["python", "lifeAIframesync.py"]
+        "args": ["python", "lifeAIframesync.py", "--passthrough", "--output_host", "0.0.0.0"]
     },
     "LLMllamacpp01": {
         "args": ["server", "-m", "/Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf", "-c", "0", "--port", "8080"]

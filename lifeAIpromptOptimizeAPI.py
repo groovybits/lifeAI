@@ -251,33 +251,15 @@ if __name__ == "__main__":
     sender = None
 
     # Set up the subscriber
-    if args.sub:
-        receiver = context.socket(zmq.SUB)
-        print(f"Setup ZMQ in {args.input_host}:{args.input_port}")
-    else:
-        receiver = context.socket(zmq.PULL)
-        print(f"Setup ZMQ in {args.input_host}:{args.input_port}")
-
-    if args.bind_input:
-        receiver.bind(f"tcp://{args.input_host}:{args.input_port}")
-    else:
-        receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
-
-    if args.sub:
-        receiver.setsockopt_string(zmq.SUBSCRIBE, "")
+    receiver = context.socket(zmq.SUB)
+    print(f"Setup ZMQ in {args.input_host}:{args.input_port}")
+    receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
+    receiver.setsockopt_string(zmq.SUBSCRIBE, "")
 
     # Set up the publisher
-    if args.pub:
-        sender = context.socket(zmq.PUB)
-        print(f"binded to ZMQ out {args.output_host}:{args.output_port}")
-    else:
-        sender = context.socket(zmq.PUSH)
-        print(f"binded to ZMQ out {args.output_host}:{args.output_port}")
-        
-    if args.bind_output:
-        sender.bind(f"tcp://{args.output_host}:{args.output_port}")
-    else:    
-        sender.connect(f"tcp://{args.output_host}:{args.output_port}")
+    sender = context.socket(zmq.PUB)
+    print(f"binded to ZMQ out {args.output_host}:{args.output_port}")
+    sender.bind(f"tcp://{args.output_host}:{args.output_port}")
 
     main()
 

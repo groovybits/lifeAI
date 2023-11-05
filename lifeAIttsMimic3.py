@@ -150,21 +150,11 @@ if __name__ == "__main__":
     logger.addHandler(ch)
 
     context = zmq.Context()
-     # Set up the subscriber
-    if args.sub:
-        receiver = context.socket(zmq.SUB)
-        print(f"Setup ZMQ in {args.input_host}:{args.input_port}")
-    else:
-        receiver = context.socket(zmq.PULL)
-        print(f"Setup ZMQ in {args.input_host}:{args.input_port}")
-
-    if args.bind_input:
-        receiver.bind(f"tcp://{args.input_host}:{args.input_port}")
-    else:
-        receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
-
-    if args.sub:
-        receiver.setsockopt_string(zmq.SUBSCRIBE, "")
+    # Set up the subscriber
+    receiver = context.socket(zmq.SUB)
+    print(f"Setup ZMQ in {args.input_host}:{args.input_port}")
+    receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
+    receiver.setsockopt_string(zmq.SUBSCRIBE, "")
 
     # Set up the publisher
     sender = context.socket(zmq.PUSH)

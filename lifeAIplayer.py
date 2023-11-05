@@ -438,8 +438,9 @@ def main():
             
             save_json(message, mediaid)  # or image_message, if it's the one to be saved
 
-            # Save audio asset
-            save_asset(music, mediaid, segment_number, "music")
+            if args.save_assets:
+                # Save audio asset
+                save_asset(music, mediaid, segment_number, "music")
         
             # queue in music_buffer header and music
             music_buffer.put((header_message, music))
@@ -519,11 +520,12 @@ def main():
             # Save JSON header
             save_json(audio_message, mediaid)  # or image_message, if it's the one to be saved
 
-            # Save audio asset
-            save_asset(audio_asset, mediaid, segment_number, "audio")
+            if args.save_assets:
+                # Save audio asset
+                save_asset(audio_asset, mediaid, segment_number, "audio")
 
-            # Save image asset
-            save_asset(image_np, mediaid, segment_number, "images")
+                # Save image asset
+                save_asset(image_np, mediaid, segment_number, "images")
 
             # Play audio and display image
             playback(image_np, audio_asset, pygame_speek, last_music_segment)
@@ -567,6 +569,7 @@ if __name__ == "__main__":
     parser.add_argument("--volume", type=float, default=0.5, help="Volume for audio playback")
     parser.add_argument("--music_interval", type=float, default=60, help="Interval between music changes")
     parser.add_argument("--nomusic", action="store_true", default=False, help="Disable music")
+    parser.add_argument("--save_assets", action="store_true", default=False, help="Save assets to disk")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO
