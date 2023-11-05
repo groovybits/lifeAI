@@ -6,8 +6,8 @@
 ## add value to .env
 source .env
 #TWITCH_STREAM_KEY=
-VIDEO_DEV=0
-AUDIO_DEV=1
+VIDEO_DEV=2
+AUDIO_DEV=2
 
 ffmpeg -y -hide_banner \
     -probesize 500M -pix_fmt uyvy422 \

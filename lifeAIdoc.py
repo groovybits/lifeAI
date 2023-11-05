@@ -57,13 +57,13 @@ def clean_text(text):
     return text
 
 def main():
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    embeddings = HuggingFaceEmbeddings(model_name=args.embeddings)
     chroma_client = chromadb.PersistentClient(settings=CHROMA_SETTINGS , path="db")
     db = Chroma(persist_directory="db", embedding_function=embeddings, client_settings=CHROMA_SETTINGS, client=chroma_client)
-    retriever = db.as_retriever(search_kwargs={"k": 1})
+    retriever = db.as_retriever(search_kwargs={"k": args.doc_count})
     # activate/deactivate the streaming StdOut callback for LLMs
     callbacks = [StreamingStdOutCallbackHandler()]
-    llm = GPT4All(model="models/ggml-all-MiniLM-L6-v2-f16.bin", max_tokens=args.max_tokens, backend='gptj', n_batch=8, callbacks=callbacks, verbose=False)
+    llm = GPT4All(model=args.model, max_tokens=args.max_tokens, backend='gptj', n_batch=8, callbacks=callbacks, verbose=False)
     qa = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=retriever, return_source_documents=True)
 
     while True:
@@ -122,6 +122,10 @@ if __name__ == "__main__":
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--max_size", type=int, default=32768, required=False, help="Maximum size of text to process")
     parser.add_argument("--max_tokens", type=int, default=4096, required=False, help="Maximum tokens to process")
+    parser.add_argument("--doc_count", type=int, default=2, required=False, help="Number of documents to return")
+    parser.add_argument("--model", type=str, default="models/ggml-all-MiniLM-L6-v2-f16.bin", required=False, help="GPT model to use")
+    parser.add_argument("--embeddings", type=str, default="all-MiniLM-L6-v2", required=False, help="HuggingFace embedding model to use")
+
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO
