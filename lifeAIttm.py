@@ -40,20 +40,27 @@ def generate_audio(prompt, negative_prompt, guidance_scale=3, audio_length_in_s=
     return (sampling_rate, audio_values)
 
 def main():
+    latency = 0
+    max_latency = args.max_latency
+    throttle = False
     while True:
+        messages_buffered = ""
+        if throttle:
+            start = time.time()
+            combine_time = latency / 1000
+
+            # read and combine the messages for 60 seconds into a single message
+            while time.time() - start < combine_time:
+                message = receiver.recv_json()
+                if 'text' in message:
+                    messages_buffered += message["text"] + " "
+                elif 'optimized_prompt' in message:
+                    messages_buffered += message["optimized_prompt"] + " "
+            logger.info(f"TTM: Throttling for {combine_time} seconds.")
+
+        # read the message
         header_message = receiver.recv_json()
-        """
-        # Send the processed message
-        header_message = {
-        "segment_number": segment_number,
-        "mediaid": mediaid,
-        "mediatype": mediatype,
-        "username": username,
-        "source": source,
-        "message": message,
-        "text": "",
-        }      
-        """
+       
         # fill in the variables form the header_message
         optimized_prompt = ""
         if "optimized_prompt" in header_message:
@@ -62,14 +69,12 @@ def main():
             optimized_prompt = header_message["text"]
             logger.error(f"TTM: No optimized prompt, using original text.")
 
+        optimized_prompt = f"{messages_buffered} {optimized_prompt}"
+
         logger.debug(f"Text to Music Recieved:\n{header_message}")
         logger.info(f"Text to Music Recieved:\n{optimized_prompt}")
 
         prompt = f"music like {args.genre} {optimized_prompt}"
-
-        if time.time() - header_message['timestamp'] > args.latency:
-            logger.error(f"TTM: Message is too old, skipping.")
-            continue
 
         sampling_rate, audio_values = generate_audio(prompt, 
                                                      "noise, static, banging and clanging",
@@ -89,6 +94,12 @@ def main():
         header_message["stream"] = "music"
         sender.send_json(header_message, zmq.SNDMORE)
         sender.send(audiobuf.getvalue())
+
+        # measure latency and see if we need to throttle output
+        latency = round(time.time() * 1000) - header_message['timestamp']
+        if latency > (max_latency * 1000):
+            logger.error(f"TTM: Message is too old {latency/1000}, throttling for the next 60 seconds.")
+            throttle = True
         
         logger.debug(f"Text to Music Sent:\n{header_message}")
         logger.info(f"Text to Music of {duration} duration Sent:\n{optimized_prompt}")
@@ -111,7 +122,7 @@ if __name__ == "__main__":
     parser.add_argument("--guidance_scale", type=float, default=3.0, help="Guidance scale for the model")
     parser.add_argument("--seed", type=int, default=0, help="Seed for the model")
     parser.add_argument("--genre", type=str, default="Groovy 70s soul music", help="Genre for the model")
-    parser.add_argument("--latency", type=int, default=60, help="Latency in seconds to wait before sending music")
+    parser.add_argument("--max_latency", type=int, default=10, help="Max latency for messages before they are throttled / combined")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO

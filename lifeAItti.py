@@ -47,12 +47,26 @@ def clean_text(text):
 
 def main():
     last_image = None
-    last_image_timestamp = 0
-    last_image_walltime = 0
-    text_cache = []
     retry = False
+    latency = 0
+    max_latency = args.max_latency
+    throttle = False
     header_message = None
     while True:
+        if throttle:
+            start = time.time()
+            combine_time = latency / 1000
+
+            # read and combine the messages for 60 seconds into a single message
+            while time.time() - start < combine_time:
+                header_message = receiver.recv_json()
+                header_message["stream"] = "image"
+
+                sender.send_json(header_message, zmq.SNDMORE)
+                sender.send(last_image)
+
+            logger.info(f"TTM: Throttling for {combine_time} seconds.")
+
         # Receive a message
         if retry:
             logger.error(f"Retrying...")
@@ -120,8 +134,12 @@ def main():
         sender.send(last_image)
 
         logger.info(f"Text to Image sent image #{segment_number} {header_message['timestamp']} of {len(last_image)} bytes.")
-        last_image_walltime = time.time()
-        last_image_timestamp = header_message["timestamp"]
+
+        # measure latency and see if we need to throttle output
+        latency = round(time.time() * 1000) - header_message['timestamp']
+        if latency > (max_latency * 1000):
+            logger.error(f"TTM: Message is too old {latency/1000}, throttling for the next{latency/1000} seconds.")
+            throttle = True
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -136,6 +154,8 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--model", type=str, default="runwayml/stable-diffusion-v1-5", help="Model ID to use")
     parser.add_argument("--latency", type=int, default=0, help="Latency in seconds to wait for a message")
     parser.add_argument("--extend_prompt", action="store_true", help="Extend prompt past 77 token limit.")
+    parser.add_argument("--max_latency", type=int, default=10, help="Max latency for messages before they are throttled / combined")
+
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO
