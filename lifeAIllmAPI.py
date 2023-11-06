@@ -182,6 +182,13 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
                                              zmq_sender, 
                                              characters_per_line, 
                                              sentence_count)
+        
+        # Send end frame
+        # Prepare the message to send to the LLM
+        header_message["text"] = f"{args.end_message}"
+        header_message["timestamp"] = int(round(time.time() * 1000))
+        send_data(zmq_sender, header_message.copy())
+
     except Exception as e:
         logger.error(f"LLM exception: {e}")
         logger.error(f"{traceback.print_exc()}")
@@ -336,6 +343,7 @@ if __name__ == "__main__":
     parser.add_argument("--pub", action="store_true", default=False, help="Publish to a topic")
     parser.add_argument("--llm_port", type=int, default=8080)
     parser.add_argument("--llm_host", type=str, default="127.0.0.1")
+    parser.add_argument("--end_message", type=str, default="The Groovy Life AI - www.groovylife.ai", help="End message to send to the client.")
 
     args = parser.parse_args()
 
