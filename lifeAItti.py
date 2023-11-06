@@ -55,7 +55,7 @@ def main():
     while True:
         if throttle:
             start = time.time()
-            combine_time = latency / 1000
+            combine_time = max(0, (latency / 1000) - max_latency)
 
             # read and combine the messages for 60 seconds into a single message
             while time.time() - start < combine_time:

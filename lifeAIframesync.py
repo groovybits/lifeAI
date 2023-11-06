@@ -31,13 +31,12 @@ def sync_media_buffers(audio_buffer, music_buffer, image_buffer, sender, logger,
                 logger.info(f"Sent music segment #{music_message['segment_number']} at timestamp {music_message['timestamp']}")
 
             if not image_buffer.empty():
-                image_message, image_asset = image_buffer.get()
                 if media_type == 'image':
-                    sender.send_json(message, zmq.SNDMORE)
-                    sender.send(asset)
-                    logger.info(f"Sent {media_type} segment #{message['segment_number']} at timestamp {message['timestamp']}")
-                    master_clock = message['timestamp']
-
+                    image_message, image_asset = image_buffer.get()
+                    sender.send_json(image_message, zmq.SNDMORE)
+                    sender.send(image_asset)
+                    logger.info(f"Sent {media_type} segment #{image_message['segment_number']} at timestamp {image_message['timestamp']}")
+                    master_clock = image_message['timestamp']
 
             # Process audio and image buffers
             if not mux_pq.empty() or (not audio_buffer.empty()):

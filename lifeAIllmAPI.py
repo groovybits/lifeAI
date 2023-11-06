@@ -64,7 +64,7 @@ def clean_text(text):
     text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
     
     # Remove special characters and digits (optional, be cautious)
-    text = re.sub(r'[^a-zA-Z0-9\s.?,!\n]', '', text)
+    text = re.sub(r'[^a-zA-Z0-9\s.?,!\n:\'\"\-\t]', '', text)
     
     # Remove extra whitespace
     text = ' '.join(text.split())

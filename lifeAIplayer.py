@@ -146,7 +146,7 @@ def draw_japanese_text_on_image(image_np, text, position, font_path, font_size):
 
 def add_text_to_image(image, text):
     if image is not None:
-        logger.info(f"Adding text to image: {text[:100]}")
+        logger.info(f"Adding text to image: {text[:80]}")
 
         # Maintain aspect ratio and add black bars
         width, height = image.size
@@ -292,60 +292,46 @@ def save_asset(asset, mediaid, segment_number, asset_type):
         with open(file_path, 'wb') as file:
             file.write(asset)
 
-class AudioMixer:
-    def __init__(self, pygame_mixer):
-        self.pygame_mixer = pygame_mixer
-        self.music_segment = None
-        self.music_position = 0  # Position in the music track
-        self.speech_sample_rate = 22500  # Assuming the speech is also at 32kHz
+def get_audio_duration(audio_samples):
+    audio_segment = AudioSegment.from_file(io.BytesIO(audio_samples), format="wav")
+    duration_ms = len(audio_segment)  # Duration in milliseconds
+    duration_s = duration_ms / 1000.0  # Convert to seconds
+    return duration_s
 
-    def load_music(self, music_audio_samples):
-        """Load initial music audio and prepare it for looping."""
-        self.music_segment = AudioSegment.from_file(io.BytesIO(music_audio_samples), format="wav")
+class BackgroundMusic(threading.Thread):
+    def __init__(self):
+        super().__init__()
+        pygame_music.mixer.init(frequency=32000, size=-16, channels=1, buffer=1024)
+        pygame_music.init()
+        self.audio_buffer = None
+        self.running = True
+        self.lock = threading.Lock()  # Lock to synchronize access to audio_buffer
 
-    def mix_speech_with_music(self, speech_audio_samples):
-        speech_segment = AudioSegment.from_file(io.BytesIO(speech_audio_samples), format="wav", frame_rate=self.speech_sample_rate)
+    def run(self):
+        while self.running:
+            with self.lock:
+                if self.audio_buffer:
+                    self.play_audio(self.audio_buffer)
+                    self.audio_buffer = None  # Reset audio_buffer to prevent replaying the same buffer
+            pygame_music.time.Clock().tick(1)  # Limit the while loop to 1 iteration per second
 
-        if self.music_segment:
-            # Ensure music and speech segments have the same frame rate
-            if speech_segment.frame_rate != self.music_segment.frame_rate:
-                self.music_segment = self.music_segment.set_frame_rate(speech_segment.frame_rate)
+    def play_audio(self, audio_samples):
+        audiobuf = io.BytesIO(audio_samples)
+        if audiobuf:
+            pygame_music.mixer.music.load(audiobuf)
+            pygame_music.mixer.music.set_volume(args.volume)  # Set the volume
+            pygame_music.mixer.music.play(-1)  # -1 instructs Pygame to loop the audio indefinitely
 
-            # Calculate the amount of music needed for the current speech segment
-            required_music_length = len(speech_segment)
+    def change_track(self, audio_buffer):
+        with self.lock:
+            pygame_music.mixer.music.stop()  # Stop the currently playing audio
+            self.audio_buffer = audio_buffer
 
-            # Loop the music if it is shorter than the speech segment
-            while len(self.music_segment) - self.music_position < required_music_length:
-                self.music_segment += self.music_segment
+    def stop(self):
+        self.running = False
+        pygame_music.mixer.music.stop()
 
-            # Extract the portion of the music that we need
-            music_to_mix = self.music_segment[self.music_position:self.music_position + required_music_length]
-            self.music_position += required_music_length
-
-            # Mix speech and music
-            mixed_segment = speech_segment.overlay(music_to_mix)
-        else:
-            # If there is no music, just use the speech segment
-            mixed_segment = speech_segment
-
-        # Output the mixed audio
-        mixed_audio_data = mixed_segment.raw_data
-        return mixed_audio_data
-
-    def change_music(self, new_music_audio_samples):
-        # Create a new music segment from the raw audio samples
-        new_music_segment = AudioSegment.from_file(io.BytesIO(new_music_audio_samples), format="wav")
-
-        # Check if the sample rate of the new music matches the speech sample rate
-        if new_music_segment.frame_rate != self.speech_sample_rate:
-            # If not, set the frame rate of the music to match the speech
-            new_music_segment = new_music_segment.set_frame_rate(self.speech_sample_rate)
-
-        # Replace the old music with the new one and reset the music position
-        self.music_segment = new_music_segment
-        self.music_position = 0
-
-def play_audio(audio_samples, pygame):  
+def play_audio(audio_samples, pygame):
     audiobuf = io.BytesIO(audio_samples)
     if audiobuf:
         ## Speak WAV TTS Output using pygame
@@ -354,47 +340,12 @@ def play_audio(audio_samples, pygame):
         while pygame.mixer.music.get_busy():
             pygame.time.Clock().tick(1)
 
-def mix_and_loop_music_with_speech(speech_audio_samples, music_audio_samples, pygame_mixer):
-    # Load the speech and music into pydub.AudioSegment ojects
-    speech=None
-    if speech_audio_samples:
-        speech = AudioSegment.from_file(io.BytesIO(speech_audio_samples), format="wav")
-    music = AudioSegment.from_file(io.BytesIO(music_audio_samples), format="wav")
-    
-    # Calculate how many times the music needs to be looped
-    loop_count = 1
-    if speech:
-        loop_count = int(speech.duration_seconds // music.duration_seconds) + 1
-    looped_music = music * loop_count  # Loop the music
-    
-    # Overlay the speech onto the looped music
-    mixed = None
-    if speech:
-        # lower volume of music to .5
-        looped_music = looped_music - 10
-        mixed = looped_music.overlay(speech, position=0)
-    else:
-        mixed = looped_music
-    
-    # Export the mixed audio to a byte buffer
-    mixed_buffer = io.BytesIO()
-    mixed.export(mixed_buffer, format="wav")
-    
-    # Load the mixed audio into pygame and play
-    mixed_buffer.seek(0)  # Rewind buffer to the start
-    pygame_mixer.mixer.music.load(mixed_buffer)
-    pygame_mixer.mixer.music.play()
-    while pygame_mixer.mixer.music.get_busy():
-            pygame_mixer.time.Clock().tick(1)
-
-def playback(image, audio, pygame_player, music=None):
+def playback(image, audio, pygame_player):
     # play both audio and display image with audio blocking till finished
     if image:
         render(image)
-    if music:
-        mix_and_loop_music_with_speech(audio, music, pygame_player)
-    elif audio:
-        play_audio(audio, pygame_player)
+    
+    play_audio(audio, pygame_player)
 
 def get_audio_duration(audio_samples):
     audio_segment = AudioSegment.from_file(io.BytesIO(audio_samples), format="wav")
@@ -406,13 +357,17 @@ def main():
     ## Main routine
     pygame_speek.mixer.init(frequency=22500, size=-16, channels=1, buffer=1024)
     pygame_speek.init()
-    audio_mixer = AudioMixer(pygame_speek)
+    bg_music = BackgroundMusic()
+    bg_music.start()
 
-    last_image_header = None
-    last_image_segment = None
     last_music_segment = None
-
     last_music_change = 0
+
+    last_image_asset = None
+
+    image_segment_number = 0
+    audio_segment_number = 0
+    last_sent_segments = time.time()
 
     while True:
         header_message = socket.recv_json()
@@ -467,7 +422,7 @@ def main():
                 # Convert the bytes back to a PIL Image object
                 image = Image.open(io.BytesIO(image))
 
-                print(f"Image Prompt: {optimized_prompt}\Original Text: {text}\nOriginal Question:{message}")
+                print(f"Image Prompt: {optimized_prompt}\Original Text: {text[:10]}...\nOriginal Question:{message[:10]}...")
 
                 # queue the header and image together
                 image_buffer.put((header_message, image))
@@ -475,21 +430,14 @@ def main():
                 logger.error(f"Error converting image to ascii: {e}")
 
         ## get an audio sample and header, get the text field from it, then get an image and header and burn in the text from the audio header to the image and render it while playing the audio
-        if not audio_buffer.empty() and (not image_buffer.empty() or last_image_header is not None):
+        if not audio_buffer.empty() and not image_buffer.empty():
             audio_message, audio_asset = audio_buffer.get()
-            music_message, music_asset = None, None
-            if not args.nomusic and  not music_buffer.empty():
-                music_message, music_asset = music_buffer.get()
-                last_music_segment = music_asset
-            image_message = None
-            image_asset = None
-            if last_image_header is not None:
-                image_message = last_image_header
-                image_asset = last_image_segment
-                last_image_header = None
-                last_image_segment = None
-            else:
-                image_message, image_asset = image_buffer.get()
+            
+            image_message, image_asset = image_buffer.get()
+
+            image_segment_number = image_message["segment_number"]
+            audio_segment_number = audio_message["segment_number"]
+            last_sent_segments = time.time()
 
             text = audio_message["text"]
             optimized_prompt = text
@@ -502,15 +450,10 @@ def main():
             if audio_message['timestamp'] > image_message['timestamp']:
                 logger.debug(f"Audio segment #{audio_message['segment_number']} is newer than image segment #{image_message['segment_number']}.")
 
-            # Convert the PIL Image to a NumPy array for OpenCV operations
-            image_np = np.array(image)
-            image_np = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
-
+            last_image_asset = image_asset.copy()
             if args.burn_prompt:
-                #image_np = add_text_to_image(image_asset, optimized_prompt)
                 image_np = process_new_image(image_asset, optimized_prompt)
             else:
-                #image_np = add_text_to_image(image_asset, text)
                 image_np = process_new_image(image_asset, text, args)
 
             ## write out json into a directory assets/{mediaid}.json with it pretty pretty printed, 
@@ -528,11 +471,29 @@ def main():
                 save_asset(image_np, mediaid, segment_number, "images")
 
             # Play audio and display image
-            playback(image_np, audio_asset, pygame_speek, last_music_segment)
+            playback(image_np, audio_asset, pygame_speek)
         else:
-            # rebroadcast the last image and audio and music if we don't have any current
-            if last_music_segment is not None:
-                playback(None, None, pygame_speek, last_music_segment)
+            # check last sent segments and if it's been more than 5 seconds, send a blank image and audio
+            if time.time() - last_sent_segments > 15 and last_image_asset is not None:
+                # confirm image_segment_number and audio_segment_number are both matching, else we need see if audio has buffered
+                # samples to send and use the last image if there are no more image buffers
+                if image_segment_number != audio_segment_number:
+                    logger.debug(f"Image segment number {image_segment_number} does not match audio segment number {audio_segment_number}.")
+                    if image_buffer.empty():
+                        if not audio_buffer.empty():
+                            print(f"Audio buffer is not empty, using last image and audio.")
+                            audio_message, audio_asset = audio_buffer.get()
+                            text = audio_message["text"]
+                            optimized_prompt = text
+                            if 'optimized_text' in audio_message:
+                                optimized_prompt = audio_message["optimized_text"]
+                            else:
+                                optimized_prompt = text
+                            image_np = process_new_image(last_image_asset, optimized_prompt, args)
+                            playback(image_np, audio_asset, pygame_speek)
+                            last_sent_segments = time.time()
+                            audio_segment_number = audio_message["segment_number"]
+                            print(f"Sent audio segment #{audio_message['segment_number']} at timestamp {audio_message['timestamp']}")
         
         if not music_buffer.empty():
             if args.nomusic:
@@ -546,10 +507,10 @@ def main():
                 print(f"Music Prompt: {music_message['message']}\nOriginal Text: {music_message['text']}\nOriginal Question:{music_message['message']}")
                 if last_music_change > 0:
                     print(f"Changing music because it's been {time.time() - last_music_change} seconds since the last music change.")
-                    audio_mixer.change_music(music)
+                    bg_music.change_track(music)
                 else:
                     # Load the initial music track
-                    audio_mixer.load_music(music)
+                    bg_music.change_track(music)
 
                 last_music_segment = music
                 last_music_change = time.time()

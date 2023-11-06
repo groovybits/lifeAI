@@ -21,12 +21,23 @@ import numpy as np
 
 trlogging.set_verbosity_error()
 
-def generate_audio(prompt, negative_prompt, guidance_scale=3, audio_length_in_s=10, seed=0):
-    inputs = processor(
-        text=[prompt, negative_prompt],
-        padding=True,
-        return_tensors="pt",
-        ).to("cpu")
+def generate_audio(prompt, negative_prompt, guidance_scale=3, audio_length_in_s=10, seed=0, audio=None, sampling_rate=32000):
+    inputs = None
+    if audio is not None:
+        inputs = processor(
+            audio=audio,
+            sampling_rate=sampling_rate,
+            padding=False,
+            return_tensors="pt",
+            ).to("cpu")
+        # limit to 10 seconds
+        audio_length_in_s = 10
+    else:
+        inputs = processor(
+            text=[prompt, negative_prompt],
+            padding=True,
+            return_tensors="pt",
+            ).to("cpu")
 
     with torch.no_grad():
         encoder_outputs = text_encoder(**inputs)
@@ -35,19 +46,18 @@ def generate_audio(prompt, negative_prompt, guidance_scale=3, audio_length_in_s=
 
     set_seed(seed)
     audio_values = model.generate(inputs.input_ids[0][None, :], attention_mask=inputs.attention_mask, encoder_outputs=encoder_outputs, do_sample=True, guidance_scale=guidance_scale, max_new_tokens=max_new_tokens)
-
-    audio_values = (audio_values.cpu().numpy() * 32767).astype(np.int16)
-    return (sampling_rate, audio_values)
+    return audio_values
 
 def main():
     latency = 0
     max_latency = args.max_latency
     throttle = False
+    last_audio = None
     while True:
         messages_buffered = ""
         if throttle:
             start = time.time()
-            combine_time = latency / 1000
+            combine_time = max(0, (latency / 1000 - max_latency))
 
             # read and combine the messages for 60 seconds into a single message
             while time.time() - start < combine_time:
@@ -76,11 +86,16 @@ def main():
 
         prompt = f"music like {args.genre} {optimized_prompt}"
 
-        sampling_rate, audio_values = generate_audio(prompt, 
+        audio_values = generate_audio(prompt, 
                                                      "noise, static, banging and clanging",
                                                      args.guidance_scale,
                                                      args.seconds,
-                                                     args.seed)
+                                                     args.seed,
+                                                     last_audio)
+        
+        if args.continuation:
+            last_audio = audio_values
+        audio_values = (audio_values.cpu().numpy() * 32767).astype(np.int16)
 
         # This is assuming audio_values is meant to be mono; if it's stereo, it should be shaped to (frames, 2)
         audio_values = audio_values.squeeze()  # This will convert (1, 1, 318080) to (318080,)
@@ -98,7 +113,7 @@ def main():
         # measure latency and see if we need to throttle output
         latency = round(time.time() * 1000) - header_message['timestamp']
         if latency > (max_latency * 1000):
-            logger.error(f"TTM: Message is too old {latency/1000}, throttling for the next 60 seconds.")
+            logger.error(f"TTM: Message is too old {latency/1000}, throttling for the next {latency/1000} seconds.")
             throttle = True
         
         logger.debug(f"Text to Music Sent:\n{header_message}")
@@ -115,17 +130,27 @@ if __name__ == "__main__":
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Port for receiving text input")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending audio output")
     parser.add_argument("--model", type=str, required=False, default="facebook/musicgen-small", help="Text to music model to use")
-    parser.add_argument("--seconds", type=int, default=10, required=False, help="Seconds to create, default is 30")
+    parser.add_argument("--seconds", type=int, default=20, required=False, help="Seconds to create, default is 20")
     parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
     parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--guidance_scale", type=float, default=3.0, help="Guidance scale for the model")
     parser.add_argument("--seed", type=int, default=0, help="Seed for the model")
-    parser.add_argument("--genre", type=str, default="Groovy 70s soul music", help="Genre for the model")
-    parser.add_argument("--max_latency", type=int, default=10, help="Max latency for messages before they are throttled / combined")
+    parser.add_argument("--genre", type=str, default="Tibetan temple like ambiance with singing bowls and bells and indian instruments to a driving soothing bass beat", help="Genre for the model")
+    parser.add_argument("--max_latency", type=int, default=20, help="Max latency for messages before they are throttled / combined, should match --seconds in most cases.")
+    parser.add_argument("--continuation", action="store_true", default=False, help="Continuation of the last audio")
+    
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO
+
+    # max is 30 seconds generation
+    if args.seconds > 30:
+        args.seconds = 30
+        print("Max seconds is 30, setting to 30")
+
+    if args.seconds != 30 and args.max_latency == 30:
+        args.max_latency = args.seconds
 
     if args.loglevel == "info":
         LOGLEVEL = logging.INFO
@@ -160,9 +185,15 @@ if __name__ == "__main__":
     processor = AutoProcessor.from_pretrained(args.model)
     model = MusicgenForConditionalGeneration.from_pretrained(args.model)
 
+    # get random number for seed if it is 0
+    if args.seed == 0:
+        args.seed = np.random.randint(0, 100000)
+
     sampling_rate = model.audio_encoder.config.sampling_rate
     frame_rate = model.audio_encoder.config.frame_rate
     text_encoder = model.get_text_encoder()
+
+    logger.info(f"Sampling rate: {sampling_rate} Frame rate: {frame_rate} Text encoder: {text_encoder}")
 
     if args.metal:
         model = model.to("mps")
