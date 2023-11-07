@@ -24,3 +24,4 @@ chromadb
 langchainhub
 sentence-transformers
 PyMuPDF==1.23.1
+openai

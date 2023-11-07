@@ -18,6 +18,50 @@ from transformers import logging as trlogging
 import re
 import logging
 import time
+from openai import OpenAI
+import base64
+from dotenv import load_dotenv
+
+load_dotenv()
+
+def save_image(data, file_path, save_file=False):
+    # Strip out the header of the base64 string if present
+    if ',' in data:
+        header, data = data.split(',', 1)
+
+    image = base64.b64decode(data)
+    
+    if save_file:
+        with open(file_path, "wb") as fh:
+            fh.write(image)
+
+    return image
+
+def generate_openai(prompt, username="lifeai", return_url=False):
+    response = openai_client.images.generate(
+    model="dall-e-3",
+    prompt=prompt,
+    size="1024x1024",
+    quality="standard",
+    style="natural",
+    response_format="b64_json",
+    user=username,
+    n=1,
+    )
+
+    print(f"{response.data[0]}")
+
+    image_url = response.data[0].url
+    b64_json = response.data[0].b64_json
+
+    revised_prompt = response.data[0].revised_prompt
+    print(f"OpenAI revised prompt: {revised_prompt}")
+
+    image = save_image(b64_json, "out.png")
+    if return_url:
+        print(f"got url: {image_url}")
+    
+    return image
 
 trlogging.set_verbosity_error()
 
@@ -113,15 +157,19 @@ def main():
 
                 image = pipe(prompt_embeds=prompt_embeds, negative_prompt_embeds=negative_prompt_embeds).images[0]
             else:
-                image = pipe(clean_text(optimized_prompt)).images[0]
+                if args.service == "openai":
+                    image = generate_openai(optimized_prompt, username=header_message["username"])
+                else:
+                    image = pipe(clean_text(optimized_prompt)).images[0]
 
-            # Convert PIL Image to bytes
-            img_byte_arr = io.BytesIO()
-            image.save(img_byte_arr, format='PNG')  # Save it as PNG or JPEG depending on your preference
-            image = img_byte_arr.getvalue()
+            if args.service != "openai":
+                # Convert PIL Image to bytes
+                img_byte_arr = io.BytesIO()
+                image.save(img_byte_arr, format='PNG')  # Save it as PNG or JPEG depending on your preference
+                image = img_byte_arr.getvalue()
 
             # check if image is more than 75k
-            if len(image) < 75000:
+            if args.service != "openai" and len(image) < 75000:
                 logger.error(f"Image is too small, retrying...")
                 retry = True
                 continue
@@ -155,6 +203,7 @@ if __name__ == "__main__":
     parser.add_argument("--latency", type=int, default=0, help="Latency in seconds to wait for a message")
     parser.add_argument("--extend_prompt", action="store_true", help="Extend prompt past 77 token limit.")
     parser.add_argument("--max_latency", type=int, default=10, help="Max latency for messages before they are throttled / combined")
+    parser.add_argument("--service", type=str, default=None, help="Service to use for image generation: openai, dall-e")
 
     args = parser.parse_args()
 
@@ -198,6 +247,10 @@ if __name__ == "__main__":
         pipe = pipe.to("cuda")
     else:
         pipe = pipe.to("mps")
+
+    openai_client = None
+    if args.service == "openai":
+        openai_client = OpenAI()
 
     context = zmq.Context()
     receiver = context.socket(zmq.SUB)

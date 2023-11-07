@@ -155,10 +155,11 @@ class AiTwitchBot(commands.Cog):
             cursor.execute("SELECT content FROM messages WHERE user = ? ORDER BY timestamp", (name,))
             dbdata = cursor.fetchall()
             history = [ChatCompletionMessage(role="user", content=d[0]) for d in dbdata]
-            # truncate history array to 10 entries
-            history = history[-10:]
+            # truncate history array to 3 entries
+            history = history[-3:]
             # flatten history into a string representation
             history = " ".join([str(h) for h in history])
+            history = clean_text(history).replace('\n', ' ')
 
             db_conn.close()
 
