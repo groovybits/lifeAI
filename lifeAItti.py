@@ -37,7 +37,7 @@ def save_image(data, file_path, save_file=False):
 
     return image
 
-def generate_openai(prompt, username="lifeai", return_url=False):
+def generate_openai(mediaid, prompt, username="lifeai", return_url=False, save_file=False):
     response = openai_client.images.generate(
     model="dall-e-3",
     prompt=prompt,
@@ -49,15 +49,15 @@ def generate_openai(prompt, username="lifeai", return_url=False):
     n=1,
     )
 
-    print(f"{response.data[0]}")
+    logger.debug(f"{response.data[0]}")
 
     image_url = response.data[0].url
     b64_json = response.data[0].b64_json
 
     revised_prompt = response.data[0].revised_prompt
-    print(f"OpenAI revised prompt: {revised_prompt}")
+    logger.info(f"OpenAI revised prompt: {revised_prompt}")
 
-    image = save_image(b64_json, "out.png")
+    image = save_image(b64_json, f"images/{mediaid}.png", save_file)
     if return_url:
         print(f"got url: {image_url}")
     
@@ -91,6 +91,7 @@ def clean_text(text):
 
 def main():
     last_image = None
+    last_image_time = 0
     retry = False
     latency = 0
     max_latency = args.max_latency
@@ -119,6 +120,7 @@ def main():
             header_message = receiver.recv_json()
 
         # get variables from header
+        mediaid = header_message["mediaid"]
         segment_number = header_message["segment_number"]
         optimized_prompt = ""
         if "optimized_text" in header_message:
@@ -134,7 +136,7 @@ def main():
         logger.info(f"Text to Image recieved text #{segment_number}:\n - {optimized_prompt}")
 
         image = None
-        if args.latency == 0 or last_image == None or time.time() - header_message["timestamp"] <= args.latency:
+        if args.wait_time == 0 or last_image == None or time.time() - last_image_time >= args.wait_time:
             # 2. Forward embeddings and negative embeddings through text encoder
             if args.extend_prompt:
                 max_length = pipe.tokenizer.model_max_length
@@ -158,7 +160,7 @@ def main():
                 image = pipe(prompt_embeds=prompt_embeds, negative_prompt_embeds=negative_prompt_embeds).images[0]
             else:
                 if args.service == "openai":
-                    image = generate_openai(optimized_prompt, username=header_message["username"])
+                    image = generate_openai(mediaid, optimized_prompt, header_message["username"], args.save_images)
                 else:
                     image = pipe(clean_text(optimized_prompt)).images[0]
 
@@ -175,6 +177,7 @@ def main():
                 continue
 
             last_image = image
+            last_image_time = time.time()
 
         header_message["stream"] = "image"
 
@@ -184,10 +187,11 @@ def main():
         logger.info(f"Text to Image sent image #{segment_number} {header_message['timestamp']} of {len(last_image)} bytes.")
 
         # measure latency and see if we need to throttle output
-        latency = round(time.time() * 1000) - header_message['timestamp']
-        if latency > (max_latency * 1000):
-            logger.error(f"TTM: Message is too old {latency/1000}, throttling for the next{latency/1000} seconds.")
-            throttle = True
+        if args.service != "openai":
+            latency = round(time.time() * 1000) - header_message['timestamp']
+            if latency > (max_latency * 1000):
+                logger.error(f"TTM: Message is too old {latency/1000}, throttling for the next{latency/1000} seconds.")
+                throttle = True
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -200,10 +204,11 @@ if __name__ == "__main__":
     parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("-m", "--model", type=str, default="runwayml/stable-diffusion-v1-5", help="Model ID to use")
-    parser.add_argument("--latency", type=int, default=0, help="Latency in seconds to wait for a message")
+    parser.add_argument("--wait_time", type=int, default=0, help="Time in seconds to wait between image generations")
     parser.add_argument("--extend_prompt", action="store_true", help="Extend prompt past 77 token limit.")
     parser.add_argument("--max_latency", type=int, default=10, help="Max latency for messages before they are throttled / combined")
     parser.add_argument("--service", type=str, default=None, help="Service to use for image generation: openai, dall-e")
+    parser.add_argument("--save_images", action="store_true", help="Save images to disk")
 
     args = parser.parse_args()
 
@@ -232,25 +237,28 @@ if __name__ == "__main__":
 
     ## Disable NSFW filters
     pipe = None
-    if args.nsfw:
-        pipe = StableDiffusionPipeline.from_pretrained(model_id,
-                                                        torch_dtype=torch.float16,
-                                                        safety_checker = None,
-                                                        requires_safety_checker = False)
-    else:
-        pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
+    if args.service != "openai":
+        if args.nsfw:
+            pipe = StableDiffusionPipeline.from_pretrained(model_id,
+                                                            torch_dtype=torch.float16,
+                                                            safety_checker = None,
+                                                            requires_safety_checker = False)
+        else:
+            pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
 
-    ## Offload to GPU Metal
-    if args.metal:
-        pipe = pipe.to("mps")
-    elif args.cuda:
-        pipe = pipe.to("cuda")
-    else:
-        pipe = pipe.to("mps")
+        ## Offload to GPU Metal
+        if args.metal:
+            pipe = pipe.to("mps")
+        elif args.cuda:
+            pipe = pipe.to("cuda")
+        else:
+            pipe = pipe.to("mps")
 
     openai_client = None
     if args.service == "openai":
         openai_client = OpenAI()
+        if args.wait_time == 0:
+            args.wait_time = 60
 
     context = zmq.Context()
     receiver = context.socket(zmq.SUB)

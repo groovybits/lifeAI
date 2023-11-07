@@ -144,6 +144,13 @@ def main():
 
         logger.debug(f"Prompt optimizer received header: {header_message}")
         logger.info(f" Prompt optimizer for {mediaid} #{segment_number} {timestamp} {md5sum} '{message}' - {text}")
+
+        if args.passthrough:
+            logger.info(f"Passing through message for {mediaid} #{segment_number} {timestamp} {md5sum} - {text}")
+            header_message["optimized_text"] = text
+            sender.send_json(header_message)
+            continue
+        
         # check if enabled and combine prompts, once we have enough then we send them combined
         if args.combine_count > 1:
             current_text_array.append(text)
@@ -220,6 +227,7 @@ if __name__ == "__main__":
     parser.add_argument("--bind_output", action="store_true", default=False, help="Bind to a topic")
     parser.add_argument("--bind_input", action="store_true", default=False, help="Bind to a topic")
     parser.add_argument("--combine_count", type=int, default=0, help="Number of messages to combine into one prompt.")
+    parser.add_argument("--passthrough", action="store_true", default=False, help="Pass through messages without optimizing.")
 
     args = parser.parse_args()
 

@@ -22,6 +22,18 @@ Diagram:
 - <https://huggingface.co/runwayml/stable-diffusion-v1-5> Text to Image Stable Diffusion 1.5
 - <https://huggingface.co/facebook/musicgen-small> Text to Music Facebook MusicGen Music generation model
 
+## OpenAI GPT-* API Support!!!
+
+- Coming soon, very soon!
+
+## OpenAI Dalle-3 API Support!!!
+
+- If you have an OpenAI API key you can set it in .env and run the TTI module as --service "openai".
+
+## OpenAI TTS API Support!!!
+
+- Coming soon, very soon!
+
 ## ZMQ modules from Input to Output
 
 - [Program Manager](lifeAIstart.py)        Startup and control all the modules, uses [config.json](config.json)
