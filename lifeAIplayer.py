@@ -432,7 +432,6 @@ def main():
         ## get an audio sample and header, get the text field from it, then get an image and header and burn in the text from the audio header to the image and render it while playing the audio
         if not audio_buffer.empty() and not image_buffer.empty():
             audio_message, audio_asset = audio_buffer.get()
-            
             image_message, image_asset = image_buffer.get()
 
             image_segment_number = image_message["segment_number"]
