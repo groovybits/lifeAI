@@ -20,7 +20,6 @@ import numpy as np
 import logging
 import time
 import soundfile as sf
-import pygame as pygame_speek
 import pygame as pygame_music
 import queue
 import threading
@@ -31,7 +30,8 @@ import textwrap
 import json
 from collections import deque
 from pydub import AudioSegment
-import traceback
+import simpleaudio as sa
+
 
 # Queue to store the last images
 past_images_queue = deque(maxlen=6)  # Assuming 6 images for each side
@@ -331,21 +331,29 @@ class BackgroundMusic(threading.Thread):
         self.running = False
         pygame_music.mixer.music.stop()
 
-def play_audio(audio_samples, pygame):
-    audiobuf = io.BytesIO(audio_samples)
-    if audiobuf:
-        ## Speak WAV TTS Output using pygame
-        pygame.mixer.music.load(audiobuf)
-        pygame.mixer.music.play()
-        while pygame.mixer.music.get_busy():
-            pygame.time.Clock().tick(1)
+def play_audio(audio_data, format='wav'):
+    # Play the audio without converting if it's already a WAV file
+    if format == 'wav':
+        wave_obj = sa.WaveObject.from_wave_read(io.BytesIO(audio_data))
+    # Convert AAC to WAV and then play
+    elif format == 'aac':
+        audio_segment = AudioSegment.from_file(io.BytesIO(audio_data), format="aac")
+        wav_io = io.BytesIO()
+        audio_segment.export(wav_io, format="wav")
+        wav_io.seek(0)
+        wave_obj = sa.WaveObject.from_wave_read(wav_io)
+    else:
+        raise ValueError(f"Unsupported format: {format}")
 
-def playback(image, audio, pygame_player):
+    play_obj = wave_obj.play()
+    play_obj.wait_done()
+
+def playback(image, audio):
     # play both audio and display image with audio blocking till finished
     if image:
         render(image)
     
-    play_audio(audio, pygame_player)
+    play_audio(audio)
 
 def get_audio_duration(audio_samples):
     audio_segment = AudioSegment.from_file(io.BytesIO(audio_samples), format="wav")
@@ -355,8 +363,6 @@ def get_audio_duration(audio_samples):
 
 def main():
     ## Main routine
-    pygame_speek.mixer.init(frequency=22500, size=-16, channels=1, buffer=1024)
-    pygame_speek.init()
     bg_music = BackgroundMusic()
     bg_music.start()
 
@@ -470,7 +476,7 @@ def main():
                 save_asset(image_np, mediaid, segment_number, "images")
 
             # Play audio and display image
-            playback(image_np, audio_asset, pygame_speek)
+            playback(image_np, audio_asset)
         else:
             # check last sent segments and if it's been more than 5 seconds, send a blank image and audio
             if time.time() - last_sent_segments > 15 and last_image_asset is not None:
@@ -489,7 +495,7 @@ def main():
                             else:
                                 optimized_prompt = text
                             image_np = process_new_image(last_image_asset, optimized_prompt, args)
-                            playback(image_np, audio_asset, pygame_speek)
+                            playback(image_np, audio_asset)
                             last_sent_segments = time.time()
                             audio_segment_number = audio_message["segment_number"]
                             print(f"Sent audio segment #{audio_message['segment_number']} at timestamp {audio_message['timestamp']}")

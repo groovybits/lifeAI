@@ -179,7 +179,8 @@ def main():
                         "message": f"{args.prompt} {title}",
                         "history": f"Breaking news just in... {title}",
                         "aipersonality": f"{args.aipersonality}",
-                        "ainame": args.ainame
+                        "ainame": args.ainame,
+                        "voice_model": "mimic3:en_US/cmu-arctic_low#eey:1.2",
                     }
                     socket.send_json(client_request)
                 else:

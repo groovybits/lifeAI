@@ -10,67 +10,115 @@
 
 import zmq
 import argparse
-from transformers import VitsModel, AutoTokenizer
-import torch
+import requests
 import io
-import soundfile as sf
-from transformers import logging as trlogging
 import warnings
-import urllib3
-import inflect
 import re
 import logging
 import time
+import os
+from dotenv import load_dotenv
+import inflect
 import traceback
+import soundfile as sf
+import torch
+from transformers import VitsModel, AutoTokenizer
+from transformers import logging as trlogging
 
-warnings.simplefilter(action='ignore', category=Warning)
-warnings.filterwarnings("ignore", category=urllib3.exceptions.NotOpenSSLWarning)
-from urllib3.exceptions import NotOpenSSLWarning
-warnings.simplefilter(action='ignore', category=NotOpenSSLWarning)
 trlogging.set_verbosity_error()
 
-def clean_text_for_tts(text):
-    p = inflect.engine()
+load_dotenv()
 
-    def num_to_words(match):
-        number = match.group()
-        try:
-            words = p.number_to_words(number)
-        except inflect.NumOutOfRangeError:
-            words = "[number too large]"
-        return words
+# Suppress warnings
+warnings.simplefilter(action='ignore', category=Warning)
 
-    text = re.sub(r'\b\d+(\.\d+)?\b', num_to_words, text)
+def clean_text(text):
+    # Remove URLs
+    text = re.sub(r'http[s]?://\S+', '', text)
+    
+    # Remove image tags or Markdown image syntax
+    text = re.sub(r'\!\[.*?\]\(.*?\)', '', text)
+    text = re.sub(r'<img.*?>', '', text)
+    
+    # Remove HTML tags
+    text = re.sub(r'<.*?>', '', text)
+    
+    # Remove any inline code blocks
+    text = re.sub(r'`.*?`', '', text)
+    
+    # Remove any block code segments
+    text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
+    
+    # Remove special characters and digits (optional, be cautious)
+    text = re.sub(r'[^a-zA-Z0-9\s.?,!\n:\'\"\-\t]', '', text)
 
-    # Add a pause after punctuation
-    text = text.replace('.', '. ')
-    text = text.replace(',', ', ')
-    text = text.replace('?', '? ')
-    text = text.replace('!', '! ')
+    if args.service == "mms-tts":
+        p = inflect.engine()
+
+        def num_to_words(match):
+            number = match.group()
+            try:
+                words = p.number_to_words(number)
+            except inflect.NumOutOfRangeError:
+                words = "[number too large]"
+            return words
+
+        text = re.sub(r'\b\d+(\.\d+)?\b', num_to_words, text)
+        
+        # Remove extra whitespace
+        text = ' '.join(text.split())
 
     return text
 
+def get_tts_audio(service, text, voice=None, noise_scale=None, noise_w=None, length_scale=None, ssml=None, audio_target=None):
+    
+    if service == "mimic3":
+        params = {
+            'text': text,
+            'voice': voice or 'en_US/cmu-arctic_low#slt',
+            'noiseScale': noise_scale or '0.333',
+            'noiseW': noise_w or '0.333',
+            'lengthScale': length_scale or '1',
+            'ssml': ssml or 'false',
+            'audioTarget': audio_target or 'client'
+        }
 
-def main():
-    while True:
-        header_message = receiver.recv_json()
+        response = requests.get('http://earth:59125/api/tts', params=params)
+        response.raise_for_status()
+        return response.content
+    elif service == "openai":
         """
-          header_message = {
-            "segment_number": segment_number,
-            "mediaid": mediaid,
-            "mediatype": mediatype,
-            "username": username,
-            "source": source,
-            "message": message,
-            "text": "",
-        }"""
-        segment_number = header_message["segment_number"]
-        text = header_message["text"]
+        curl https://api.openai.com/v1/audio/speech \
+            -H "Authorization: Bearer $OPENAI_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{
+                \"model\": \"tts-1\",
+                \"input\": \"AI is amazing and Anime is good. It is a miracle that GPT-4 is so good.\",
+                \"voice\": \"$v\",
+                \"response_format\": \"aac\",
+                \"speed\": \"1.0\"
+            }" \
+                --output speech_$v.aac
+        """
+        params = {
+            'model': 'tts-1',
+            'input': text,
+            'voice': voice or 'nova',
+            'speed': length_scale or '1',
+            'response_format':'aac'
+        }
 
-        logger.debug("Text to Speech recieved request:\n%s" % header_message)
-        logger.info(f"Text to Speech: recieved text #{segment_number}\n{text}")
+        headers = {
+            "accept": "application/json",
+            "content-type": "application/json",
+            "authorization": os.environ['OPENAI_API_KEY']
+        }
 
-        inputs = tokenizer(clean_text_for_tts(text), return_tensors="pt")
+        response = requests.post('https://api.openai.com/v1/audio/speech', headers=headers, params=params)
+        response.raise_for_status()
+        return response.content
+    elif service == "mms-tts":
+        inputs = tokenizer(text, return_tensors="pt")
         inputs['input_ids'] = inputs['input_ids'].long()
 
         output = None
@@ -81,36 +129,112 @@ def main():
         except Exception as e:
             logger.error(f"{traceback.print_exc()}")
             logger.error(f"Exception: ERROR STT error with output.squeeze().numpy().T on audio: {text}")
-            continue
+            return None
+        
         audiobuf = io.BytesIO()
         sf.write(audiobuf, waveform_np, model.config.sampling_rate, format='WAV')
         audiobuf.seek(0)
 
-        duration = len(waveform_np) / model.config.sampling_rate
+        #duration = len(waveform_np) / model.config.sampling_rate
+        
+        return audiobuf.getvalue()
 
-        # fill in the header
+def main():
+    while True:
+        header_message = receiver.recv_json()
+        segment_number = header_message["segment_number"]
+        text = header_message["text"]
+
+        tts_api = args.service
+        voice_model = args.voice
+        voice_speed = args.length_scale
+        if 'voice_model' in header_message:
+            voice_data = header_message["voice_model"]
+            # "voice_model": "mimic3:en_US/cmu-arctic_low#eey:1.2",
+            # TTS API, Voice Model to use, Voice Model Speed to use
+            tts_api = voice_data.split(":")[0]
+            voice_model = voice_data.split(":")[1]
+            voice_speed = voice_data.split(":")[2]
+            logger.info(f"Text to Speech: Voice Model selected: {voice_model} at speed {voice_speed} using API {tts_api}.")
+        else:
+            logger.info(f"Text to Speech: Voice Model default, no 'voice_model' in request: {voice_model} at speed {voice_speed} using API {tts_api}.")
+        
+        # clean text of end of line spaces after punctuation
+        text = clean_text(text)
+        text = re.sub(r'([.,!?;:])\s+', r'\1', text)
+
+        logger.debug("Text to Speech received request:\n%s" % header_message)
+        logger.info(f"Text to Speech received request #{segment_number}:\n{text}")
+
+        # add ssml tags
+        if args.ssml == 'true' and tts_api == "mimic3":
+            text = f"<speak><prosody pitch=\"{args.pitch}\" range=\"{args.range}\" rate=\"{args.rate}\">" + text + f"</prosody></speak>"
+            logger.info(f"Text to Speech: SSML enabled, using pitch={args.pitch}, range={args.range}, rate={args.rate}.")
+            logger.debug(f"Text to Speech: SSML text:\n{text}")
+
+        duration = 0
+        try:
+            audio_blob = get_tts_audio(
+                tts_api,
+                text,
+                voice=voice_model,
+                noise_scale=args.noise_scale,
+                noise_w=args.noise_w,
+                length_scale=voice_speed,
+                ssml=args.ssml,
+                audio_target=args.audio_target
+            )
+            duration = len(audio_blob) / (22050 * 2)  # Assuming 22.5kHz 16-bit audio for duration calculation
+        except Exception as e:
+            logger.error(f"Exception: ERROR TTS error with API request for text: {text}")
+            logger.error(e)
+            continue
+
+        if duration == 0:
+            logger.error(f"Exception: ERROR TTS {tts_api} {voice_model} x{voice_speed} returned 0 duration audio blobt: {text}")
+            continue
+
+        audiobuf = io.BytesIO(audio_blob)
+        audiobuf.seek(0)
+
+        # Fill in the header
         header_message["duration"] = duration
         header_message["stream"] = "speek"
 
-        # send the header and the audio
+        # Send the header and the audio
         sender.send_json(header_message, zmq.SNDMORE)
         sender.send(audiobuf.getvalue())
-        
+
         logger.debug(f"Text to Speech: sent audio #{segment_number}\n{header_message}")
-        logger.info(f"Text to Speech: sent audio #{segment_number} of {duration} duration. {text}")
+        logger.info(f"Text to Speech: sent audio #{segment_number} of {duration} duration.\n{text}")
+
+        header_message = None
+        text = ""
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_port", type=int, default=2000, required=False, help="Port for receiving text input")
-    parser.add_argument("--output_port", type=int, default=2001, required=False, help="Port for sending audio output")
-    parser.add_argument("--target_lang", type=str, default="eng", help="Target language")
-    parser.add_argument("--source_lang", type=str, default="eng", help="Source language")
-    parser.add_argument("--audio_format", choices=["wav", "raw"], default="raw", help="Audio format to save as. Choices are 'wav' or 'raw'.")
-    parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Port for receiving text input")
-    parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending audio output")
-    parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
-    parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
+    parser.add_argument("--output_port", type=int, default=6002, required=False, help="Port for sending audio output")
+    parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Host for receiving text input")
+    parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Host for sending audio output")
+    parser.add_argument("--voice", type=str, default='en_US/cmu-arctic_low#eey', help="Voice parameter for TTS API")
+    parser.add_argument("--noise_scale", type=str, default='0.6', help="Noise scale parameter for TTS API")
+    parser.add_argument("--noise_w", type=str, default='0.6', help="Noise weight parameter for TTS API")
+    parser.add_argument("--length_scale", type=str, default='1.2', help="Length scale parameter for TTS API")
+    parser.add_argument("--ssml", type=str, default='false', help="SSML parameter for TTS API")
+    parser.add_argument("--audio_target", type=str, default='client', help="Audio target parameter for TTS API")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
+    parser.add_argument("--sub", action="store_true", default=False, help="Publish to a topic")
+    parser.add_argument("--pub", action="store_true", default=False, help="Publish to a topic")
+    parser.add_argument("--bind_output", action="store_true", default=False, help="Bind to a topic")
+    parser.add_argument("--bind_input", action="store_true", default=False, help="Bind to a topic")
+    parser.add_argument("--rate", type=str, default="default", help="Speech rate, slow, medium, fast")
+    parser.add_argument("--range", type=str, default="high", help="Speech range, low, medium, high")
+    parser.add_argument("--pitch", type=str, default="high", help="Speech pitch, low, medium, high")
+    parser.add_argument("--delay", type=int, default=0, help="Delay in seconds after timestamp before sending audio")
+    parser.add_argument("--service", type=str, default="mimic3", help="TTS service to use. mms-tts, mimic3, openai")
+    parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
+    parser.add_argument("--cuda", action="store_true", default=False, help="offload to cuda GPU")
 
     args = parser.parse_args()
 
@@ -126,8 +250,8 @@ if __name__ == "__main__":
         LOGLEVEL = logging.INFO
 
     log_id = time.strftime("%Y%m%d-%H%M%S")
-    logging.basicConfig(filename=f"logs/tts-{log_id}.log", level=LOGLEVEL)
-    logger = logging.getLogger('TTS')
+    logging.basicConfig(filename=f"logs/ttsMimic3-{log_id}.log", level=LOGLEVEL)
+    logger = logging.getLogger('tts')
 
     ch = logging.StreamHandler()
     ch.setLevel(LOGLEVEL)
@@ -136,24 +260,28 @@ if __name__ == "__main__":
     logger.addHandler(ch)
 
     context = zmq.Context()
+    # Set up the subscriber
     receiver = context.socket(zmq.SUB)
-    print("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
+    print(f"Setup ZMQ in {args.input_host}:{args.input_port}")
     receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
     receiver.setsockopt_string(zmq.SUBSCRIBE, "")
 
-    sender = context.socket(zmq.PUB)
-    print("binded to ZMQ out: %s:%d" % (args.output_host, args.output_port))
-    sender.bind(f"tcp://{args.output_host}:{args.output_port}")
+    # Set up the publisher
+    sender = context.socket(zmq.PUSH)
+    print(f"binded to ZMQ out {args.output_host}:{args.output_port}")
+    sender.connect(f"tcp://{args.output_host}:{args.output_port}")
 
-    model = VitsModel.from_pretrained("facebook/mms-tts-eng")
-    tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-eng")
+    model = None
+    tokenizer = None
+    if args.service == "mms-tts":
+        model = VitsModel.from_pretrained("facebook/mms-tts-eng")
+        tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-eng")
 
-    if args.metal:
-        model.to("mps")
-    elif args.cuda:
-        model.to("cuda")
-    else:
-        model.to("cpu")
+        if args.metal:
+            model.to("mps")
+        elif args.cuda:
+            model.to("cuda")
+        else:
+            model.to("cpu")
 
     main()
-

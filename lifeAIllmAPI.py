@@ -276,7 +276,8 @@ def main(args):
                 "tokens": 0,
                 "md5sum": "",
                 "index": 0,
-                "text": ""
+                "text": "",
+                "voice_model": client_request.get("voice_model", "mimic3:en_US/cmu-arctic_low#eey:1.2")
             }
             
             logger.debug(f"LLM: received message: - {json.dumps(header_message)}\n")

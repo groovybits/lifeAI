@@ -66,14 +66,14 @@ def generate_getimgai(mediaid, image_model, prompt):
 
 def generate_openai(mediaid, image_model, prompt, username="lifeai", return_url=False, save_file=False):
     response = openai_client.images.generate(
-    model=image_model,
-    prompt=prompt,
-    size=f"{args.width}x{args.height}",
-    quality=args.quality,
-    style=args.style,
-    response_format="b64_json",
-    user=username,
-    n=1,
+        model=image_model,
+        prompt=prompt,
+        size=f"{args.width}x{args.height}",
+        quality=args.quality,
+        style=args.style,
+        response_format="b64_json",
+        user=username,
+        n=1,
     )
 
     logger.debug(f"{response.data[0]}")

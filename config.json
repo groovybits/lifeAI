@@ -14,8 +14,8 @@
     "lifeAItti": {
         "args": ["python", "lifeAItti.py"]
     },
-    "lifeAIttsMimic3": {
-        "args": ["python", "lifeAIttsMimic3.py"]
+    "lifeAItts": {
+        "args": ["python", "lifeAItts.py"]
     },
     "lifeAIttm": {
         "args": ["python", "lifeAIttm.py"]

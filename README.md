@@ -47,7 +47,7 @@ Diagram:
 - [LLM Broker llama.cpp-API](lifeAIllmAPI.py)       Llama2 llama.cpp server local API service
 - [Prompt Optimizer](lifeAIpromptOptimizerAPI.py)      Optimize prompt or turn text into a prompt.
 
-- [TTS Producer](lifeAIttsMimic3.py)    Mimic3 TTS Text to Speech Conversion.
+- [TTS Producer](lifeAItts)             Mimic3, MMS-TTS or OpenAI TTS Text to Speech Conversion.
 - [TTM Producer](lifeAIttm.py)          Facebook Music Generation.
 - [TTI Producer](lifeAItti.py)          Stable Diffusion Text to Image Generation. (extended prompt + NSFW off option)
 
@@ -92,7 +92,7 @@ cd python-twitch-stream
 pip install .
 
 # Install Mimic3 TTS in place of FB TTS-MMS (requires Python 3.11 from Brew on MacOS X)
-# Use lifeAIttsMimic3.py instead of lifeAItts.py
+# Use lifeAItts.py
 git clone https://github.com/MycroftAI/mimic3.git
 cd mimic3/
 PYTHON=python3.11 make install
@@ -127,7 +127,7 @@ Running in dry run mode. No actual processes will be started or stopped.
 Enter command: [DRY RUN] Would start program: lifeAInewsCast
 [DRY RUN] Would start program: lifeAIllmAPI
 [DRY RUN] Would start program: lifeAItti
-[DRY RUN] Would start program: lifeAIttsMimic3
+[DRY RUN] Would start program: lifeAItts
 [DRY RUN] Would start program: lifeAIttm
 [DRY RUN] Would start program: lifeAIpromptOptimizeMusic
 [DRY RUN] Would start program: lifeAIpromptOptimizeImages
@@ -163,7 +163,7 @@ curl --request POST --url http://127.0.0.1:8080/completion  \
 
 # TTS Speech audio
 ## ./lifeAItts.py # Easier to use, doesn't voice words properly
-./lifeAIttsMimic3.py # pretty good local model
+./lifeAItts.py # can use Mimic3, mms-tts or OpenAI tts
 
 # TTI Images for video stream frames
 ./lifeAItti.py
