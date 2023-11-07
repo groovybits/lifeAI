@@ -21,6 +21,8 @@ import time
 from openai import OpenAI
 import base64
 from dotenv import load_dotenv
+import os
+import requests
 
 load_dotenv()
 
@@ -37,13 +39,38 @@ def save_image(data, file_path, save_file=False):
 
     return image
 
-def generate_openai(mediaid, prompt, username="lifeai", return_url=False, save_file=False):
+def generate_getimgai(mediaid, image_model, prompt):
+    url = "https://api.getimg.ai/v1/stable-diffusion/text-to-image"
+
+    payload = {
+        "model": "stable-diffusion-v1-5",
+        "prompt": prompt,
+        "negative_prompt": "Disfigured, cartoon, blurry",
+        "width": 512,
+        "height": 512,
+        "steps": 25,
+        "guidance": 7.5,
+        "seed": 0,
+        "scheduler": "dpmsolver++",
+        "output_format": "png"
+    }
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "authorization": os.environ['GETIMG_API_KEY']
+    }
+
+    response = requests.post(url, json=payload, headers=headers)
+
+    print(response.image)
+
+def generate_openai(mediaid, image_model, prompt, username="lifeai", return_url=False, save_file=False):
     response = openai_client.images.generate(
-    model="dall-e-3",
+    model=image_model,
     prompt=prompt,
-    size="1024x1024",
-    quality="standard",
-    style="natural",
+    size=f"{args.width}x{args.height}",
+    quality=args.quality,
+    style=args.style,
     response_format="b64_json",
     user=username,
     n=1,
@@ -160,7 +187,7 @@ def main():
                 image = pipe(prompt_embeds=prompt_embeds, negative_prompt_embeds=negative_prompt_embeds).images[0]
             else:
                 if args.service == "openai":
-                    image = generate_openai(mediaid, optimized_prompt, header_message["username"], args.save_images)
+                    image = generate_openai(mediaid, args.image_model, optimized_prompt, header_message["username"], args.save_images)
                 else:
                     image = pipe(clean_text(optimized_prompt)).images[0]
 
@@ -209,6 +236,11 @@ if __name__ == "__main__":
     parser.add_argument("--max_latency", type=int, default=10, help="Max latency for messages before they are throttled / combined")
     parser.add_argument("--service", type=str, default=None, help="Service to use for image generation: openai, dall-e")
     parser.add_argument("--save_images", action="store_true", help="Save images to disk")
+    parser.add_argument("--image_model", type=str, default="dall-e-2", help="OpenAI image model to use")
+    parser.add_argument("--width", type=int, default=512, help="Image width")
+    parser.add_argument("--height", type=int, default=512, help="Image height")
+    parser.add_argument("--style", type=str, default="vivid", help="Image style for dalle-3, standard or vivid")
+    parser.add_argument("--quality", type=str, default="standard", help="Image quality for dalle-3, standard or hd")
 
     args = parser.parse_args()
 
