@@ -327,18 +327,19 @@ class BackgroundMusic(threading.Thread):
             self.channel.set_volume(args.music_volume)  # Set the volume for this channel
             self.channel.play(sound, loops=-1)  # Play the Sound object on this channel
 
-            # Wait for the sound to finish playing
-            while self.channel.get_busy():
-                pygame.time.delay(100)  # Sleep for 100ms to prevent tight loop
-
     def change_track(self, audio_buffer):
         with self.lock:
-            pygame.mixer.music.stop()  # Stop the currently playing audio
+            # Stop the currently playing audio on this specific channel
+            self.channel.stop()  
+            # Update the audio buffer with the new track
             self.audio_buffer = audio_buffer
+            # Play the new audio buffer
+            self.play_audio(self.audio_buffer)
 
     def stop(self):
         self.running = False
-        pygame.mixer.music.stop()
+        # Stop playback on this specific channel
+        self.channel.stop()
 
 def play_audio(audio_data, target_sample_rate=32000, use_channel=None):
     # Detect the mime type of the audio data
@@ -349,6 +350,8 @@ def play_audio(audio_data, target_sample_rate=32000, use_channel=None):
         audio_segment = AudioSegment.from_file(io.BytesIO(audio_data), format='wav')
     elif mime_type in ['audio/aac', 'audio/x-aac', 'audio/x-hx-aac-adts']:
         audio_segment = AudioSegment.from_file(io.BytesIO(audio_data), format='aac')
+        # Increase the volume by 10 dB
+        audio_segment += 10
     else:
         raise ValueError(f"Unsupported audio format: {mime_type}")
 
