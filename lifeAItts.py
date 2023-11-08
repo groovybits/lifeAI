@@ -119,7 +119,7 @@ def get_tts_audio(service, text, voice=None, noise_scale=None, noise_w=None, len
             "authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"
         }
 
-        response = requests.post('https://api.openai.com/v1/audio/speech', headers=headers, params=params)
+        response = requests.post('https://api.openai.com/v1/audio/speech', headers=headers, json=params)
         response.raise_for_status()
         return response.content
     elif service == "mms-tts":
