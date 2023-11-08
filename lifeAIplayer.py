@@ -387,7 +387,7 @@ def playback(image, audio):
     if image:
         render(image)
     
-    play_audio(audio, 22500, 1)
+    play_audio(audio, 32000, 1)
 
 def get_audio_duration(audio_samples):
     audio_segment = AudioSegment.from_file(io.BytesIO(audio_samples), format="wav")

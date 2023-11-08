@@ -116,7 +116,7 @@ def get_tts_audio(service, text, voice=None, noise_scale=None, noise_w=None, len
         headers = {
             "accept": "application/json",
             "content-type": "application/json",
-            "authorization": os.environ['OPENAI_API_KEY']
+            "authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"
         }
 
         response = requests.post('https://api.openai.com/v1/audio/speech', headers=headers, params=params)
