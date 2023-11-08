@@ -247,7 +247,7 @@ class AiTwitchBot(commands.Cog):
            
             ## get the name and the personality
             for name, personality in personalities.items():
-                await ctx.send(f"{name}: {personality[:20]}")            
+                await ctx.send(f"{name}: {personality[:100]}")            
         except Exception as e:
             logger.error("Error in listpersonalities command twitch bot: %s" % str(e))
 
