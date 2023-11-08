@@ -324,8 +324,8 @@ class BackgroundMusic(threading.Thread):
         if audiobuf:
             # Load the audio data into a Sound object
             sound = pygame.mixer.Sound(audiobuf)
-            self.channel.set_volume(args.volume)  # Set the volume for this channel
-            self.channel.play(sound)  # Play the Sound object on this channel
+            self.channel.set_volume(args.music_volume)  # Set the volume for this channel
+            self.channel.play(sound, loops=-1)  # Play the Sound object on this channel
 
             # Wait for the sound to finish playing
             while self.channel.get_busy():
@@ -373,6 +373,7 @@ def play_audio(audio_data, target_sample_rate=32000, use_channel=None):
         channel = pygame.mixer.Channel(use_channel)
 
     # Play the audio on the selected channel
+    channel.set_volume(args.speech_volume)  # Set the volume for this channel
     channel.play(sound)
 
     # Wait for the sound to finish playing (linear playback)
@@ -572,7 +573,8 @@ if __name__ == "__main__":
     parser.add_argument("--burn_prompt", action="store_true", default=False, help="Burn in the prompt that created the image")
     parser.add_argument("--width", type=int, default=1920, help="Width of the output image")
     parser.add_argument("--height", type=int, default=1080, help="Height of the output image")
-    parser.add_argument("--volume", type=float, default=0.5, help="Volume for audio playback")
+    parser.add_argument("--music_volume", type=float, default=0.4, help="Volume for music audio playback")
+    parser.add_argument("--speech_volume", type=float, default=1.0, help="Volume for speech audio playback")
     parser.add_argument("--music_interval", type=float, default=60, help="Interval between music changes")
     parser.add_argument("--nomusic", action="store_true", default=False, help="Disable music")
     parser.add_argument("--save_assets", action="store_true", default=False, help="Save assets to disk")
