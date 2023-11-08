@@ -107,6 +107,10 @@ cmake .
 make
 sudo make install
 # server is installed in /usr/local/bin/server and ran via the config.json
+
+## Lib Magic
+brew install libmagic
+
 ```
 
 ## Running lifeAI
