@@ -24,6 +24,7 @@ import soundfile as sf
 import torch
 from transformers import VitsModel, AutoTokenizer
 from transformers import logging as trlogging
+from pydub import AudioSegment
 
 trlogging.set_verbosity_error()
 
@@ -69,6 +70,10 @@ def clean_text(text):
         text = ' '.join(text.split())
 
     return text
+
+def get_aac_duration(aac_data):
+    audio_segment = AudioSegment.from_file(io.BytesIO(aac_data), format='aac')
+    return len(audio_segment) / 1000.0  # Convert from milliseconds to seconds
 
 def get_tts_audio(service, text, voice=None, noise_scale=None, noise_w=None, length_scale=None, ssml=None, audio_target=None):
     
@@ -184,7 +189,10 @@ def main():
                 ssml=args.ssml,
                 audio_target=args.audio_target
             )
-            duration = len(audio_blob) / (22050 * 2)  # Assuming 22.5kHz 16-bit audio for duration calculation
+            if tts_api == "mimic3" or tts_api == "mms-tts":
+                duration = len(audio_blob) / (22050 * 2)  # Assuming 22.5kHz 16-bit audio for duration calculation
+            elif tts_api == "openai":
+                duration = get_aac_duration(audio_blob)
         except Exception as e:
             logger.error(f"Exception: ERROR TTS error with API request for text: {text}")
             logger.error(e)

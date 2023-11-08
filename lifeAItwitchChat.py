@@ -179,7 +179,8 @@ class AiTwitchBot(commands.Cog):
                 "aipersonality": aipersonality,
                 "ainame": ainame,
                 "history": history,
-                "voice_model": "mimic3:en_US/cmu-arctic_low#eey:1.2",
+                "maxtokens": "200",
+                "voice_model": "openai:nova:1.0",
             }
             socket.send_json(client_request)
 

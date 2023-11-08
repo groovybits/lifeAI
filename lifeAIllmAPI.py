@@ -168,7 +168,7 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
             'prompt': header_message["llm_prompt"],
             'temperature': args.temperature,
             'stop': args.stoptokens.split(','),
-            'max_tokens': args.maxtokens,
+            'max_tokens': header_message["maxtokens"],
             'stream': True,
         }
 
@@ -217,7 +217,7 @@ def create_prompt(header_message, args):
         oprompt_l = "episode"
         iprompt_l = "Format the output like a TV episode script using markdown."
 
-    args.stoptokens = f"{qprompt_l}:"
+    args.stoptokens = f"{qprompt_l}:,Context:,Personality:,Question:"
 
     prompt = args.promptcompletion.format(question = header_message["message"],
                                           context = prompt_context, 
@@ -277,6 +277,7 @@ def main(args):
                 "md5sum": "",
                 "index": 0,
                 "text": "",
+                "maxtokens": client_request.get("maxtokens", args.maxtokens),
                 "voice_model": client_request.get("voice_model", "mimic3:en_US/cmu-arctic_low#eey:1.2")
             }
             

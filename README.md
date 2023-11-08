@@ -108,8 +108,10 @@ make
 sudo make install
 # server is installed in /usr/local/bin/server and ran via the config.json
 
-## Lib Magic
+## MacOS deps (or any system)
 brew install libmagic
+brew install zeromq
+brew install ffmpeg
 
 ```
 
