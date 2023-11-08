@@ -31,6 +31,9 @@ import json
 from collections import deque
 from pydub import AudioSegment
 import magic
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Queue to store the last images
 past_images_queue = deque(maxlen=6)  # Assuming 6 images for each side
