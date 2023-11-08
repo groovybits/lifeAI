@@ -251,6 +251,16 @@ class AiTwitchBot(commands.Cog):
         except Exception as e:
             logger.error("Error in listpersonalities command twitch bot: %s" % str(e))
 
+    ## help command
+    @commands.command(name="help")
+    async def help(self, ctx: commands.Context):
+        try:
+            # get the name of the person who sent the message
+            name = ctx.message.author.name
+            await ctx.send(f"{name} the following commands are available: !message, !music, !image, !name, !personality, !personalities, !help. You can create a personality using '!name <name> <personality>' and use '!message <name> <message>' to send a message to that personality.")
+        except Exception as e:
+            logger.error("Error in help command twitch bot: %s" % str(e))
+
     ## image command - sends us a prompt to generate ai images with and then send it to the channel
     @commands.command(name="image")
     async def image(self, ctx: commands.Context):
