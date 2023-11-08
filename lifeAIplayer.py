@@ -31,7 +31,7 @@ import json
 from collections import deque
 from pydub import AudioSegment
 import simpleaudio as sa
-
+import magic
 
 # Queue to store the last images
 past_images_queue = deque(maxlen=6)  # Assuming 6 images for each side
@@ -331,20 +331,24 @@ class BackgroundMusic(threading.Thread):
         self.running = False
         pygame_music.mixer.music.stop()
 
-def play_audio(audio_data, format='wav'):
-    # Play the audio without converting if it's already a WAV file
-    if format == 'wav':
-        wave_obj = sa.WaveObject.from_wave_read(io.BytesIO(audio_data))
-    # Convert AAC to WAV and then play
-    elif format == 'aac':
-        audio_segment = AudioSegment.from_file(io.BytesIO(audio_data), format="aac")
-        wav_io = io.BytesIO()
-        audio_segment.export(wav_io, format="wav")
-        wav_io.seek(0)
-        wave_obj = sa.WaveObject.from_wave_read(wav_io)
-    else:
-        raise ValueError(f"Unsupported format: {format}")
+def play_audio(audio_data):
+    # Detect the mime type of the audio data
+    mime_type = magic.from_buffer(audio_data, mime=True)
 
+    if mime_type == 'audio/x-wav' or mime_type == 'audio/wav':
+        # It's a WAV file, we can play it directly.
+        wave_obj = sa.WaveObject.from_binary(audio_data)
+    elif mime_type == 'audio/aac' or mime_type == 'audio/x-aac':
+        # It's an AAC file, we need to convert it to WAV first.
+        aac_audio = AudioSegment.from_file(io.BytesIO(audio_data), format='aac')
+        wav_io = io.BytesIO()
+        aac_audio.export(wav_io, format='wav')
+        wav_io.seek(0)
+        wave_obj = sa.WaveObject.from_binary(wav_io.read())
+    else:
+        raise ValueError(f"Unsupported audio format: {mime_type}")
+
+    # Play the audio
     play_obj = wave_obj.play()
     play_obj.wait_done()
 
