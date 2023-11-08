@@ -304,28 +304,28 @@ class BackgroundMusic(threading.Thread):
         self.running = True
         self.lock = threading.Lock()  # Lock to synchronize access to audio_buffer
 
+        # Create a specific channel for this thread if it doesn't already exist
+        if not pygame.mixer.get_init():
+            pygame.mixer.init()  # Make sure the mixer is initialized
+        self.channel = pygame.mixer.Channel(2)  # Assign a specific channel
+
     def run(self):
         while self.running:
             with self.lock:
                 if self.audio_buffer:
-                    self.play_audio(self.audio_buffer, 2)
+                    self.play_audio(self.audio_buffer)
             pygame.time.Clock().tick(1)  # Limit the while loop to 1 iteration per second
 
-    def play_audio(self, audio_samples, channel_number):
+    def play_audio(self, audio_samples):
         audiobuf = io.BytesIO(audio_samples)
         if audiobuf:
-            # Create a specific channel for this thread if it doesn't already exist
-            if not pygame.mixer.get_init():
-                pygame.mixer.init()  # Make sure the mixer is initialized
-            channel = pygame.mixer.Channel(channel_number)  # Assign a specific channel
-
             # Load the audio data into a Sound object
             sound = pygame.mixer.Sound(audiobuf)
-            channel.set_volume(args.volume)  # Set the volume for this channel
-            channel.play(sound)  # Play the Sound object on this channel
+            self.channel.set_volume(args.volume)  # Set the volume for this channel
+            self.channel.play(sound)  # Play the Sound object on this channel
 
             # Wait for the sound to finish playing
-            while channel.get_busy():
+            while self.channel.get_busy():
                 pygame.time.delay(100)  # Sleep for 100ms to prevent tight loop
 
     def change_track(self, audio_buffer):
