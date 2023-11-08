@@ -347,7 +347,7 @@ def play_audio(audio_data, target_sample_rate=32000, use_channel=None):
     # Load the audio data into an AudioSegment
     if mime_type in ['audio/x-wav', 'audio/wav']:
         audio_segment = AudioSegment.from_file(io.BytesIO(audio_data), format='wav')
-    elif mime_type in ['audio/aac', 'audio/x-aac']:
+    elif mime_type in ['audio/aac', 'audio/x-aac', 'audio/x-hx-aac-adts']:
         audio_segment = AudioSegment.from_file(io.BytesIO(audio_data), format='aac')
     else:
         raise ValueError(f"Unsupported audio format: {mime_type}")
@@ -500,17 +500,23 @@ def main():
             ## and mediaid/segment_number.png too.
             ## audio_message and image_message are the headers, image_np and audio_asset are the assets
             # Save JSON header
-            save_json(audio_message, mediaid)  # or image_message, if it's the one to be saved
+            try:
+                save_json(audio_message, mediaid)  # or image_message, if it's the one to be saved
 
-            if args.save_assets:
-                # Save audio asset
-                save_asset(audio_asset, mediaid, segment_number, "audio")
+                if args.save_assets:
+                    # Save audio asset
+                    save_asset(audio_asset, mediaid, segment_number, "audio")
 
-                # Save image asset
-                save_asset(image_np, mediaid, segment_number, "images")
+                    # Save image asset
+                    save_asset(image_np, mediaid, segment_number, "images")
+            except Exception as e:
+                logger.error(f"Error saving assets: {e}")
 
             # Play audio and display image
-            playback(image_np, audio_asset)
+            try:
+                playback(image_np, audio_asset)
+            except Exception as e:
+                logger.error(f"Error playing back audio and displaying image: {e}")
         else:
             # check last sent segments and if it's been more than 5 seconds, send a blank image and audio
             if time.time() - last_sent_segments > 15 and last_image_asset is not None:
