@@ -32,7 +32,7 @@ Diagram:
 
 ## OpenAI TTS API Support!!!
 
-- Coming soon, very soon!
+- Works! You can choose voices for each input client to use or have them choose one dynamically. This will allow Twitch chat to use different voices per personality!
 
 ## ZMQ modules from Input to Output
 
