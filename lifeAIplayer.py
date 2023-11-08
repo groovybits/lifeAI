@@ -20,7 +20,7 @@ import numpy as np
 import logging
 import time
 import soundfile as sf
-import pygame as pygame_music
+import pygame
 import queue
 import threading
 from queue import PriorityQueue
@@ -30,7 +30,6 @@ import textwrap
 import json
 from collections import deque
 from pydub import AudioSegment
-import simpleaudio as sa
 import magic
 
 # Queue to store the last images
@@ -301,8 +300,6 @@ def get_audio_duration(audio_samples):
 class BackgroundMusic(threading.Thread):
     def __init__(self):
         super().__init__()
-        pygame_music.mixer.init(frequency=32000, size=-16, channels=1, buffer=1024)
-        pygame_music.init()
         self.audio_buffer = None
         self.running = True
         self.lock = threading.Lock()  # Lock to synchronize access to audio_buffer
@@ -311,53 +308,83 @@ class BackgroundMusic(threading.Thread):
         while self.running:
             with self.lock:
                 if self.audio_buffer:
-                    self.play_audio(self.audio_buffer)
-                    self.audio_buffer = None  # Reset audio_buffer to prevent replaying the same buffer
-            pygame_music.time.Clock().tick(1)  # Limit the while loop to 1 iteration per second
+                    self.play_audio(self.audio_buffer, 2)
+            pygame.time.Clock().tick(1)  # Limit the while loop to 1 iteration per second
 
-    def play_audio(self, audio_samples):
+    def play_audio(self, audio_samples, channel_number):
         audiobuf = io.BytesIO(audio_samples)
         if audiobuf:
-            pygame_music.mixer.music.load(audiobuf)
-            pygame_music.mixer.music.set_volume(args.volume)  # Set the volume
-            pygame_music.mixer.music.play(-1)  # -1 instructs Pygame to loop the audio indefinitely
+            # Create a specific channel for this thread if it doesn't already exist
+            if not pygame.mixer.get_init():
+                pygame.mixer.init()  # Make sure the mixer is initialized
+            channel = pygame.mixer.Channel(channel_number)  # Assign a specific channel
+
+            # Load the audio data into a Sound object
+            sound = pygame.mixer.Sound(audiobuf)
+            channel.set_volume(args.volume)  # Set the volume for this channel
+            channel.play(sound)  # Play the Sound object on this channel
+
+            # Wait for the sound to finish playing
+            while channel.get_busy():
+                pygame.time.delay(100)  # Sleep for 100ms to prevent tight loop
 
     def change_track(self, audio_buffer):
         with self.lock:
-            pygame_music.mixer.music.stop()  # Stop the currently playing audio
+            pygame.mixer.music.stop()  # Stop the currently playing audio
             self.audio_buffer = audio_buffer
 
     def stop(self):
         self.running = False
-        pygame_music.mixer.music.stop()
+        pygame.mixer.music.stop()
 
-def play_audio(audio_data):
+def play_audio(audio_data, target_sample_rate=32000, use_channel=None):
     # Detect the mime type of the audio data
     mime_type = magic.from_buffer(audio_data, mime=True)
 
-    if mime_type == 'audio/x-wav' or mime_type == 'audio/wav':
-        # It's a WAV file, we can play it directly.
-        wave_obj = sa.WaveObject.from_binary(audio_data)
-    elif mime_type == 'audio/aac' or mime_type == 'audio/x-aac':
-        # It's an AAC file, we need to convert it to WAV first.
-        aac_audio = AudioSegment.from_file(io.BytesIO(audio_data), format='aac')
-        wav_io = io.BytesIO()
-        aac_audio.export(wav_io, format='wav')
-        wav_io.seek(0)
-        wave_obj = sa.WaveObject.from_binary(wav_io.read())
+    # Load the audio data into an AudioSegment
+    if mime_type in ['audio/x-wav', 'audio/wav']:
+        audio_segment = AudioSegment.from_file(io.BytesIO(audio_data), format='wav')
+    elif mime_type in ['audio/aac', 'audio/x-aac']:
+        audio_segment = AudioSegment.from_file(io.BytesIO(audio_data), format='aac')
     else:
         raise ValueError(f"Unsupported audio format: {mime_type}")
 
-    # Play the audio
-    play_obj = wave_obj.play()
-    play_obj.wait_done()
+    # Resample the audio to the target sample rate if necessary
+    if audio_segment.frame_rate != target_sample_rate:
+        audio_segment = audio_segment.set_frame_rate(target_sample_rate)
+
+    # Export the resampled audio to a bytes buffer
+    wav_io = io.BytesIO()
+    audio_segment.export(wav_io, format='wav')
+    wav_io.seek(0)
+    audio_data = wav_io.read()
+
+    # Load the WAV data into Pygame
+    sound = pygame.mixer.Sound(io.BytesIO(audio_data))
+
+    # Get a new channel for playback if use_channel is not specified
+    if use_channel is None:
+        channel = pygame.mixer.find_channel()
+    else:
+        # Use the specified channel for playback
+        channel = pygame.mixer.Channel(use_channel)
+
+    # Play the audio on the selected channel
+    channel.play(sound)
+
+    # Wait for the sound to finish playing (linear playback)
+    while channel.get_busy():
+        time.sleep(0.1)  # You can adjust the sleep time as needed
+
+    # Return the channel used for playback
+    return channel
 
 def playback(image, audio):
     # play both audio and display image with audio blocking till finished
     if image:
         render(image)
     
-    play_audio(audio)
+    play_audio(audio, 22500, 1)
 
 def get_audio_duration(audio_samples):
     audio_segment = AudioSegment.from_file(io.BytesIO(audio_samples), format="wav")
@@ -568,6 +595,8 @@ if __name__ == "__main__":
     logger.info("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
     socket.connect(f"tcp://{args.input_host}:{args.input_port}")
     socket.setsockopt_string(zmq.SUBSCRIBE, "")
+
+    pygame.mixer.init(frequency=32000, size=-16, channels=2)
 
     audio_buffer = queue.Queue()
     music_buffer = queue.Queue()    
