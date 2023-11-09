@@ -206,7 +206,7 @@ def add_text_to_image(image, text):
         wrap_width = 30
         is_wide = False
         if current_ratio > 512/512:
-            wrap_width = 45
+            wrap_width = 50
             is_wide = True
         wrapped_text = textwrap.wrap(text, width=wrap_width, fix_sentence_endings=False, break_long_words=False, break_on_hyphens=False)  # Adjusted width
         y_pos = height - 40  # Adjusted height from bottom
