@@ -250,10 +250,27 @@ def main(args):
     logger.info(f"Bound to ZMQ out at {args.output_host}:{args.output_port}")
     sender.bind(f"tcp://{args.output_host}:{args.output_port}")
 
+    jobs = []
     while True:
         try:
             # Receive a message
-            client_request = receiver.recv_json()
+            client_request = None
+            if len(jobs) == 0:
+                new_job = receiver.recv_json()
+                jobs.append(new_job)
+                while receiver.get(zmq.RCVMORE):
+                    jobs.append(receiver.recv_json())
+
+                # Define a custom sort key function
+                def sort_key(job):
+                    # Give priority to 'Twitch' by returning a tuple with the first element as boolean
+                    return (job['source'] != 'Twitch', job['source'])
+
+                # Sort jobs with Twitch as the priority
+                jobs = sorted(jobs, key=sort_key)
+
+            # get the current client request
+            client_request = jobs.pop(0)
 
             is_episode = "false"
             if args.episode:

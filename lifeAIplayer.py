@@ -317,7 +317,7 @@ class BackgroundMusic(threading.Thread):
             with self.lock:
                 if self.audio_buffer:
                     self.play_audio(self.audio_buffer)
-            pygame.time.Clock().tick(1)  # Limit the while loop to 1 iteration per second
+            #pygame.time.Clock().tick(1)  # Limit the while loop to 1 iteration per second
 
     def play_audio(self, audio_samples):
         audiobuf = io.BytesIO(audio_samples)
@@ -325,7 +325,9 @@ class BackgroundMusic(threading.Thread):
             # Load the audio data into a Sound object
             sound = pygame.mixer.Sound(audiobuf)
             self.channel.set_volume(args.music_volume)  # Set the volume for this channel
-            self.channel.play(sound, loops=-1)  # Play the Sound object on this channel
+            self.channel.play(sound)  # Play the Sound object on this channel
+            while self.channel.get_busy():
+                time.sleep(0.1)
 
     def change_track(self, audio_buffer):
         with self.lock:
@@ -610,7 +612,7 @@ if __name__ == "__main__":
     socket.connect(f"tcp://{args.input_host}:{args.input_port}")
     socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
-    pygame.mixer.init(frequency=32000, size=-16, channels=2)
+    pygame.mixer.init(frequency=32000, size=-16, channels=2, buffer=32768)
 
     audio_buffer = queue.Queue()
     music_buffer = queue.Queue()    

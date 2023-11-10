@@ -31,7 +31,7 @@ def get_audio_duration(audio_samples):
 class BackgroundMusic(threading.Thread):
     def __init__(self):
         super().__init__()
-        pygame.mixer.init(frequency=32000, size=-16, channels=1, buffer=1024)
+        pygame.mixer.init(frequency=32000, size=-16, channels=1, buffer=32768)
         pygame.init()
         self.audio_buffer = None
         self.running = True
@@ -70,17 +70,7 @@ def main():
     while True:
         try:
             header_message = socket.recv_json()
-            """
-             header_message = {
-            "segment_number": segment_number,
-            "mediaid": mediaid,
-            "mediatype": mediatype,
-            "username": username,
-            "source": source,
-            "message": message,
-            "text": "",
-            }      
-            """
+           
             # fill out the variables from the header
             segment_number = header_message["segment_number"]
             mediaid = header_message["mediaid"]
