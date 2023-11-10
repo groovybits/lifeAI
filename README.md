@@ -21,6 +21,8 @@ Diagram:
 - <https://github.com/MycroftAI/mimic3> Mimic3 Text to Speech (optionally in place of Facebook mms-tts-eng).
 - <https://huggingface.co/runwayml/stable-diffusion-v1-5> Text to Image Stable Diffusion 1.5
 - <https://huggingface.co/facebook/musicgen-small> Text to Music Facebook MusicGen Music generation model
+- <https://github.com/mix1009/sdwebuiapi> Stable Diffusion WebUI using a local API in place of huggingface (faster)
+- <https://github.com/AUTOMATIC1111/stable-diffusion-webui> Stable Diffusion WebUI server, use [bin/start_sdwebui.sh](bin/start_sdwebui.sh) to start
 
 ## OpenAI GPT-* API Support!!!
 
@@ -147,7 +149,14 @@ Enter command: [DRY RUN] Would start program: lifeAInewsCast
 
 ```text
 # Run llama.cpp server for localhost API server and llama.cpp LLM handling
-server -m /Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-beta.Q8_0.gguf -t 60 -c 0 --mlock
+server -m /Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-beta.Q8_0.gguf -t 60 -c 0 --mlock -ngl -1
+
+# Prompt Optimization for Music and Images (must run one server per query agent, it is not multi-threaded)
+server -m /Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-beta.Q8_0.gguf -t 60 -c 0 --mlock --port 8081 -ngl -1
+server -m /Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-beta.Q8_0.gguf -t 60 -c 0 --mlock --port 8082 -ngl -1
+
+# Run Stable Diffusion WebUI (need to get it, see link above)
+cd stable-diffusion-webui/ && bin/start_sdwebui.sh
 
 # Test llama.cpp API
 curl --request POST --url http://127.0.0.1:8080/completion  \
@@ -195,10 +204,10 @@ curl --request POST --url http://127.0.0.1:8080/completion  \
 ./zmqTTMlisten.py
 ./zmqTTIlisten.py
 
-# Twitch RTMP direct stream without desktop OBS/capture overhead
+# Twitch RTMP direct stream without desktop OBS/capture overhead (doesn't work yet)
 ./lifeAItwitchServe.py
 
-# YouTube direct stream (TODO)
+# YouTube direct stream (use <https://restream.io> for now)
 
 ##
 ```

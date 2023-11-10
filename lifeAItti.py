@@ -23,6 +23,7 @@ import base64
 from dotenv import load_dotenv
 import os
 import requests
+import webuiapi
 
 load_dotenv()
 
@@ -63,6 +64,41 @@ def generate_getimgai(mediaid, image_model, prompt):
     response = requests.post(url, json=payload, headers=headers)
 
     print(response.image)
+    return response.image
+
+def generate_sd_webui(mediaid, prompt, save_file=False):
+    result = sdui_api.txt2img(prompt=prompt,
+                        negative_prompt="ugly, out of frame",
+                        save_images=False,
+                        width=512,
+                        height=512,
+    #                    seed=1003,
+    #                    styles=["anime"],
+    #                    cfg_scale=7,
+    #                      sampler_index='DDIM',
+    #                      steps=30,
+    #                      enable_hr=True,
+    #                      hr_scale=2,
+    #                      hr_upscaler=webuiapi.HiResUpscaler.Latent,
+    #                      hr_second_pass_steps=20,
+    #                      hr_resize_x=1536,
+    #                      hr_resize_y=1024,
+    #                      denoising_strength=0.4,
+
+            )
+
+    sdui_api.util_wait_for_ready()
+
+    if result.image is not None:
+        if save_file:
+            result.image.save(f"images/{mediaid}.png")
+            logger.info(f"Saved image to images/{mediaid}.png")
+            print(f"Saved image to images/{mediaid}.png")
+    else:
+        logger.error(f"Error generating image: {result.error}")
+        return None
+    
+    return result.image
 
 def generate_openai(mediaid, image_model, prompt, username="lifeai", return_url=False, save_file=False):
     response = openai_client.images.generate(
@@ -187,24 +223,35 @@ def main():
                 image = pipe(prompt_embeds=prompt_embeds, negative_prompt_embeds=negative_prompt_embeds).images[0]
             else:
                 if args.service == "openai":
-                    image = generate_openai(mediaid, args.image_model, optimized_prompt, header_message["username"], args.save_images)
+                    image = generate_openai(mediaid, args.oai_image_model, optimized_prompt, header_message["username"], args.save_images)
+                elif args.service == "sdwebui":
+                    image = generate_sd_webui(mediaid, optimized_prompt, args.save_images)
+                elif args.service == "getimgai":
+                    image = generate_getimgai(mediaid, args.sdwebui_image_model, optimized_prompt)
                 else:
                     image = pipe(clean_text(optimized_prompt)).images[0]
 
-            if args.service != "openai":
-                # Convert PIL Image to bytes
-                img_byte_arr = io.BytesIO()
-                image.save(img_byte_arr, format='PNG')  # Save it as PNG or JPEG depending on your preference
-                image = img_byte_arr.getvalue()
+            if image != None:
+                if args.service != "openai": # and args.service != "sdwebui":
+                    # Convert PIL Image to bytes
+                    img_byte_arr = io.BytesIO()
+                    image.save(img_byte_arr, format='PNG')  # Save it as PNG or JPEG depending on your preference
+                    image = img_byte_arr.getvalue()
+                #elif args.service == "sdwebui":
+                 #   image = image.copy()
 
-            # check if image is more than 75k
-            if args.service != "openai" and len(image) < 75000:
-                logger.error(f"Image is too small, retrying...")
+                # check if image is more than 75k
+                if args.service != "openai" and args.service != "sdwebui" and len(image) < 75000:
+                    logger.error(f"Image is too small, retrying...")
+                    retry = True
+                    continue
+
+                last_image = image
+                last_image_time = time.time()
+            else:
+                logger.error(f"Error generating image, retrying...")
                 retry = True
                 continue
-
-            last_image = image
-            last_image_time = time.time()
 
         header_message["stream"] = "image"
 
@@ -233,14 +280,16 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--model", type=str, default="runwayml/stable-diffusion-v1-5", help="Model ID to use")
     parser.add_argument("--wait_time", type=int, default=0, help="Time in seconds to wait between image generations")
     parser.add_argument("--extend_prompt", action="store_true", help="Extend prompt past 77 token limit.")
-    parser.add_argument("--max_latency", type=int, default=10, help="Max latency for messages before they are throttled / combined")
-    parser.add_argument("--service", type=str, default=None, help="Service to use for image generation: openai, dall-e")
+    parser.add_argument("--max_latency", type=int, default=30, help="Max latency for messages before they are throttled / combined")
+    parser.add_argument("--service", type=str, default="sdwebui", help="Service to use for image generation: huggingface, openai, sdwebui, getimgai")
     parser.add_argument("--save_images", action="store_true", help="Save images to disk")
-    parser.add_argument("--image_model", type=str, default="dall-e-2", help="OpenAI image model to use")
+    parser.add_argument("--oai_image_model", type=str, default="dall-e-2", help="OpenAI image model to use")
+    parser.add_argument("--sdwebui_image_model", type=str, default="realisticVision", help="Local SD WebUI API Image model to use")
     parser.add_argument("--width", type=int, default=512, help="Image width")
     parser.add_argument("--height", type=int, default=512, help="Image height")
     parser.add_argument("--style", type=str, default="vivid", help="Image style for dalle-3, standard or vivid")
     parser.add_argument("--quality", type=str, default="standard", help="Image quality for dalle-3, standard or hd")
+    parser.add_argument("--webui_url", type=str, default="127.0.0.1:7860", help="URL for webui, default 127.0.0.1:7860")
 
     args = parser.parse_args()
 
@@ -269,7 +318,7 @@ if __name__ == "__main__":
 
     ## Disable NSFW filters
     pipe = None
-    if args.service != "openai":
+    if args.service == "huggingface":
         if args.nsfw:
             pipe = StableDiffusionPipeline.from_pretrained(model_id,
                                                             torch_dtype=torch.float16,
@@ -285,6 +334,25 @@ if __name__ == "__main__":
             pipe = pipe.to("cuda")
         else:
             pipe = pipe.to("mps")
+
+    sdui_api = None
+    if args.service == "sdwebui":
+        # create API client with custom host, port
+        host, port = args.webui_url.split(":")
+        sdui_api = webuiapi.WebUIApi(
+            host='127.0.0.1', 
+            port=7860,
+            use_https=False)
+
+        if args.loglevel == "debug":
+            sdui_api.refresh_checkpoints()
+            models = sdui_api.util_get_model_names()
+            print(f"Available models: {models}")
+            current_model = sdui_api.util_get_current_model()
+            print(f"Current model: {current_model} requested model: {args}")
+            logger.info(f"Current model: {current_model} requested model: {args.sdwebui_image_model}")
+
+        sdui_api.util_set_model(args.sdwebui_image_model)
 
     openai_client = None
     if args.service == "openai":
