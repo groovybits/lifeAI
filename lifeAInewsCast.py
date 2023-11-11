@@ -178,7 +178,7 @@ def main():
                         "mediaid": mediaid,
                         "mediatype": "news",
                         "username": username,
-                        "source": "lifeAI",
+                        "source": "MediaStack",
                         "episode": is_episode,
                         "message": f"{args.prompt} {title}",
                         "history": f"Breaking news just in... {title}",

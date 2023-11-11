@@ -229,6 +229,7 @@ class AiTwitchBot(commands.Cog):
                 "username": name,
                 "source": "Twitch",
                 "message": clean_text(prompt),
+                "maxtokens": "100",
                 "aipersonality": "a musician and will compose an amazing piece of music for us.",
                 "ainame": "MusicGen",
             }
@@ -281,6 +282,7 @@ class AiTwitchBot(commands.Cog):
                 "source": "Twitch",
                 "episode": "false",
                 "message": clean_text(prompt),
+                "maxtokens": "100",
                 "aipersonality": "a digital artist and phtographer, you will compose an amazing piece of art or take an amazing photo image for us.",
                 "ainame": "ImageGen",
             }
