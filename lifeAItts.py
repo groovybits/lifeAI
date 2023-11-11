@@ -209,9 +209,9 @@ def main():
                 'en_US/cmu-arctic_low#elb',
                 'en_US/cmu-arctic_low#slt'
             ]
-            speaker_map['Gaibriella'] = {'voice', args.voice, 'gender', 'female'}
-            speaker_map['Giabriella'] = {'voice', args.voice, 'gender', 'female'}
-            speaker_map['Narrator'] = {'voice', args.voice, 'gender', 'female'}
+            speaker_map['Gaibriella'] = {'voice': args.voice, 'gender': 'female'}
+            speaker_map['Giabriella'] = {'voice': args.voice, 'gender': 'female'}
+            speaker_map['Narrator'] = {'voice': args.voice, 'gender': 'female'}
 
         # Guess gender
         gender = last_gender

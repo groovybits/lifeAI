@@ -143,7 +143,7 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
     logger.info(f"LLM generating text for media id {header_message['mediaid']}.")
 
     # Prepare the message to send to the LLM
-    header_message["text"] = f"{header_message['mediatype']} {header_message['username']}: {header_message['message'][:500]}...."
+    header_message["text"] = f"{header_message['mediatype']} message from {header_message['username']}: {header_message['message'][:300]}...."
 
     # Send initial question
     header_message["timestamp"] = int(round(time.time() * 1000))
@@ -329,7 +329,7 @@ def main(args):
 if __name__ == "__main__":
     role_enforcer = ("Give an {A} for the message from {user} listed as a {Q} at the prompt below. "
                      "Stay in the role of {assistant} using the Context if present to help generate the {output}.\n")
-    prompt_template = "<s>[INST]<<SYS>>Personality: As {assistant} {personality}{instructions}%s<</SYS>>\n\n{context}\n{Q}: {question}[/INST]\n{A}:" % role_enforcer
+    prompt_template = "<s>[INST]<<SYS>>Personality: As {assistant} {personality}{instructions}%s<</SYS>>\n\n{context}\n{Q}: {user} asked {question}[/INST]\n{A}:" % role_enforcer
     qprompt = "Question"
     aprompt = "Answer"
     oprompt = "response"
