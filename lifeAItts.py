@@ -83,7 +83,7 @@ def get_tts_audio(service, text, voice=None, noise_scale=None, noise_w=None, len
             'voice': voice or 'en_US/cmu-arctic_low#slt',
             'noiseScale': noise_scale or '0.333',
             'noiseW': noise_w or '0.333',
-            'lengthScale': length_scale or '1',
+            'lengthScale': length_scale or '1.0',
             'ssml': ssml or 'false',
             'audioTarget': audio_target or 'client'
         }
@@ -109,7 +109,7 @@ def get_tts_audio(service, text, voice=None, noise_scale=None, noise_w=None, len
             'model': 'tts-1',
             'input': text,
             'voice': voice or 'nova',
-            'speed': length_scale or '1',
+            'speed': length_scale or '1.0',
             'response_format':'aac'
         }
 
@@ -145,14 +145,25 @@ def get_tts_audio(service, text, voice=None, noise_scale=None, noise_w=None, len
         return audiobuf.getvalue()
 
 def main():
+    last_gender = args.gender
+    last_voice_model = args.voice
+    male_voice_index = 0
+    female_voice_index = 0
     while True:
         header_message = receiver.recv_json()
         segment_number = header_message["segment_number"]
         text = header_message["text"]
+        episode = header_message["episode"]
 
         tts_api = args.service
+
         voice_model = args.voice
-        voice_speed = args.length_scale
+        voice_speed = "1.0"
+        if tts_api == "mimic3":
+            voice_speed = "1.2"
+        else:
+            voice_speed = args.length_scale
+
         if 'voice_model' in header_message:
             voice_data = header_message["voice_model"]
             # "voice_model": "mimic3:en_US/cmu-arctic_low#eey:1.2",
@@ -163,6 +174,48 @@ def main():
             logger.info(f"Text to Speech: Voice Model selected: {voice_model} at speed {voice_speed} using API {tts_api}.")
         else:
             logger.info(f"Text to Speech: Voice Model default, no 'voice_model' in request: {voice_model} at speed {voice_speed} using API {tts_api}.")
+        
+        # check for a [gender] marker consisting of [m], [f], or [n] which we will define a variable gender = either male, female or nonbinary
+        # Identify gender from text
+        gender = args.gender
+        if re.search(r'\[m\]', text):
+            gender = "male"
+        elif re.search(r'\[f\]', text):
+            gender = "female"
+        elif re.search(r'\[n\]', text):
+            gender = "nonbinary"
+        else:
+            gender = last_gender
+        last_gender = gender
+
+        # Find and assign voices to speakers
+        new_voice_model = None
+        speaker_match = re.search(r'^(.*?):', text)
+        if speaker_match:
+            speaker = speaker_match.group(1).strip()
+            if speaker not in speaker_map:
+                if gender in ["male"]:
+                    if male_voice_index >= len(male_voices):
+                        male_voice_index = 0
+                    speaker_map[speaker] = {'voice': male_voices[male_voice_index], 'gender': gender}
+                    male_voice_index = (male_voice_index + 1) % len(male_voices)
+                    new_voice_model = speaker_map[speaker]['voice']
+                else:
+                    if female_voice_index >= len(female_voices):
+                        female_voice_index = 0
+                    speaker_map[speaker] = {'voice': female_voices[female_voice_index], 'gender': gender}
+                    female_voice_index = (female_voice_index + 1) % len(female_voices)
+                    new_voice_model = speaker_map[speaker]['voice']
+            logger.info(f"Text to Speech: Speaker found: {speaker} with voice {speaker_map[speaker]['voice']}.")
+        else:
+            logger.debug(f"Text to Speech: Speaker not found in text {text}.")
+        
+        if new_voice_model:
+            logger.info(f"Text to Speech: Speaker found, switching from {last_voice_model} to voice {new_voice_model}.")
+            last_voice_model = new_voice_model
+        else:
+            logger.info(f"Text to Speech: Speaker not found, using default voice {voice_model}.")
+            last_voice_model = voice_model
         
         # clean text of end of line spaces after punctuation
         text = clean_text(text)
@@ -182,7 +235,7 @@ def main():
             audio_blob = get_tts_audio(
                 tts_api,
                 text,
-                voice=voice_model,
+                voice=last_voice_model,
                 noise_scale=args.noise_scale,
                 noise_w=args.noise_w,
                 length_scale=voice_speed,
@@ -228,7 +281,7 @@ if __name__ == "__main__":
     parser.add_argument("--voice", type=str, default='en_US/cmu-arctic_low#eey', help="Voice parameter for TTS API")
     parser.add_argument("--noise_scale", type=str, default='0.6', help="Noise scale parameter for TTS API")
     parser.add_argument("--noise_w", type=str, default='0.6', help="Noise weight parameter for TTS API")
-    parser.add_argument("--length_scale", type=str, default='1.2', help="Length scale parameter for TTS API")
+    parser.add_argument("--length_scale", type=str, default='1.0', help="Length scale parameter for TTS API")
     parser.add_argument("--ssml", type=str, default='false', help="SSML parameter for TTS API")
     parser.add_argument("--audio_target", type=str, default='client', help="Audio target parameter for TTS API")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
@@ -243,6 +296,7 @@ if __name__ == "__main__":
     parser.add_argument("--service", type=str, default="mimic3", help="TTS service to use. mms-tts, mimic3, openai")
     parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
     parser.add_argument("--cuda", action="store_true", default=False, help="offload to cuda GPU")
+    parser.add_argument("--gender", type=str, default="female", help="Gender default for characters without [m], [f], or [n] markers")
 
     args = parser.parse_args()
 
@@ -291,5 +345,40 @@ if __name__ == "__main__":
             model.to("cuda")
         else:
             model.to("cpu")
+
+
+    # voice, gender
+    speaker_map = {}
+    male_voices = []
+    female_voices = []
+
+    if args.service == "openai":
+        if args.length_scale == "1.2":
+            args.length_scale = "0.8"
+        male_voices = ['alloy', 'echo', 'fabel', 'oynx']
+        female_voices = ['nova', 'shimmer']
+        speaker_map['gabriella'] = {'voice': 'nova', 'gender': 'female'}
+    elif args.service == "mimic3":
+        male_voices = [
+            'en_US/cmu-arctic_low#rms',
+            'en_US/cmu-arctic_low#ksp',
+            'en_US/cmu-arctic_low#aew',
+            'en_US/cmu-arctic_low#bdl',
+            'en_US/cmu-arctic_low#jmk',
+            'en_US/cmu-arctic_low#fem',
+            'en_US/cmu-arctic_low#ahw',
+            'en_US/cmu-arctic_low#aup',
+            'en_US/cmu-arctic_low#gke'
+        ]
+        female_voices = [
+            'en_US/cmu-arctic_low#ljm',
+            'en_US/cmu-arctic_low#slp',
+            'en_US/cmu-arctic_low#axp',
+            'en_US/cmu-arctic_low#eey',
+            'en_US/cmu-arctic_low#lnh',
+            'en_US/cmu-arctic_low#elb',
+            'en_US/cmu-arctic_low#slt'
+        ]
+        speaker_map['gabriella'] = {'voice', args.voice, 'gender', 'female'}
 
     main()

@@ -180,7 +180,7 @@ class AiTwitchBot(commands.Cog):
                 "ainame": ainame,
                 "history": history,
                 "maxtokens": "200",
-                "voice_model": "openai:nova:1.0",
+                "voice_model": "openai:nova:0.8",
             }
             socket.send_json(client_request)
 
