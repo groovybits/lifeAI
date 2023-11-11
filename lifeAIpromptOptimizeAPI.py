@@ -23,23 +23,23 @@ def clean_text(text):
     text = re.sub(r'http[s]?://\S+', '', text)
     
     # Remove image tags or Markdown image syntax
-    text = re.sub(r'\!\[.*?\]\(.*?\)', '', text)
-    text = re.sub(r'<img.*?>', '', text)
+    #text = re.sub(r'\!\[.*?\]\(.*?\)', '', text)
+    #text = re.sub(r'<img.*?>', '', text)
     
     # Remove HTML tags
-    text = re.sub(r'<.*?>', '', text)
+    #text = re.sub(r'<.*?>', '', text)
     
     # Remove any inline code blocks
-    text = re.sub(r'`.*?`', '', text)
+    #text = re.sub(r'`.*?`', '', text)
     
     # Remove any block code segments
-    text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
+    #text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
     
     # Remove special characters and digits (optional, be cautious)
-    text = re.sub(r'[^a-zA-Z0-9\s.?,!\n]', '', text)
+    #text = re.sub(r'[^a-zA-Z0-9\s.?,!\n]', '', text)
     
     # Remove extra whitespace
-    text = ' '.join(text.split())
+    #text = ' '.join(text.split())
     return text
 
 def get_api_response(api_url, completion_params):
@@ -61,9 +61,9 @@ def run_llm(prompt, api_url, args):
     try:
         prompt = clean_text(prompt)
         completion_params = {
-            'prompt': prompt[:args.context - len(prompt)],
+            'prompt': prompt,
             'temperature': args.temperature,
-            'stop': args.stoptokens.split(','),
+            #'stop': args.stoptokens.split(','),
             'max_tokens': args.maxtokens,
             'stream': False,
         }
@@ -135,7 +135,7 @@ def main():
             continue
 
         if "message" in header_message:
-            message = header_message["message"][:80]
+            message = header_message["message"]
 
         mediaid = header_message["mediaid"]
         timestamp = header_message["timestamp"]
@@ -170,7 +170,7 @@ def main():
                 text = " ".join(current_text_array)
                 current_text_array = []
 
-        full_prompt = f"Request: {prompt}\n\n{args.qprompt}: {message[:120]} - {text[:300]}\n{args.aprompt}:"
+        full_prompt = f"<s>[INST]<<SYS>>Request: {prompt}<</SYS>>\n\n{args.qprompt}: {message} - {text[:args.maxtokens*3]}[/INST]\n{args.aprompt}:"
 
         optimized_prompt = ""
         try:
@@ -208,9 +208,9 @@ if __name__ == "__main__":
     parser.add_argument("--output_port", type=int, default=3001)
     parser.add_argument("--topic", type=str, default="picture", 
                         help="Topic to use for image generation, default 'image generation'")
-    parser.add_argument("--maxtokens", type=int, default=77)
+    parser.add_argument("--maxtokens", type=int, default=120)
     parser.add_argument("--context", type=int, default=4096)
-    parser.add_argument("--temperature", type=float, default=0.8)
+    parser.add_argument("--temperature", type=float, default=0.3)
     parser.add_argument("-d", "--debug", action="store_true", default=False)
     parser.add_argument("--qprompt", type=str, default="Text", 
                         help="Prompt to use for image generation, default Text")

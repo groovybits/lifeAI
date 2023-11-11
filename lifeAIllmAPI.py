@@ -48,26 +48,26 @@ def get_subtitle_groups(text, sentence_count):
 
 def clean_text(text):
     # Remove URLs
-    text = re.sub(r'http[s]?://\S+', '', text)
+    #text = re.sub(r'http[s]?://\S+', '', text)
     
     # Remove image tags or Markdown image syntax
-    text = re.sub(r'\!\[.*?\]\(.*?\)', '', text)
-    text = re.sub(r'<img.*?>', '', text)
+    #text = re.sub(r'\!\[.*?\]\(.*?\)', '', text)
+    #text = re.sub(r'<img.*?>', '', text)
     
     # Remove HTML tags
-    text = re.sub(r'<.*?>', '', text)
+    #text = re.sub(r'<.*?>', '', text)
     
     # Remove any inline code blocks
-    text = re.sub(r'`.*?`', '', text)
+    #text = re.sub(r'`.*?`', '', text)
     
     # Remove any block code segments
-    text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
+    #text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
     
     # Remove special characters and digits (optional, be cautious)
-    text = re.sub(r'[^a-zA-Z0-9\s.?,!\n:\'\"\-\t]', '', text)
+    #text = re.sub(r'[^a-zA-Z0-9\s.?,!\n:\'\"\-\t]<>', '', text)
     
     # Remove extra whitespace
-    text = ' '.join(text.split())
+    #text = ' '.join(text.split())
 
     return text
 
@@ -329,7 +329,7 @@ def main(args):
 if __name__ == "__main__":
     role_enforcer = ("Give an {A} for the message from {user} listed as a {Q} at the prompt below. "
                      "Stay in the role of {assistant} using the Context if present to help generate the {output}.\n")
-    prompt_template = "Personality: As {assistant} {personality}{instructions}%s\n\n{context}{Q}: {question}\n{A}:" % role_enforcer
+    prompt_template = "<s>[INST]<<SYS>>Personality: As {assistant} {personality}{instructions}%s<</SYS>>\n\n{context}\n{Q}: {question}[/INST]\n{A}:" % role_enforcer
     qprompt = "Question"
     aprompt = "Answer"
     oprompt = "response"
