@@ -156,9 +156,15 @@ def main():
         text = header_message["text"]
         episode = header_message["episode"]
 
+        # voice, gender
+        speaker_map = {}
+        male_voices = []
+        female_voices = []
+
         tts_api = args.service
 
-        voice_model = args.voice
+        ## set the defaults
+        voice_model = last_voice_model
         voice_speed = "1.0"
         if tts_api == "mimic3":
             voice_speed = "1.2"
@@ -176,8 +182,39 @@ def main():
         else:
             logger.info(f"Text to Speech: Voice Model default, no 'voice_model' in request: {voice_model} at speed {voice_speed} using API {tts_api}.")
 
+        if tts_api == "openai":
+            if args.length_scale == "1.2":
+                args.length_scale = "0.8"
+            male_voices = ['alloy', 'echo', 'fabel', 'oynx']
+            female_voices = ['nova', 'shimmer']
+            speaker_map['gabriella'] = {'voice': 'nova', 'gender': 'female'}
+        elif tts_api == "mimic3":
+            male_voices = [
+                'en_US/cmu-arctic_low#rms',
+                'en_US/cmu-arctic_low#ksp',
+                'en_US/cmu-arctic_low#aew',
+                'en_US/cmu-arctic_low#bdl',
+                'en_US/cmu-arctic_low#jmk',
+                'en_US/cmu-arctic_low#fem',
+                'en_US/cmu-arctic_low#ahw',
+                'en_US/cmu-arctic_low#aup',
+                'en_US/cmu-arctic_low#gke'
+            ]
+            female_voices = [
+                'en_US/cmu-arctic_low#ljm',
+                'en_US/cmu-arctic_low#slp',
+                'en_US/cmu-arctic_low#axp',
+                'en_US/cmu-arctic_low#eey',
+                'en_US/cmu-arctic_low#lnh',
+                'en_US/cmu-arctic_low#elb',
+                'en_US/cmu-arctic_low#slt'
+            ]
+            speaker_map['Gaibriella'] = {'voice', args.voice, 'gender', 'female'}
+            speaker_map['Giabriella'] = {'voice', args.voice, 'gender', 'female'}
+            speaker_map['Narrator'] = {'voice', args.voice, 'gender', 'female'}
+
         # Guess gender
-        gender = args.gender
+        gender = last_gender
 
         # Find and assign voices to speakers
         new_voice_model = None
@@ -200,7 +237,7 @@ def main():
                     elif guessed_gender in ['female', 'mostly_female']:
                         gender = "female"
                     else:
-                        gender = "unknown"
+                        gender = "nonbinary"
 
                         # Identify gender from text
                         if re.search(r'\[m\]', text):
@@ -369,40 +406,6 @@ if __name__ == "__main__":
         else:
             model.to("cpu")
 
-
-    # voice, gender
-    speaker_map = {}
-    male_voices = []
-    female_voices = []
-
-    if args.service == "openai":
-        if args.length_scale == "1.2":
-            args.length_scale = "0.8"
-        male_voices = ['alloy', 'echo', 'fabel', 'oynx']
-        female_voices = ['nova', 'shimmer']
-        speaker_map['gabriella'] = {'voice': 'nova', 'gender': 'female'}
-    elif args.service == "mimic3":
-        male_voices = [
-            'en_US/cmu-arctic_low#rms',
-            'en_US/cmu-arctic_low#ksp',
-            'en_US/cmu-arctic_low#aew',
-            'en_US/cmu-arctic_low#bdl',
-            'en_US/cmu-arctic_low#jmk',
-            'en_US/cmu-arctic_low#fem',
-            'en_US/cmu-arctic_low#ahw',
-            'en_US/cmu-arctic_low#aup',
-            'en_US/cmu-arctic_low#gke'
-        ]
-        female_voices = [
-            'en_US/cmu-arctic_low#ljm',
-            'en_US/cmu-arctic_low#slp',
-            'en_US/cmu-arctic_low#axp',
-            'en_US/cmu-arctic_low#eey',
-            'en_US/cmu-arctic_low#lnh',
-            'en_US/cmu-arctic_low#elb',
-            'en_US/cmu-arctic_low#slt'
-        ]
-        speaker_map['gabriella'] = {'voice', args.voice, 'gender', 'female'}
 
     d = gender.Detector(case_sensitive=False)
 
