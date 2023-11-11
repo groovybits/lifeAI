@@ -215,7 +215,7 @@ def create_prompt(header_message, args):
         qprompt_l = "Plotline"
         aprompt_l = "Episode"
         oprompt_l = "episode"
-        iprompt_l = "Output as a TV episode full length character speaker parts with name[gender]: lines and a plotline it follows and a surprise ending. use [m], [f], and [n] as gender markers for speakers intended genders."
+        iprompt_l = "Output as a TV episode full length character speaker parts with name[gender]: lines and a plotline it follows and a surprise ending. use [m], [f], and [n] as gender markers for speakers intended genders included initially on output as an index of characters, do not use spaces in character names. Try to keep speakers separate in paragraphs from one another for speaking parts. Use Narrator or Description for all other text."
 
     args.stoptokens = f"{qprompt_l}:,Context:,Personality:,Question:"
 

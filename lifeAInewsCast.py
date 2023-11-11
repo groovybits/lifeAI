@@ -184,7 +184,7 @@ def main():
                         "history": f"Breaking news just in... {title}",
                         "aipersonality": f"{args.aipersonality}",
                         "ainame": args.ainame,
-                        "maxtokens": 800,
+                        "maxtokens": args.maxtokens,
                         "voice_model": "mimic3:en_US/cmu-arctic_low#eey:1.2",
                     }
                     socket.send_json(client_request)

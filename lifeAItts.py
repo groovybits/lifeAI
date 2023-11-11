@@ -25,6 +25,7 @@ import torch
 from transformers import VitsModel, AutoTokenizer
 from transformers import logging as trlogging
 from pydub import AudioSegment
+import gender_guesser.detector as gender
 
 trlogging.set_verbosity_error()
 
@@ -174,42 +175,64 @@ def main():
             logger.info(f"Text to Speech: Voice Model selected: {voice_model} at speed {voice_speed} using API {tts_api}.")
         else:
             logger.info(f"Text to Speech: Voice Model default, no 'voice_model' in request: {voice_model} at speed {voice_speed} using API {tts_api}.")
-        
-        # check for a [gender] marker consisting of [m], [f], or [n] which we will define a variable gender = either male, female or nonbinary
-        # Identify gender from text
+
+        # Guess gender
         gender = args.gender
-        if re.search(r'\[m\]', text):
-            gender = "male"
-        elif re.search(r'\[f\]', text):
-            gender = "female"
-        elif re.search(r'\[n\]', text):
-            gender = "nonbinary"
-        else:
-            gender = last_gender
-        last_gender = gender
 
         # Find and assign voices to speakers
         new_voice_model = None
-        speaker_match = re.search(r'^(.*?):', text)
-        if speaker_match:
-            speaker = speaker_match.group(1).strip()
-            if speaker not in speaker_map:
-                if gender in ["male"]:
-                    if male_voice_index >= len(male_voices):
-                        male_voice_index = 0
-                    speaker_map[speaker] = {'voice': male_voices[male_voice_index], 'gender': gender}
-                    male_voice_index = (male_voice_index + 1) % len(male_voices)
-                    new_voice_model = speaker_map[speaker]['voice']
+
+        # Regex pattern to find speaker names with different markers
+        speaker_pattern = r'^(?:\[/INST\])?<<([A-Za-z]+)>>|^(?:\[\w+\])?([A-Za-z]+):'
+
+        for line in text.split('\n'):
+            speaker_match = re.search(speaker_pattern, line)
+            if speaker_match:
+                # Extracting speaker name from either of the capturing groups
+                speaker = speaker_match.group(1) or speaker_match.group(2)
+                speaker = speaker.strip()
+
+                if speaker not in speaker_map:
+                    guessed_gender = d.get_gender(speaker.split()[0])  # assuming the first word is the name
+                    
+                    if guessed_gender in ['male', 'mostly_male']:
+                        gender = "male"
+                    elif guessed_gender in ['female', 'mostly_female']:
+                        gender = "female"
+                    else:
+                        gender = "unknown"
+
+                        # Identify gender from text
+                        if re.search(r'\[m\]', text):
+                            gender = "male"
+                        elif re.search(r'\[f\]', text):
+                            gender = "female"
+                        elif re.search(r'\[n\]', text):
+                            gender = "nonbinary"
+                        else:
+                            gender = last_gender
+
+                    last_gender = gender
+
+                    if gender == "male":
+                        voice_choice = male_voices[male_voice_index % len(male_voices)]
+                        male_voice_index += 1
+                    else:  # Female and nonbinary use female voices
+                        voice_choice = female_voices[female_voice_index % len(female_voices)]
+                        female_voice_index += 1
+
+                    speaker_map[speaker] = {'voice': voice_choice, 'gender': gender}
+                    new_voice_model = voice_choice
                 else:
-                    if female_voice_index >= len(female_voices):
-                        female_voice_index = 0
-                    speaker_map[speaker] = {'voice': female_voices[female_voice_index], 'gender': gender}
-                    female_voice_index = (female_voice_index + 1) % len(female_voices)
                     new_voice_model = speaker_map[speaker]['voice']
-            logger.info(f"Text to Speech: Speaker found: {speaker} with voice {speaker_map[speaker]['voice']}.")
+                    gender = speaker_map[speaker]['gender']
+                    last_gender = gender
+
+                logger.info(f"Text to Speech: Speaker found: {speaker} with voice {speaker_map[speaker]['voice']}.")
+                break  # If you want to process one speaker at a time, otherwise remove this line
         else:
             logger.debug(f"Text to Speech: Speaker not found in text {text}.")
-        
+
         if new_voice_model:
             logger.info(f"Text to Speech: Speaker found, switching from {last_voice_model} to voice {new_voice_model}.")
             last_voice_model = new_voice_model
@@ -380,5 +403,7 @@ if __name__ == "__main__":
             'en_US/cmu-arctic_low#slt'
         ]
         speaker_map['gabriella'] = {'voice', args.voice, 'gender', 'female'}
+
+    d = gender.Detector(case_sensitive=False)
 
     main()
