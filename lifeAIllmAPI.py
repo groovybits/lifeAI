@@ -167,13 +167,13 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
         completion_params = {
             'prompt': header_message["llm_prompt"],
             'temperature': args.temperature,
-            'stop': args.stoptokens.split(','),
+            #'stop': args.stoptokens.split(','),
             'max_tokens': header_message["maxtokens"],
             'stream': True,
         }
 
-        if args.maxtokens:
-            completion_params['n_predict'] = args.maxtokens
+        if header_message["maxtokens"] > 0:
+            completion_params['n_predict'] = header_message["maxtokens"]
         
         # Start a new thread to stream the API response and send it back to the client
         header_message = stream_api_response(header_message.copy(), 
@@ -215,7 +215,7 @@ def create_prompt(header_message, args):
         qprompt_l = "Plotline"
         aprompt_l = "Episode"
         oprompt_l = "episode"
-        iprompt_l = "Format the output like a TV episode script using markdown."
+        iprompt_l = "Output as a TV episode full length character speaker parts with name: lines and a plotline it follows and a surprise ending."
 
     args.stoptokens = f"{qprompt_l}:,Context:,Personality:,Question:"
 
@@ -228,6 +228,8 @@ def create_prompt(header_message, args):
                                           output = oprompt_l,
                                           Q = qprompt_l,
                                           A = aprompt_l)
+    
+    logger.info(f"LLM: prompt: - {prompt}")
     
     return prompt
 

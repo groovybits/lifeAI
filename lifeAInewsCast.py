@@ -168,6 +168,10 @@ def main():
                     logger.info(f"Sending message {message}")
                     logger.debug(f"Sending story {story} by {username} - {description}")
 
+                    is_episode = "false"
+                    if args.episode:
+                        is_episode = "true"
+
                     # Send the message
                     client_request = {
                         "segment_number": 0,
@@ -175,7 +179,7 @@ def main():
                         "mediatype": "news",
                         "username": username,
                         "source": "lifeAI",
-                        "episode": "false",
+                        "episode": is_episode,
                         "message": f"{args.prompt} {title}",
                         "history": f"Breaking news just in... {title}",
                         "aipersonality": f"{args.aipersonality}",
@@ -195,7 +199,7 @@ if __name__ == "__main__":
     default_personality = "You are Life AI's Groovy AI Bot GAIB. You are acting as a news reporter getting stories and analyzing them and presenting various thoughts and relations of them with a joyful compassionate wise perspective. Make the news fun and silly, joke and make comedy out of the world. Speak in a conversational tone referencing yourself and the person who asked the question if given.  Maintain your role without revealing that you're an AI Language model or your inability to access real-time information. Do not mention the text or sources used, treat the contextas something you are using as internal thought to generate responses as your role."
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--interval", type=int, default=90, required=False, help="interval to send messages in seconds, default is 90")
+    parser.add_argument("--interval", type=int, default=120, required=False, help="interval to send messages in seconds, default is 90")
     parser.add_argument("--output_port", type=int, default=8000, required=False, help="Port to send message to")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Host for sending message to.")
     parser.add_argument("--username", type=str, required=False, default="NewsAnchor", help="Username of sender")
@@ -206,6 +210,8 @@ if __name__ == "__main__":
     parser.add_argument("--aipersonality", type=str, required=False, default=f"{default_personality}", help="AI personality")
     parser.add_argument("--ainame", type=str, required=False, default="GAIB", help="AI name")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
+    parser.add_argument("-e", "--episode", action="store_true", default=False, help="Episode mode, Output a TV Episode format script.")
+    parser.add_argument("-mt", "--maxtokens", type=int, default=2000, help="Max tokens per message")
 
     args = parser.parse_args()
 
