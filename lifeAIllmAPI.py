@@ -172,8 +172,8 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
             'stream': True,
         }
 
-        if header_message["maxtokens"] > 0:
-            completion_params['n_predict'] = header_message["maxtokens"]
+        if int(header_message["maxtokens"]) > 0:
+            completion_params['n_predict'] = int(header_message["maxtokens"])
         
         # Start a new thread to stream the API response and send it back to the client
         header_message = stream_api_response(header_message.copy(), 

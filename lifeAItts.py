@@ -94,41 +94,6 @@ def get_tts_audio(service, text, voice=None, noise_scale=None, noise_w=None, len
         response.raise_for_status()
         return response.content
     elif service == "openai":
-        """
-        curl https://api.openai.com/v1/audio/speech \
-            -H "Authorization: Bearer $OPENAI_API_KEY" \
-            -H "Content-Type: application/json" \
-            -d "{
-                \"model\": \"tts-1\",
-                \"input\": \"AI is amazing and Anime is good. It is a miracle that GPT-4 is so good.\",
-                \"voice\": \"$v\",
-                \"response_format\": \"aac\",
-                \"speed\": \"1.0\"
-            }" \
-                --output speech_$v.aac
-        """
-        """
-        response = openai_client.audio.speech.create(
-            model="tts-1",
-            voice="alloy",
-            input="Today is a wonderful day to build something people love!"
-        )
-        """
-        """
-        params = {
-            'model': 'tts-1',
-            'input': text,
-            'voice': voice or 'nova',
-            'speed': length_scale or '1.0',
-            'response_format':'aac'
-        }
-
-        headers = {
-            "accept": "application/json",
-            "content-type": "application/json",
-            "authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"
-        }
-        """
         response = openai_client.audio.speech.create(
             model='tts-1',
             voice= voice or 'nova',
@@ -137,8 +102,6 @@ def get_tts_audio(service, text, voice=None, noise_scale=None, noise_w=None, len
             response_format='aac'
         )
 
-        #response = requests.post('https://api.openai.com/v1/audio/speech', headers=headers, json=params)
-        response.raise_for_status()
         return response.content
     elif service == "mms-tts":
         inputs = tokenizer(text, return_tensors="pt")
@@ -157,8 +120,6 @@ def get_tts_audio(service, text, voice=None, noise_scale=None, noise_w=None, len
         audiobuf = io.BytesIO()
         sf.write(audiobuf, waveform_np, model.config.sampling_rate, format='WAV')
         audiobuf.seek(0)
-
-        #duration = len(waveform_np) / model.config.sampling_rate
         
         return audiobuf.getvalue()
 
@@ -169,6 +130,8 @@ def main():
     female_voice_index = 0
     speaker_map = {}
     last_speaker = None
+    voice_service = args.service
+    service_switch = False
     while True:
         header_message = receiver.recv_json()
         segment_number = header_message["segment_number"]
@@ -180,10 +143,11 @@ def main():
         female_voices = []
 
         tts_api = args.service
+        service_switch = False
 
         ## set the defaults
-        voice_model = last_voice_model
         voice_speed = "1.0"
+        voice_model = None
         if tts_api == "mimic3":
             voice_speed = "1.2"
         else:
@@ -206,6 +170,12 @@ def main():
             male_voices = ['alloy', 'echo', 'fabel', 'oynx']
             female_voices = ['nova', 'shimmer']
             speaker_map['gabriella'] = {'voice': 'nova', 'gender': 'female'}
+            default_voice = 'nova'
+            if voice_service != "openai":
+                voice_service = "openai"
+                voice_model = default_voice
+                service_switch = True
+                last_voice_model = default_voice
         elif tts_api == "mimic3":
             male_voices = [
                 'en_US/cmu-arctic_low#rms',
@@ -227,12 +197,24 @@ def main():
                 'en_US/cmu-arctic_low#elb',
                 'en_US/cmu-arctic_low#slt'
             ]
+            default_voice = 'en_US/cmu-arctic_low#eey'
+            if voice_service != "mimic3":
+                voice_service = "mimic3"
+                voice_model = default_voice
+                service_switch = True
+                last_voice_model = default_voice
 
         # Guess gender
         gender = last_gender
 
         # Find and assign voices to speakers
         new_voice_model = None
+
+        if voice_model == None:
+            if service_switch:
+                voice_model = default_voice
+            else:
+                voice_model = last_voice_model
 
         # Regex pattern to find speaker names with different markers
         speaker_pattern = r'^(?:\[/INST\])?<<([A-Za-z]+)>>|^(?:\[\w+\])?([A-Za-z]+):'
@@ -267,9 +249,13 @@ def main():
                     last_gender = gender
 
                     if gender == "male":
+                        if male_voice_index > len(male_voices):
+                            male_voice_index = 0
                         voice_choice = male_voices[male_voice_index % len(male_voices)]
                         male_voice_index += 1
                     else:  # Female and nonbinary use female voices
+                        if female_voice_index > len(female_voices):
+                            female_voice_index = 0
                         voice_choice = female_voices[female_voice_index % len(female_voices)]
                         female_voice_index += 1
 
@@ -279,6 +265,15 @@ def main():
                 else:
                     new_voice_model = speaker_map[speaker]['voice']
                     gender = speaker_map[speaker]['gender']
+                    if new_voice_model not in female_voices and new_voice_model not in male_voices:
+                        if gender == "male":
+                            if male_voice_index > len(male_voices):
+                                male_voice_index = 0
+                            new_voice_model = male_voices[male_voice_index]
+                        else:
+                            if female_voice_index > len(female_voices):
+                                female_voice_index = 0
+                            new_voice_model = female_voices[female_voice_index]
                     last_gender = gender
                     last_speaker = speaker  # Update the last speaker
 
@@ -298,6 +293,7 @@ def main():
         if new_voice_model:
             logger.info(f"Text to Speech: Speaker found, switching from {last_voice_model} to voice {new_voice_model}.")
             last_voice_model = new_voice_model
+            voice_model = new_voice_model
         else:
             logger.info(f"Text to Speech: Speaker not found, using default voice {voice_model}.")
             last_voice_model = voice_model
