@@ -26,6 +26,7 @@ from transformers import VitsModel, AutoTokenizer
 from transformers import logging as trlogging
 from pydub import AudioSegment
 import gender_guesser.detector as gender
+from openai import OpenAI
 
 trlogging.set_verbosity_error()
 
@@ -106,6 +107,14 @@ def get_tts_audio(service, text, voice=None, noise_scale=None, noise_w=None, len
             }" \
                 --output speech_$v.aac
         """
+        """
+        response = openai_client.audio.speech.create(
+            model="tts-1",
+            voice="alloy",
+            input="Today is a wonderful day to build something people love!"
+        )
+        """
+        """
         params = {
             'model': 'tts-1',
             'input': text,
@@ -119,8 +128,16 @@ def get_tts_audio(service, text, voice=None, noise_scale=None, noise_w=None, len
             "content-type": "application/json",
             "authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"
         }
+        """
+        response = openai_client.audio.speech.create(
+            model='tts-1',
+            voice= voice or 'nova',
+            input=text,
+            speed=length_scale or '1.0',
+            response_format='aac'
+        )
 
-        response = requests.post('https://api.openai.com/v1/audio/speech', headers=headers, json=params)
+        #response = requests.post('https://api.openai.com/v1/audio/speech', headers=headers, json=params)
         response.raise_for_status()
         return response.content
     elif service == "mms-tts":
@@ -150,6 +167,8 @@ def main():
     last_voice_model = args.voice
     male_voice_index = 0
     female_voice_index = 0
+    speaker_map = {}
+    last_speaker = None
     while True:
         header_message = receiver.recv_json()
         segment_number = header_message["segment_number"]
@@ -157,7 +176,6 @@ def main():
         episode = header_message["episode"]
 
         # voice, gender
-        speaker_map = {}
         male_voices = []
         female_voices = []
 
@@ -209,9 +227,6 @@ def main():
                 'en_US/cmu-arctic_low#elb',
                 'en_US/cmu-arctic_low#slt'
             ]
-            speaker_map['Gaibriella'] = {'voice': args.voice, 'gender': 'female'}
-            speaker_map['Giabriella'] = {'voice': args.voice, 'gender': 'female'}
-            speaker_map['Narrator'] = {'voice': args.voice, 'gender': 'female'}
 
         # Guess gender
         gender = last_gender
@@ -239,15 +254,15 @@ def main():
                     else:
                         gender = "nonbinary"
 
-                        # Identify gender from text
-                        if re.search(r'\[m\]', text):
-                            gender = "male"
-                        elif re.search(r'\[f\]', text):
-                            gender = "female"
-                        elif re.search(r'\[n\]', text):
-                            gender = "nonbinary"
-                        else:
-                            gender = last_gender
+                    # Identify gender from text if not determined by name
+                    if re.search(r'\[m\]', text):
+                        gender = "male"
+                    elif re.search(r'\[f\]', text):
+                        gender = "female"
+                    elif re.search(r'\[n\]', text):
+                        gender = "nonbinary"
+                    else:
+                        gender = last_gender
 
                     last_gender = gender
 
@@ -260,16 +275,26 @@ def main():
 
                     speaker_map[speaker] = {'voice': voice_choice, 'gender': gender}
                     new_voice_model = voice_choice
+                    last_speaker = speaker  # Update the last speaker
                 else:
                     new_voice_model = speaker_map[speaker]['voice']
                     gender = speaker_map[speaker]['gender']
                     last_gender = gender
+                    last_speaker = speaker  # Update the last speaker
 
                 logger.info(f"Text to Speech: Speaker found: {speaker} with voice {speaker_map[speaker]['voice']}.")
                 break  # If you want to process one speaker at a time, otherwise remove this line
-        else:
-            logger.debug(f"Text to Speech: Speaker not found in text {text}.")
+            else:
+                # No new speaker found, use last speaker and gender if available
+                if last_speaker:
+                    speaker = last_speaker
+                    gender = last_gender
+                    new_voice_model = speaker_map[speaker]['voice'] if speaker in speaker_map else last_voice_model
+                    logger.info(f"Text to Speech: Continuing with last speaker: {speaker} and voice {new_voice_model}.")
+                else:
+                    logger.debug("Text to Speech: No speaker found, and no last speaker to default to.")
 
+        # Outside of the for loop
         if new_voice_model:
             logger.info(f"Text to Speech: Speaker found, switching from {last_voice_model} to voice {new_voice_model}.")
             last_voice_model = new_voice_model
@@ -406,6 +431,7 @@ if __name__ == "__main__":
         else:
             model.to("cpu")
 
+    openai_client = OpenAI()
 
     d = gender.Detector(case_sensitive=False)
 
