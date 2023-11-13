@@ -31,7 +31,7 @@ def get_audio_duration(audio_samples):
 class BackgroundMusic(threading.Thread):
     def __init__(self):
         super().__init__()
-        pygame.mixer.init(frequency=32000, size=-16, channels=1, buffer=32768)
+        pygame.mixer.init(frequency=32000, size=-16, channels=1, buffer=1024)
         pygame.init()
         self.audio_buffer = None
         self.running = True
@@ -42,7 +42,7 @@ class BackgroundMusic(threading.Thread):
             with self.lock:
                 if self.audio_buffer:
                     self.play_audio(self.audio_buffer)
-                    self.audio_buffer = None  # Reset audio_buffer to prevent replaying the same buffer
+                    #self.audio_buffer = None  # Reset audio_buffer to prevent replaying the same buffer
             pygame.time.Clock().tick(1)  # Limit the while loop to 1 iteration per second
 
     def play_audio(self, audio_samples):
@@ -50,7 +50,9 @@ class BackgroundMusic(threading.Thread):
         if audiobuf:
             pygame.mixer.music.load(audiobuf)
             pygame.mixer.music.set_volume(args.volume)  # Set the volume
-            pygame.mixer.music.play(-1)  # -1 instructs Pygame to loop the audio indefinitely
+            pygame.mixer.music.play()  # -1 instructs Pygame to loop the audio indefinitely
+            while pygame.mixer.music.get_busy():
+                pygame.time.Clock().tick(1)
 
     def change_track(self, audio_buffer):
         with self.lock:

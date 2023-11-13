@@ -185,7 +185,7 @@ def main():
                         "aipersonality": f"{args.aipersonality}",
                         "ainame": args.ainame,
                         "maxtokens": args.maxtokens,
-                        "voice_model": "mimic3:en_US/cmu-arctic_low#eey:1.2",
+                        "voice_model": args.voice,
                     }
                     socket.send_json(client_request)
                 else:
@@ -212,6 +212,7 @@ if __name__ == "__main__":
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("-e", "--episode", action="store_true", default=False, help="Episode mode, Output a TV Episode format script.")
     parser.add_argument("-mt", "--maxtokens", type=int, default=2000, help="Max tokens per message")
+    parser.add_argument("-v", "--voice", type=str, default="mimic3:en_US/hifi-tts_low#92:1.5", help="Voice model to use as default.")
 
     args = parser.parse_args()
 

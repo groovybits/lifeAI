@@ -343,7 +343,7 @@ class BackgroundMusic(threading.Thread):
         # Stop playback on this specific channel
         self.channel.stop()
 
-def play_audio(audio_data, target_sample_rate=32000, use_channel=None):
+def play_audio(audio_data, target_sample_rate=22050, use_channel=None):
     # Detect the mime type of the audio data
     mime_type = magic.from_buffer(audio_data, mime=True)
 
@@ -393,7 +393,7 @@ def playback(image, audio):
     if image:
         render(image)
     
-    play_audio(audio, 32000, 1)
+    play_audio(audio, 22050, 1)
 
 def get_audio_duration(audio_samples):
     audio_segment = AudioSegment.from_file(io.BytesIO(audio_samples), format="wav")
@@ -612,7 +612,7 @@ if __name__ == "__main__":
     socket.connect(f"tcp://{args.input_host}:{args.input_port}")
     socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
-    pygame.mixer.init(frequency=32000, size=-16, channels=2, buffer=32768)
+    pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=32768)
 
     audio_buffer = queue.Queue()
     music_buffer = queue.Queue()    

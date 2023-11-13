@@ -96,7 +96,7 @@ if __name__ == "__main__":
     parser.add_argument("--show_hex", action="store_true", help="Show the hex representation of the audio payload")
     parser.add_argument("--audio_format", type=str, choices=["wav", "raw"], default="wav", help="Audio format to save as. Choices are 'wav' or 'raw'. Default is 'wav'.")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
-    parser.add_argument("--freq", type=int, default=22500, help="Frequency of audio")
+    parser.add_argument("--freq", type=int, default=22050, help="Frequency of audio")
     parser.add_argument("--channels", type=int, default=1, help="Number of channels")
 
     args = parser.parse_args()
