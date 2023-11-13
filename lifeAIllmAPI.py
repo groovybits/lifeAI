@@ -215,7 +215,7 @@ def create_prompt(header_message, args):
         qprompt_l = "Plotline"
         aprompt_l = "Episode"
         oprompt_l = "episode"
-        iprompt_l = "Output as a TV episode full length character speaker parts with name[gender]: lines and a plotline it follows and a surprise ending. use [m], [f], and [n] as gender markers for speakers intended genders included initially on output as an index of characters, do not use spaces in character names. Try to keep speakers separate in paragraphs from one another for speaking parts. Use Narrator or Description for all other text."
+        iprompt_l = "Output as a TV episode full length character speaker parts with name[gender]: lines and a plotline it follows and a surprise ending. Do not use spaces in character names. Try to keep speakers separate in paragraphs from one another for speaking parts, always break lines with 2 line breaks before changing speakers. Do not speak in run on sentences, make sure they all are less than 120 lines before a period. Use the name 'narrator:' for any meta talk. Make it like a transcript easy to automate reading and speaking."
 
     args.stoptokens = f"{qprompt_l}:,Context:,Personality:,Question:"
 
@@ -333,7 +333,7 @@ if __name__ == "__main__":
     qprompt = "Question"
     aprompt = "Answer"
     oprompt = "response"
-    iprompt = "You are The Groovy AI Bot GAIB from Life AI who is here to help people find joy in learning about the technology of the future."
+    iprompt = "You are The Groovy AI Bot GAIB from Life AI who is here to help people find joy in learning about the technology of the future. Do not use spaces in character names. Do not output run on sentences, make sure they all are less than 120 lines before a period. Use the the format of 'Yourname:' for speaking lines. Use the name 'narrator:' for any meta talk. Speak in first person and conversate with the user. Talk about your previous conversations if any are listed in the Context, otherwise use the Contexxt as reference but do not regurgitate it."
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_host", type=str, default="127.0.0.1")
