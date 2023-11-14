@@ -21,7 +21,7 @@ import numpy as np
 
 trlogging.set_verbosity_error()
 
-def generate_audio(prompt, negative_prompt, guidance_scale=3, audio_length_in_s=10, seed=0, audio=None, sampling_rate=32000):
+def generate_audio(prompt, negative_prompt, guidance_scale=3, audio_length_in_s=30, seed=0, audio=None, sampling_rate=32000):
     inputs = None
     if audio is not None:
         inputs = processor(
@@ -30,7 +30,7 @@ def generate_audio(prompt, negative_prompt, guidance_scale=3, audio_length_in_s=
             padding=False,
             return_tensors="pt",
             ).to("cpu")
-        # limit to 10 seconds
+        # limit to 10 seconds for audio continuation
         audio_length_in_s = 10
     else:
         inputs = processor(
@@ -84,10 +84,10 @@ def main():
         logger.debug(f"Text to Music Recieved:\n{header_message}")
         logger.info(f"Text to Music Recieved:\n{optimized_prompt}")
 
-        prompt = f"music like {args.genre} {optimized_prompt}"
+        prompt = f"{args.genre} {optimized_prompt}"
 
         audio_values = generate_audio(prompt, 
-                                                     "noise, static, banging and clanging",
+                                                     "noise, static, crackles, pops",
                                                      args.guidance_scale,
                                                      args.seconds,
                                                      args.seed,
@@ -136,7 +136,7 @@ if __name__ == "__main__":
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--guidance_scale", type=float, default=3.0, help="Guidance scale for the model")
     parser.add_argument("--seed", type=int, default=0, help="Seed for the model")
-    parser.add_argument("--genre", type=str, default="Music that is ", help="Genre for the model")
+    parser.add_argument("--genre", type=str, default="", help="Genre for the model")
     parser.add_argument("--max_latency", type=int, default=20, help="Max latency for messages before they are throttled / combined, should match --seconds in most cases.")
     parser.add_argument("--continuation", action="store_true", default=False, help="Continuation of the last audio")
     
