@@ -390,7 +390,7 @@ def play_audio(audio_data, target_sample_rate=22050, use_channel=None):
 
 def playback(image, audio):
     # play both audio and display image with audio blocking till finished
-    if image:
+    if image and not args.norender:
         render(image)
     
     play_audio(audio, 22050, 1)
@@ -583,6 +583,7 @@ if __name__ == "__main__":
     parser.add_argument("--music_interval", type=float, default=60, help="Interval between music changes")
     parser.add_argument("--nomusic", action="store_true", default=False, help="Disable music")
     parser.add_argument("--save_assets", action="store_true", default=False, help="Save assets to disk")
+    parser.add_argument("--norender", action="store_true", default=False, help="Disable rendering of images")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO
