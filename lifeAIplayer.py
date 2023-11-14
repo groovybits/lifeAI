@@ -476,7 +476,19 @@ def main():
                 logger.error(f"Error converting image to ascii: {e}")
 
         ## get an audio sample and header, get the text field from it, then get an image and header and burn in the text from the audio header to the image and render it while playing the audio
-        if not audio_buffer.empty() and not image_buffer.empty():
+        if args.nobuffer and args.norender and not audio_buffer.empty():
+            audio_message, audio_asset = audio_buffer.get()
+            text = audio_message["text"]
+            optimized_prompt = text
+            if 'optimized_text' in audio_message:
+                optimized_prompt = audio_message["optimized_text"]
+            else:
+                optimized_prompt = text
+            playback(None, audio_asset)
+            last_sent_segments = time.time()
+            audio_segment_number = audio_message["segment_number"]
+            print(f"Sent audio segment #{audio_message['segment_number']} at timestamp {audio_message['timestamp']}")
+        elif not audio_buffer.empty() and not image_buffer.empty():
             audio_message, audio_asset = audio_buffer.get()
             image_message, image_asset = image_buffer.get()
 
@@ -584,6 +596,7 @@ if __name__ == "__main__":
     parser.add_argument("--nomusic", action="store_true", default=False, help="Disable music")
     parser.add_argument("--save_assets", action="store_true", default=False, help="Save assets to disk")
     parser.add_argument("--norender", action="store_true", default=False, help="Disable rendering of images")
+    parser.add_argument("--nobuffer", action="store_true", default=False, help="Disable buffering of images")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO
