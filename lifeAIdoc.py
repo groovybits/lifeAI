@@ -24,10 +24,32 @@ from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.llms import GPT4All
 from langchain.chains import RetrievalQA
 import re
+import nltk  # Import nltk for sentence tokenization
+import spacy ## python -m spacy download en_core_web_sm
 
 load_dotenv()
 
 warnings.simplefilter(action='ignore', category=Warning)
+
+# Download the Punkt tokenizer models (only needed once)
+nltk.download('punkt')
+
+def extract_sensible_sentences(text):
+    # Load the spaCy model
+    nlp = spacy.load("en_core_web_sm")
+
+    # Process the text with spaCy
+    doc = nlp(text)
+
+    # Filter sentences based on some criteria (e.g., length, structure)
+    sensible_sentences = [sent.text for sent in doc.sents if len(sent.text.split()) > 3 and is_sensible(sent.text)]
+
+    return sensible_sentences
+
+def is_sensible(sentence):
+    # Implement a basic check for sentence sensibility
+    # This is a placeholder - you'd need a more sophisticated method for real use
+    return not bool(re.search(r'\b[a-zA-Z]{20,}\b', sentence))
 
 def clean_text(text):
     # truncate to 800 characters max
@@ -53,6 +75,10 @@ def clean_text(text):
     
     # Remove extra whitespace
     text = ' '.join(text.split())
+
+    # Extract sensible sentences
+    sensible_sentences = extract_sensible_sentences(text)
+    text = ' '.join(sensible_sentences)
 
     return text
 

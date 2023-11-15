@@ -22,6 +22,7 @@ import hashlib
 import re
 
 import nltk  # Import nltk for sentence tokenization
+import spacy ## python -m spacy download en_core_web_sm
 
 # Download the Punkt tokenizer models (only needed once)
 nltk.download('punkt')
@@ -30,6 +31,23 @@ warnings.simplefilter(action='ignore', category=Warning)
 warnings.filterwarnings("ignore", category=urllib3.exceptions.InsecureRequestWarning)
 from urllib3.exceptions import InsecureRequestWarning
 warnings.simplefilter(action='ignore', category=InsecureRequestWarning)
+
+def extract_sensible_sentences(text):
+    # Load the spaCy model
+    nlp = spacy.load("en_core_web_sm")
+
+    # Process the text with spaCy
+    doc = nlp(text)
+
+    # Filter sentences based on some criteria (e.g., length, structure)
+    sensible_sentences = [sent.text for sent in doc.sents if len(sent.text.split()) > 3 and is_sensible(sent.text)]
+
+    return sensible_sentences
+
+def is_sensible(sentence):
+    # Implement a basic check for sentence sensibility
+    # This is a placeholder - you'd need a more sophisticated method for real use
+    return not bool(re.search(r'\b[a-zA-Z]{20,}\b', sentence))
 
 # Function to group the text into subtitle groups
 def get_subtitle_groups(text, sentence_count):
@@ -94,6 +112,14 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
     return header_message
 
 def send_group(text, zmq_sender, header_message, sentence_count):
+    #sensible_sentences = extract_sensible_sentences(text)
+    #text = ' '.join(sensible_sentences)
+
+    # clean text of [INST], [/INST], <<SYS>>, <</SYS>>, <s>, </s> tags
+    exclusions = ["[INST]", "[/INST]", "<<SYS>>", "<</SYS>>", "<s>", "</s>"]
+    for exclusion in exclusions:
+        text = text.replace(exclusion, "")
+
     # Clean the text of any special tokens [\S+]
     text = re.sub(r"\[\\[A-Z]+\]", "", text)
     # CLean the [speaker:] strings to just the speaker name and a colon
@@ -284,13 +310,16 @@ def main(args):
 
             # create a history of the conversation with system prompt at the start
             tmp_history = []
-            tmp_history.append("<s>[INST]<<SYS>>%s<</SYS>>[/INST]</s>" % system_prompt.format( # add the system prompt
+            current_system_prompt = system_prompt.format( # add the system prompt
                 assistant = header_message["ainame"], 
                 personality = header_message["aipersonality"], 
                 instructions = iprompt_l, 
-                output = oprompt_l))
+                output = oprompt_l)
+            
+            tmp_history.append("<s>[INST]<<SYS>>%s<</SYS>>[/INST]</s>" % current_system_prompt)
             tmp_history.extend(history) # add the history of the conversation
-            tmp_history.append("<s>[INST]%s%s\n\n%s: %s[/INST]\n%s:" % (prompt_context, 
+            tmp_history.append("<s>[INST]<<SYS>>%s<</SYS>>\n%s%s\n\n%s: %s[/INST]\n%s:" % (current_system_prompt,
+                                                                            prompt_context, 
                                                                             user_prompt.format(user=header_message["username"], 
                                                                                 Q=qprompt_l, 
                                                                                 A=aprompt_l), 
@@ -303,11 +332,6 @@ def main(args):
 
             # Call LLM function to process the request
             header_message = run_llm(header_message, sender, api_endpoint, args.characters_per_line, args.sentence_count, args)
-
-            # clean text of [INST], [/INST], <<SYS>>, <</SYS>>, <s>, </s> tags
-            exclusions = ["[INST]", "[/INST]", "<<SYS>>", "<</SYS>>", "<s>", "</s>"]
-            for exclusion in exclusions:
-                header_message["text"] = header_message["text"].replace(exclusion, "")
 
             # store the history
             history.append(f"<s>[INST]{qprompt_l}: {header_message['message']}[/INST]\n{aprompt_l}: {header_message['text']}</s>")
@@ -340,7 +364,7 @@ if __name__ == "__main__":
                "otherwise use the Contexxt as reference but do not regurgitate it.")
 
     system_prompt = ("Personality: As {assistant} {personality}{instructions}"
-                     "Stay in the role of {assistant} using the Context if present to help generate the {output}.\n")
+                     "Stay in the role of {assistant} using the Context and chat history if present to help generate the {output} as a continuation of the same sentiment and topics.\n")
     user_prompt = "Give an {A} for the message from {user} listed as a {Q} below. "
 
     parser = argparse.ArgumentParser()

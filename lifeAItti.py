@@ -193,43 +193,46 @@ def main():
             logger.error(f"TTI: No optimized text, using original text.")
 
         # Clean text
-        optimized_prompt = clean_text(optimized_prompt[:300])
+        optimized_prompt = clean_text(optimized_prompt[:1000])
+
+        # create prompt
+        optimized_prompt = f"{args.genre} {optimized_prompt}"
 
         logger.debug(f"Text to Image recieved optimized prompt:\n{header_message}.")
-        logger.info(f"Text to Image recieved text #{segment_number}:\n - {optimized_prompt}")
+        logger.info(f"Text to Image using text as prompt #{segment_number}:\n - {optimized_prompt}")
 
         image = None
         if args.wait_time == 0 or last_image == None or time.time() - last_image_time >= args.wait_time:
-            # 2. Forward embeddings and negative embeddings through text encoder
-            if args.extend_prompt:
-                max_length = pipe.tokenizer.model_max_length
-
-                # 3. Forward
-                input_ids = pipe.tokenizer(optimized_prompt, return_tensors="pt").input_ids
-                input_ids = input_ids.to("mps")
-
-                negative_ids = pipe.tokenizer("", truncation=False, padding="max_length", max_length=input_ids.shape[-1], return_tensors="pt").input_ids                                                                                                     
-                negative_ids = negative_ids.to("mps")
-
-                concat_embeds = []
-                neg_embeds = []
-                for i in range(0, input_ids.shape[-1], max_length):
-                    concat_embeds.append(pipe.text_encoder(input_ids[:, i: i + max_length])[0])
-                    neg_embeds.append(pipe.text_encoder(negative_ids[:, i: i + max_length])[0])
-
-                prompt_embeds = torch.cat(concat_embeds, dim=1)
-                negative_prompt_embeds = torch.cat(neg_embeds, dim=1)
-
-                image = pipe(prompt_embeds=prompt_embeds, negative_prompt_embeds=negative_prompt_embeds).images[0]
+            if args.service == "openai":
+                image = generate_openai(mediaid, args.oai_image_model, optimized_prompt, header_message["username"], args.save_images)
+            elif args.service == "sdwebui":
+                image = generate_sd_webui(mediaid, optimized_prompt, args.save_images)
+            elif args.service == "getimgai":
+                image = generate_getimgai(mediaid, args.sdwebui_image_model, optimized_prompt)
             else:
-                if args.service == "openai":
-                    image = generate_openai(mediaid, args.oai_image_model, optimized_prompt, header_message["username"], args.save_images)
-                elif args.service == "sdwebui":
-                    image = generate_sd_webui(mediaid, optimized_prompt, args.save_images)
-                elif args.service == "getimgai":
-                    image = generate_getimgai(mediaid, args.sdwebui_image_model, optimized_prompt)
+                if args.extend_prompt:
+                    max_length = pipe.tokenizer.model_max_length
+
+                    # 3. Forward
+                    input_ids = pipe.tokenizer(optimized_prompt, return_tensors="pt").input_ids
+                    input_ids = input_ids.to("mps")
+
+                    negative_ids = pipe.tokenizer("", truncation=False, padding="max_length", max_length=input_ids.shape[-1], return_tensors="pt").input_ids                                                                                                     
+                    negative_ids = negative_ids.to("mps")
+
+                    concat_embeds = []
+                    neg_embeds = []
+                    for i in range(0, input_ids.shape[-1], max_length):
+                        concat_embeds.append(pipe.text_encoder(input_ids[:, i: i + max_length])[0])
+                        neg_embeds.append(pipe.text_encoder(negative_ids[:, i: i + max_length])[0])
+
+                    prompt_embeds = torch.cat(concat_embeds, dim=1)
+                    negative_prompt_embeds = torch.cat(neg_embeds, dim=1)
+                    
+                    # 2. Forward embeddings and negative embeddings through text encoder
+                    image = pipe(prompt_embeds=prompt_embeds, negative_prompt_embeds=negative_prompt_embeds).images[0]
                 else:
-                    image = pipe(clean_text(optimized_prompt)).images[0]
+                    image = pipe(optimized_prompt).images[0]
 
             if image != None:
                 if args.service != "openai": # and args.service != "sdwebui":
@@ -280,7 +283,7 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--model", type=str, default="runwayml/stable-diffusion-v1-5", help="Model ID to use")
     parser.add_argument("--wait_time", type=int, default=0, help="Time in seconds to wait between image generations")
     parser.add_argument("--extend_prompt", action="store_true", help="Extend prompt past 77 token limit.")
-    parser.add_argument("--max_latency", type=int, default=60, help="Max latency for messages before they are throttled / combined")
+    parser.add_argument("--max_latency", type=int, default=30, help="Max latency for messages before they are throttled / combined")
     parser.add_argument("--service", type=str, default="sdwebui", help="Service to use for image generation: huggingface, openai, sdwebui, getimgai")
     parser.add_argument("--save_images", action="store_true", help="Save images to disk")
     parser.add_argument("--oai_image_model", type=str, default="dall-e-2", help="OpenAI image model to use")
@@ -290,6 +293,7 @@ if __name__ == "__main__":
     parser.add_argument("--style", type=str, default="vivid", help="Image style for dalle-3, standard or vivid")
     parser.add_argument("--quality", type=str, default="standard", help="Image quality for dalle-3, standard or hd")
     parser.add_argument("--webui_url", type=str, default="127.0.0.1:7860", help="URL for webui, default 127.0.0.1:7860")
+    parser.add_argument("--genre", type=str, default="beautiful pretty", help="Genre for the model")
 
     args = parser.parse_args()
 

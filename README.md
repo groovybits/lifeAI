@@ -14,7 +14,7 @@ Diagram:
 
 ![Groovy Life AI](https://storage.googleapis.com/gaib/2/documentation/GroovyLifeAI.png)
 
-## This uses the following models from huggingface
+## This uses the following dependencies
 
 - <https://github.com/ggerganov/llama.cpp/tree/master/examples/server> LLM  llama.cpp (install and run server for API access locally)
 - <https://huggingface.co/TheBloke/zephyr-7B-beta-GGUF> Model 7B parameter GPT-like model fine-tuned on a mix of publicly available, synthetic datasets.
@@ -23,6 +23,7 @@ Diagram:
 - <https://huggingface.co/facebook/musicgen-small> Text to Music Facebook MusicGen Music generation model
 - <https://github.com/mix1009/sdwebuiapi> Stable Diffusion WebUI using a local API in place of huggingface (faster)
 - <https://github.com/AUTOMATIC1111/stable-diffusion-webui> Stable Diffusion WebUI server, use [bin/start_sdwebui.sh](bin/start_sdwebui.sh) to start
+- <https://github.com/ggerganov/llama.cpp> Llama2 local LLM API server
 
 ## OpenAI GPT-* API Support!!!
 
@@ -114,6 +115,9 @@ sudo make install
 brew install libmagic
 brew install zeromq
 brew install ffmpeg
+
+## Spacy package requirement
+python -m spacy download en_core_web_sm
 
 ```
 

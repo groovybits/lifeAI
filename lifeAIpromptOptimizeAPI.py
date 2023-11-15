@@ -17,29 +17,56 @@ import logging
 import requests
 import json
 import re
+import nltk  # Import nltk for sentence tokenization
+import spacy ## python -m spacy download en_core_web_sm
+
+# Download the Punkt tokenizer models (only needed once)
+nltk.download('punkt')
+
+def extract_sensible_sentences(text):
+    # Load the spaCy model
+    nlp = spacy.load("en_core_web_sm")
+
+    # Process the text with spaCy
+    doc = nlp(text)
+
+    # Filter sentences based on some criteria (e.g., length, structure)
+    sensible_sentences = [sent.text for sent in doc.sents if len(sent.text.split()) > 3 and is_sensible(sent.text)]
+
+    return sensible_sentences
+
+def is_sensible(sentence):
+    # Implement a basic check for sentence sensibility
+    # This is a placeholder - you'd need a more sophisticated method for real use
+    return not bool(re.search(r'\b[a-zA-Z]{20,}\b', sentence))
 
 def clean_text(text):
     # Remove URLs
     text = re.sub(r'http[s]?://\S+', '', text)
     
     # Remove image tags or Markdown image syntax
-    #text = re.sub(r'\!\[.*?\]\(.*?\)', '', text)
-    #text = re.sub(r'<img.*?>', '', text)
+    text = re.sub(r'\!\[.*?\]\(.*?\)', '', text)
+    text = re.sub(r'<img.*?>', '', text)
     
     # Remove HTML tags
-    #text = re.sub(r'<.*?>', '', text)
+    text = re.sub(r'<.*?>', '', text)
     
     # Remove any inline code blocks
-    #text = re.sub(r'`.*?`', '', text)
+    text = re.sub(r'`.*?`', '', text)
     
     # Remove any block code segments
-    #text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
+    text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
     
     # Remove special characters and digits (optional, be cautious)
-    #text = re.sub(r'[^a-zA-Z0-9\s.?,!\n]', '', text)
+    text = re.sub(r'[^a-zA-Z0-9\s.?,!]', '', text)
     
     # Remove extra whitespace
-    #text = ' '.join(text.split())
+    text = ' '.join(text.split())
+
+    # Extract sensible sentences
+    sensible_sentences = extract_sensible_sentences(text)
+    text = ' '.join(sensible_sentences)
+
     return text
 
 def get_api_response(api_url, completion_params):
@@ -59,12 +86,11 @@ def get_api_response(api_url, completion_params):
 def run_llm(prompt, api_url, args):
     optimized_prompt = ""
     try:
-        prompt = clean_text(prompt)
         completion_params = {
             'prompt': prompt,
             'temperature': args.temperature,
-            #'stop': args.stoptokens.split(','),
             'max_tokens': args.maxtokens,
+            'n_'
             'stream': False,
         }
 
@@ -128,13 +154,14 @@ def main():
         message = ""
 
         if "text" in header_message:
-            text = header_message["text"]
+            text = clean_text(header_message["text"])[:1024]
+            text = clean_text(text)
         else:
             logger.error(f"Error! No text in message: {header_message}")
             continue
 
         if "message" in header_message:
-            message = header_message["message"]
+            message = header_message["message"][:80]
 
         mediaid = header_message["mediaid"]
         timestamp = header_message["timestamp"]
@@ -169,7 +196,7 @@ def main():
                 text = " ".join(current_text_array)
                 current_text_array = []
 
-        full_prompt = f"<s>[INST]<<SYS>>{prompt}<</SYS>>[/INST]</s>\n<s>[INST]{args.qprompt}: {message[:(args.maxtokens*3)]} - {text[:args.maxtokens*3]}[/INST]\n{args.aprompt}:"
+        full_prompt = f"<s>[INST]<<SYS>>{prompt}<</SYS>>[/INST]</s>\n<s>[INST]{args.qprompt}: {message} - {text}[/INST]\n{args.aprompt}:"
 
         optimized_prompt = ""
         try:
@@ -217,16 +244,8 @@ if __name__ == "__main__":
                         help="Prompt to use for image generation, default Text")
     parser.add_argument("--aprompt", type=str, default="Assistant", 
                         help="Prompt to use for image generation, default Description")
-    parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
-    parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
-    parser.add_argument("--n_keep", type=int, default=0, help="Number of tokens to keep for the context.")
-    parser.add_argument("-sts", "--stoptokens", type=str, default="Text:,Request:", help="Stop tokens to use, do not change unless you know what you are doing!")
     parser.add_argument("--no_cache_prompt", action='store_true', help="Flag to disable caching of prompts.")
-    parser.add_argument("--sub", action="store_true", default=False, help="Publish to a topic")
-    parser.add_argument("--pub", action="store_true", default=False, help="Publish to a topic")
-    parser.add_argument("--bind_output", action="store_true", default=False, help="Bind to a topic")
-    parser.add_argument("--bind_input", action="store_true", default=False, help="Bind to a topic")
     parser.add_argument("--combine_count", type=int, default=0, help="Number of messages to combine into one prompt.")
     parser.add_argument("--passthrough", action="store_true", default=False, help="Pass through messages without optimizing.")
     parser.add_argument("--prompt_template", type=str, default=prompt_template,

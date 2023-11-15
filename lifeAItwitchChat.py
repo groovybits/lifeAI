@@ -169,7 +169,7 @@ class AiTwitchBot(commands.Cog):
                 "ainame": ainame,
                 "history": history,
                 "maxtokens": 200,
-                "voice_model": "openai:nova:0.8",
+                "voice_model": args.voice,
             }
             socket.send_json(client_request)
 
@@ -344,6 +344,7 @@ if __name__ == "__main__":
                         default="", 
                         help="Personality of the default bot")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
+    parser.add_argument("-v", "--voice", type=str, default="mimic3:en_US/hifi-tts_low#92:1.5", help="Voice model to use as default.")
 
     args = parser.parse_args()
 
