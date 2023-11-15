@@ -304,6 +304,11 @@ def main(args):
             # Call LLM function to process the request
             header_message = run_llm(header_message, sender, api_endpoint, args.characters_per_line, args.sentence_count, args)
 
+            # clean text of [INST], [/INST], <<SYS>>, <</SYS>>, <s>, </s> tags
+            exclusions = ["[INST]", "[/INST]", "<<SYS>>", "<</SYS>>", "<s>", "</s>"]
+            for exclusion in exclusions:
+                header_message["text"] = header_message["text"].replace(exclusion, "")
+
             # store the history
             history.append(f"<s>[INST]{qprompt_l}: {header_message['message']}[/INST]\n{aprompt_l}: {header_message['text']}</s>")
 
