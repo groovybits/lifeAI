@@ -110,8 +110,7 @@ def run_llm(prompt, api_url, args):
     return optimized_prompt
 
 def main():
-    prompt_template = "Use the following Text to create a short and summarized short Description for the {topic} as a summary in words."
-    prompt = prompt_template.format(topic=args.topic)
+    prompt = args.prompt_template.format(topic=args.topic)
 
     current_text_array = []
     combined_header_message = None
@@ -170,7 +169,7 @@ def main():
                 text = " ".join(current_text_array)
                 current_text_array = []
 
-        full_prompt = f"<s>[INST]<<SYS>>Request: {prompt}<</SYS>>\n\n{args.qprompt}: {message} - {text[:args.maxtokens*3]}[/INST]\n{args.aprompt}:"
+        full_prompt = f"<s>[INST]<<SYS>>{prompt}<</SYS>>\n\n{args.qprompt}: {message[:(args.maxtokens*3)]} - {text[:args.maxtokens*3]}[/INST]\n{args.aprompt}:"
 
         optimized_prompt = ""
         try:
@@ -199,6 +198,8 @@ def main():
         logger.info(f"Optimized: {mediaid} #{segment_number} {timestamp} {md5sum} - {optimized_prompt}")
 
 if __name__ == "__main__":
+    prompt_template = "Use the following sentences to create a short and summarized {topic} Description for generating multimodal {topic} from text."
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--llm_port", type=int, default=8080)
     parser.add_argument("--llm_host", type=str, default="127.0.0.1")
@@ -206,15 +207,15 @@ if __name__ == "__main__":
     parser.add_argument("--input_port", type=int, default=2000)
     parser.add_argument("--output_host", type=str, default="127.0.0.1")
     parser.add_argument("--output_port", type=int, default=3001)
-    parser.add_argument("--topic", type=str, default="picture", 
+    parser.add_argument("--topic", type=str, default="image", 
                         help="Topic to use for image generation, default 'image generation'")
     parser.add_argument("--maxtokens", type=int, default=120)
     parser.add_argument("--context", type=int, default=4096)
     parser.add_argument("--temperature", type=float, default=0.3)
     parser.add_argument("-d", "--debug", action="store_true", default=False)
-    parser.add_argument("--qprompt", type=str, default="Text", 
+    parser.add_argument("--qprompt", type=str, default="User", 
                         help="Prompt to use for image generation, default Text")
-    parser.add_argument("--aprompt", type=str, default="Description", 
+    parser.add_argument("--aprompt", type=str, default="Assistant", 
                         help="Prompt to use for image generation, default Description")
     parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
     parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
@@ -228,6 +229,8 @@ if __name__ == "__main__":
     parser.add_argument("--bind_input", action="store_true", default=False, help="Bind to a topic")
     parser.add_argument("--combine_count", type=int, default=0, help="Number of messages to combine into one prompt.")
     parser.add_argument("--passthrough", action="store_true", default=False, help="Pass through messages without optimizing.")
+    parser.add_argument("--prompt_template", type=str, default=prompt_template,
+                        help=f"Prompt template to use for image generation, default {prompt_template}")
 
     args = parser.parse_args()
 

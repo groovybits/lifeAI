@@ -176,7 +176,7 @@ def main():
                     client_request = {
                         "segment_number": 0,
                         "mediaid": mediaid,
-                        "mediatype": "news",
+                        "mediatype": "News",
                         "username": username,
                         "source": "MediaStack",
                         "episode": is_episode,

@@ -30,3 +30,4 @@ numpy
 python-magic
 webuiapi
 gender-guesser
+langchain

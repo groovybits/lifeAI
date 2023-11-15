@@ -208,33 +208,54 @@ def add_text_to_image(image, text):
         if current_ratio > 512/512:
             wrap_width = 50
             is_wide = True
-        wrapped_text = textwrap.wrap(text, width=wrap_width, fix_sentence_endings=False, break_long_words=False, break_on_hyphens=False)  # Adjusted width
+        wrapped_text = textwrap.wrap(text, width=wrap_width, fix_sentence_endings=False, break_long_words=False, break_on_hyphens=False)
         y_pos = height - 40  # Adjusted height from bottom
 
         font_size = 1
-        font_thickness = 2  # Adjusted for bolder font
+        font_thickness = 3  # Adjusted for bolder font
         border_thickness = 8  # Adjusted for bolder border
 
         if is_wide:
             font_size = 2
-            font_thickness = 4
+            font_thickness = 6
             border_thickness = 15
-        elif width < 600:  # Assuming smaller images have widths less than 600, adjust if necessary
+        elif width < 600:
             font_size = 1
             font_thickness = 3
             border_thickness = 10
 
-        for line in reversed(wrapped_text):
-            text_width, _ = cv2.getTextSize(line, cv2.FONT_HERSHEY_DUPLEX, font_size, font_thickness)[0]
-            x_pos = (width - text_width) // 2  # Center the text
-            if contains_japanese(line):
-                image = draw_japanese_text_on_image(image, line, (x_pos, y_pos), args.japanesefont,60)
-            else:
-                cv2.putText(image, line, (x_pos, y_pos), cv2.FONT_HERSHEY_DUPLEX, font_size, (0, 0, 0), border_thickness)
-                cv2.putText(image, line, (x_pos, y_pos), cv2.FONT_HERSHEY_DUPLEX, font_size, (255, 255, 255), font_thickness)
-            y_pos -= 60
+        # Set the color for the text outline
+        outline_color = (0, 0, 0)  # Black color for the outline
 
-        ## Convert back from numpy array
+        for line in reversed(wrapped_text):
+            # Get the text size, baseline, and adjust the y_pos
+            ((text_width, text_height), baseline) = cv2.getTextSize(line, cv2.FONT_HERSHEY_DUPLEX, font_size, font_thickness)
+            x_pos = (width - text_width) // 2  # Center the text
+            y_pos -= (baseline + text_height + 10)  # Adjust y_pos for each line, reduce padding
+
+            # Calculate the rectangle coordinates with less height
+            rect_x_left = x_pos - 10
+            rect_y_top = y_pos - text_height - 10  # Reduced padding for height
+            rect_x_right = x_pos + text_width + 10
+            rect_y_bottom = y_pos + 13  # Reduced padding for height
+
+            # Draw a semi-transparent rectangle
+            overlay = image.copy()
+            cv2.rectangle(overlay, (rect_x_left, rect_y_top), (rect_x_right, rect_y_bottom), (0, 0, 0), -1)
+            alpha = 0.1  # Transparency factor.
+            image = cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0)
+
+            # Draw text shadow for a drop shadow effect
+            shadow_offset = 4  # Offset for the shadow, adjust as needed
+            cv2.putText(image, line, (x_pos + shadow_offset, y_pos + shadow_offset), cv2.FONT_HERSHEY_DUPLEX, font_size, (0, 0, 0), font_thickness)
+
+            # Draw text outline
+            cv2.putText(image, line, (x_pos, y_pos), cv2.FONT_HERSHEY_DUPLEX, font_size, (0, 0, 0), border_thickness)
+
+            # Draw the main text
+            cv2.putText(image, line, (x_pos, y_pos), cv2.FONT_HERSHEY_DUPLEX, font_size, (255, 255, 255), font_thickness)
+
+        # Convert back from numpy array
         image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
 
     return image  # returning the modified image
@@ -249,22 +270,32 @@ def image_to_ascii(image):
     ascii_image = ''.join([''.join(ascii_image[i:i+args.width]) + '\n' for i in range(0, len(ascii_image), args.width)])
     return ascii_image
 
-def render(image):
+def update_image(duration_ms):
+    k = cv2.waitKey(duration_ms) & 0xFF
+    if k == ord('f'):
+        print(f"Render: Toggling fullscreen.")
+        cv2.moveWindow(args.title, 0, 0)
+        # maximize_window()
+        cv2.setWindowProperty(args.title, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
+    elif k == ord('m'):
+        print(f"Render: Toggling maximized.")
+        cv2.setWindowProperty(args.title, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
+    elif k == ord('q') or k == 27:
+        print(f"Render: Quitting.")
+        cv2.destroyAllWindows() 
+
+def render(image, duration):
     # Convert PIL Image to NumPy array
     image_np = np.array(image)
 
     # Convert RGB to BGR (OpenCV uses BGR format)
     image_bgr = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
 
-    cv2.imshow('GAIB The Groovy AI Bot', image_bgr)
+    cv2.imshow(args.title, image_bgr)
 
-    k = cv2.waitKey(10)
-    if k == ord('f'):
-        cv2.setWindowProperty('GAIB The Groovy AI Bot', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-    elif k == ord('m'):
-        cv2.setWindowProperty('GAIB The Groovy AI Bot', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
-    elif k == ord('q') or k == 27:
-        cv2.destroyAllWindows()
+    duration_ms = 10 #int(duration * 1000 - 200)
+    update_image(duration_ms)
 
 def save_json(header, mediaid):
     assets_dir = "assets"
@@ -306,44 +337,44 @@ class BackgroundMusic(threading.Thread):
         self.audio_buffer = None
         self.running = True
         self.lock = threading.Lock()  # Lock to synchronize access to audio_buffer
-
-        # Create a specific channel for this thread if it doesn't already exist
-        if not pygame.mixer.get_init():
-            pygame.mixer.init()  # Make sure the mixer is initialized
-        self.channel = pygame.mixer.Channel(2)  # Assign a specific channel
+        self.channel = audio_channel_music  # Assign a specific channel
+        self.complete = True
+        self.switching = False
 
     def run(self):
         while self.running:
-            with self.lock:
-                if self.audio_buffer:
-                    self.play_audio(self.audio_buffer)
-            #pygame.time.Clock().tick(1)  # Limit the while loop to 1 iteration per second
+            if self.audio_buffer:
+                self.play_audio()
+            else:
+                time.sleep(0.1)
 
-    def play_audio(self, audio_samples):
-        audiobuf = io.BytesIO(audio_samples)
+    def play_audio(self):
+        audiobuf = None
+        with self.lock:
+            if self.audio_buffer != None:
+                audiobuf = io.BytesIO(self.audio_buffer)
+
         if audiobuf:
             # Load the audio data into a Sound object
             sound = pygame.mixer.Sound(audiobuf)
-            self.channel.set_volume(args.music_volume)  # Set the volume for this channel
-            self.channel.play(sound)  # Play the Sound object on this channel
-            while self.channel.get_busy():
+            self.switching = False
+            self.channel.play(sound, loops=0, maxtime=0, fade_ms=100)  # Play the Sound object on this channel
+            while self.channel.get_busy():  # Wait for playback to finish
                 time.sleep(0.1)
+        else:
+            print(f"Music Thread: *** No audio buffer to play for play_audio().")
 
     def change_track(self, audio_buffer):
         with self.lock:
-            # Stop the currently playing audio on this specific channel
-            self.channel.stop()  
             # Update the audio buffer with the new track
             self.audio_buffer = audio_buffer
-            # Play the new audio buffer
-            self.play_audio(self.audio_buffer)
+            self.switching = True
+            self.channel.fadeout(100)  # Fade out the audio
 
     def stop(self):
         self.running = False
-        # Stop playback on this specific channel
-        self.channel.stop()
 
-def play_audio(audio_data, target_sample_rate=22050, use_channel=None):
+def play_audio(audio_data, target_sample_rate=22050):
     # Detect the mime type of the audio data
     mime_type = magic.from_buffer(audio_data, mime=True)
 
@@ -370,30 +401,17 @@ def play_audio(audio_data, target_sample_rate=22050, use_channel=None):
     # Load the WAV data into Pygame
     sound = pygame.mixer.Sound(io.BytesIO(audio_data))
 
-    # Get a new channel for playback if use_channel is not specified
-    if use_channel is None:
-        channel = pygame.mixer.find_channel()
-    else:
-        # Use the specified channel for playback
-        channel = pygame.mixer.Channel(use_channel)
-
     # Play the audio on the selected channel
-    channel.set_volume(args.speech_volume)  # Set the volume for this channel
-    channel.play(sound)
+    print(f"*** Playing audio on channel {audio_channel_speech.get_busy()}")
+    audio_channel_speech.play(sound)
 
-    # Wait for the sound to finish playing (linear playback)
-    while channel.get_busy():
-        time.sleep(0.1)  # You can adjust the sleep time as needed
-
-    # Return the channel used for playback
-    return channel
-
-def playback(image, audio):
+def playback(image, audio, duration):
     # play both audio and display image with audio blocking till finished
     if image and not args.norender:
-        render(image)
+        render(image, duration)
     
-    play_audio(audio, 22050, 1)
+    play_audio(audio, 22050)
+    print(f"Audio playback initiated.")
 
 def get_audio_duration(audio_samples):
     audio_segment = AudioSegment.from_file(io.BytesIO(audio_samples), format="wav")
@@ -406,7 +424,6 @@ def main():
     bg_music = BackgroundMusic()
     bg_music.start()
 
-    last_music_segment = None
     last_music_change = 0
 
     last_image_asset = None
@@ -415,86 +432,123 @@ def main():
     audio_segment_number = 0
     last_sent_segments = time.time()
 
+    audio_playback_complete_speech = True
+
     while True:
-        header_message = socket.recv_json()
+        # check if we will block, if so then don't and check events instead of pygame
+        header_message = None
+        segment_number = 0
+        timestamp = 0
+        mediaid = 0
+        message = ""
+        text = ""
+        optimized_prompt = ""
+        type = ""
+        music = None
+        audio = None
+        image = None
 
-        segment_number = header_message["segment_number"]
-        timestamp = header_message["timestamp"]
-        mediaid = header_message["mediaid"]
-        
-        message = header_message["message"]
-        text = header_message["text"]
-        
-        optimized_prompt = text
-        if 'optimized_text' in header_message:
-            optimized_prompt = header_message["optimized_text"]
+        if socket.poll(timeout=0):
+            # Receive the header message
+            header_message = socket.recv_json()
 
-        type = header_message["stream"]
-        if type == "music":
-            # Now, receive the binary audio data
-            music = socket.recv()
-
-            # Print the header
-            print(f"Received music segment {type} #{segment_number} {timestamp}: {mediaid} {len(text)} characters")
+            segment_number = header_message["segment_number"]
+            timestamp = header_message["timestamp"]
+            mediaid = header_message["mediaid"]
             
-            save_json(message, mediaid)  # or image_message, if it's the one to be saved
+            message = header_message["message"]
+            text = header_message["text"]
+            
+            optimized_prompt = text
+            if 'optimized_text' in header_message:
+                optimized_prompt = header_message["optimized_text"]
 
-            if args.save_assets:
-                # Save audio asset
-                save_asset(music, mediaid, segment_number, "music")
-        
-            # queue in music_buffer header and music
-            music_buffer.put((header_message, music))
+            type = header_message["stream"]
+            if type == "music":
+                # Now, receive the binary audio data
+                music = socket.recv()
 
-        if type == "speek":
-            # Now, receive the binary audio data
-            audio = socket.recv()
+                # Print the header
+                print(f"Received music segment {type} #{segment_number} {timestamp}: {mediaid} {len(text)} characters")
+                
+                save_json(message, mediaid)  # or image_message, if it's the one to be saved
 
-            # Print the header
-            print(f"Received audio segment {type} #{segment_number} {timestamp}: {mediaid} {len(text)} characters")
+                if args.save_assets:
+                    # Save audio asset
+                    save_asset(music, mediaid, segment_number, "music")
+            
+                # queue in music_buffer header and music
+                music_buffer.put((header_message, music))
 
-            # queue the header and audio together
-            audio_buffer.put((header_message, audio))
+            if type == "speek":
+                # Now, receive the binary audio data
+                audio = socket.recv()
 
-        ## Image
-        if type == "image":
-            # Now, receive the binary audio data
-            image = socket.recv()
+                # Print the header
+                print(f"Received audio segment {type} #{segment_number} {timestamp}: {mediaid} {len(text)} characters")
 
-            # Print the header
-            print(f"Received image segment {type} #{segment_number} {timestamp}: {mediaid} {len(text)} characters")
+                # queue the header and audio together
+                audio_buffer.put((header_message, audio))
 
-            try:
-                # Convert the bytes back to a PIL Image object
-                image = Image.open(io.BytesIO(image))
+            ## Image
+            if type == "image":
+                # Now, receive the binary audio data
+                image = socket.recv()
 
-                print(f"Image Prompt: {optimized_prompt}\Original Text: {text[:10]}...\nOriginal Question:{message[:10]}...")
+                # Print the header
+                print(f"Received image segment {type} #{segment_number} {timestamp}: {mediaid} {len(text)} characters")
 
-                # queue the header and image together
-                image_buffer.put((header_message, image))
-            except Exception as e:
-                logger.error(f"Error converting image to ascii: {e}")
+                try:
+                    # Convert the bytes back to a PIL Image object
+                    image = Image.open(io.BytesIO(image))
+
+                    print(f"Image Prompt: {optimized_prompt[:20]}\Original Text: {text[:10]}...\nOriginal Question:{message[:10]}...")
+
+                    # queue the header and image together
+                    image_buffer.put((header_message, image))
+                except Exception as e:
+                    logger.error(f"Error converting image to ascii: {e}")
+        else:
+            ## No ZMQ message available, check for events
+            time.sleep(0.1)
+
+        ## Update the image if we are rendering during speaking
+        if not audio_playback_complete_speech:
+            update_image(10)
+
+        # No message available, check for events
+        if pygame.event.peek(AUDIO_END_EVENT_SPEECH):
+            for event in pygame.event.get(AUDIO_END_EVENT_SPEECH):
+                if event.type == AUDIO_END_EVENT_SPEECH:
+                    print(f"Audio playback complete speech.")
+                    audio_playback_complete_speech = True
+                else:
+                    print(f"Unknown event on get event: {event}")
 
         ## get an audio sample and header, get the text field from it, then get an image and header and burn in the text from the audio header to the image and render it while playing the audio
-        if args.nobuffer and args.norender and not audio_buffer.empty():
+        if args.nobuffer and args.norender and not audio_buffer.empty() and audio_playback_complete_speech:
             audio_message, audio_asset = audio_buffer.get()
             text = audio_message["text"]
+            duration = audio_message["duration"]
             optimized_prompt = text
             if 'optimized_text' in audio_message:
                 optimized_prompt = audio_message["optimized_text"]
             else:
                 optimized_prompt = text
-            playback(None, audio_asset)
+            audio_playback_complete_speech = False
+            playback(None, audio_asset, duration)
             last_sent_segments = time.time()
             audio_segment_number = audio_message["segment_number"]
             print(f"Sent audio segment #{audio_message['segment_number']} at timestamp {audio_message['timestamp']}")
-        elif not audio_buffer.empty() and not image_buffer.empty():
+        elif not audio_buffer.empty() and not image_buffer.empty() and audio_playback_complete_speech:
             audio_message, audio_asset = audio_buffer.get()
             image_message, image_asset = image_buffer.get()
 
             image_segment_number = image_message["segment_number"]
             audio_segment_number = audio_message["segment_number"]
             last_sent_segments = time.time()
+
+            duration = audio_message["duration"]
 
             text = audio_message["text"]
             optimized_prompt = text
@@ -532,7 +586,8 @@ def main():
 
             # Play audio and display image
             try:
-                playback(image_np, audio_asset)
+                audio_playback_complete_speech = False
+                playback(image_np, audio_asset, duration)
             except Exception as e:
                 logger.error(f"Error playing back audio and displaying image: {e}")
         else:
@@ -540,7 +595,7 @@ def main():
             if time.time() - last_sent_segments > 15 and last_image_asset is not None:
                 # confirm image_segment_number and audio_segment_number are both matching, else we need see if audio has buffered
                 # samples to send and use the last image if there are no more image buffers
-                if image_segment_number != audio_segment_number:
+                if image_segment_number != audio_segment_number and audio_playback_complete_speech:
                     logger.debug(f"Image segment number {image_segment_number} does not match audio segment number {audio_segment_number}.")
                     if image_buffer.empty():
                         if not audio_buffer.empty():
@@ -548,12 +603,14 @@ def main():
                             audio_message, audio_asset = audio_buffer.get()
                             text = audio_message["text"]
                             optimized_prompt = text
+                            duration = audio_message["duration"]
                             if 'optimized_text' in audio_message:
                                 optimized_prompt = audio_message["optimized_text"]
                             else:
                                 optimized_prompt = text
                             image_np = process_new_image(last_image_asset, optimized_prompt, args)
-                            playback(image_np, audio_asset)
+                            audio_playback_complete_speech = False
+                            playback(image_np, audio_asset, duration)
                             last_sent_segments = time.time()
                             audio_segment_number = audio_message["segment_number"]
                             print(f"Sent audio segment #{audio_message['segment_number']} at timestamp {audio_message['timestamp']}")
@@ -565,7 +622,7 @@ def main():
                     music_message, music = music_buffer.get()
                 continue
 
-            if last_music_change == 0 or time.time() - last_music_change > args.music_interval:
+            if not music_buffer.empty() and (last_music_change == 0 or time.time() - last_music_change > args.music_interval):
                 music_message, music = music_buffer.get()
                 print(f"Music Prompt: {music_message['message']}\nOriginal Text: {music_message['text']}\nOriginal Question:{music_message['message']}")
                 if last_music_change > 0:
@@ -575,7 +632,6 @@ def main():
                     # Load the initial music track
                     bg_music.change_track(music)
 
-                last_music_segment = music
                 last_music_change = time.time()
             else:
                 print(f"Skipping music because it's too soon since the last music change {time.time() - last_music_change}.")
@@ -597,6 +653,7 @@ if __name__ == "__main__":
     parser.add_argument("--save_assets", action="store_true", default=False, help="Save assets to disk")
     parser.add_argument("--norender", action="store_true", default=False, help="Disable rendering of images")
     parser.add_argument("--nobuffer", action="store_true", default=False, help="Disable buffering of images")
+    parser.add_argument("--title", type=str, default="GAIB The Groovy AI Bot", help="Title for the window")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO
@@ -626,7 +683,17 @@ if __name__ == "__main__":
     socket.connect(f"tcp://{args.input_host}:{args.input_port}")
     socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
+    pygame.init()
     pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=32768)
+    AUDIO_END_EVENT_MUSIC = pygame.USEREVENT + 1
+    AUDIO_END_EVENT_SPEECH = pygame.USEREVENT + 2
+
+    audio_channel_speech = pygame.mixer.Channel(1)
+    audio_channel_speech.set_endevent(AUDIO_END_EVENT_SPEECH)
+    audio_channel_speech.set_volume(args.speech_volume)
+
+    audio_channel_music = pygame.mixer.Channel(2)
+    audio_channel_music.set_volume(args.music_volume)
 
     audio_buffer = queue.Queue()
     music_buffer = queue.Queue()    
