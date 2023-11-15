@@ -84,7 +84,7 @@ def main():
         logger.debug(f"Text to Music Recieved:\n{header_message}")
         logger.info(f"Text to Music Recieved:\n{optimized_prompt}")
 
-        prompt = f"{args.genre} music themed with {optimized_prompt}"
+        prompt = f"{args.genre} feeling and mood is {optimized_prompt}"
 
         audio_values = generate_audio(prompt, 
                                                      args.negative_prompt,
@@ -130,13 +130,13 @@ if __name__ == "__main__":
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Port for receiving text input")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending audio output")
     parser.add_argument("--model", type=str, required=False, default="facebook/musicgen-small", help="Text to music model to use")
-    parser.add_argument("--seconds", type=int, default=30, required=False, help="Seconds to create, default is 20")
+    parser.add_argument("--seconds", type=int, default=15, required=False, help="Seconds to create, default is 15")
     parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
     parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--guidance_scale", type=float, default=3.0, help="Guidance scale for the model")
     parser.add_argument("--seed", type=int, default=0, help="Seed for the model")
-    parser.add_argument("--genre", type=str, default="upbeat happy japanese pop music, energetic rocking beat ", help="Genre for the model")
+    parser.add_argument("--genre", type=str, default="upbeat happy pop music, energetic rocking beat. ", help="Genre for the model")
     parser.add_argument("--max_latency", type=int, default=20, help="Max latency for messages before they are throttled / combined, should match --seconds in most cases.")
     parser.add_argument("--continuation", action="store_true", default=False, help="Continuation of the last audio")
     parser.add_argument("--negative_prompt", type=str, default="noise, static, crackles, pops, depressing, sad, slow, boring, annoying", help="Negative prompt for the model")
