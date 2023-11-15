@@ -287,13 +287,13 @@ if __name__ == "__main__":
     parser.add_argument("--service", type=str, default="sdwebui", help="Service to use for image generation: huggingface, openai, sdwebui, getimgai")
     parser.add_argument("--save_images", action="store_true", help="Save images to disk")
     parser.add_argument("--oai_image_model", type=str, default="dall-e-2", help="OpenAI image model to use")
-    parser.add_argument("--sdwebui_image_model", type=str, default="realisticVision", help="Local SD WebUI API Image model to use")
+    parser.add_argument("--sdwebui_image_model", type=str, default="protogen", help="Local SD WebUI API Image model to use, default protogen")
     parser.add_argument("--width", type=int, default=512, help="Image width")
     parser.add_argument("--height", type=int, default=512, help="Image height")
     parser.add_argument("--style", type=str, default="vivid", help="Image style for dalle-3, standard or vivid")
     parser.add_argument("--quality", type=str, default="standard", help="Image quality for dalle-3, standard or hd")
     parser.add_argument("--webui_url", type=str, default="127.0.0.1:7860", help="URL for webui, default 127.0.0.1:7860")
-    parser.add_argument("--genre", type=str, default="beautiful pretty", help="Genre for the model")
+    parser.add_argument("--genre", type=str, default="beautiful pretty anime hand drawn scene", help="Genre for the model")
 
     args = parser.parse_args()
 

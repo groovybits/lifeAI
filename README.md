@@ -24,6 +24,7 @@ Diagram:
 - <https://github.com/mix1009/sdwebuiapi> Stable Diffusion WebUI using a local API in place of huggingface (faster)
 - <https://github.com/AUTOMATIC1111/stable-diffusion-webui> Stable Diffusion WebUI server, use [bin/start_sdwebui.sh](bin/start_sdwebui.sh) to start
 - <https://github.com/ggerganov/llama.cpp> Llama2 local LLM API server
+- <https://huggingface.co/darkstorm2150/Protogen_x3.4_Official_Release> Default image generation model Protogen
 
 ## OpenAI GPT-* API Support!!!
 
