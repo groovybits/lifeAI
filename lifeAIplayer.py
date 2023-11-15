@@ -646,7 +646,7 @@ if __name__ == "__main__":
     parser.add_argument("--burn_prompt", action="store_true", default=False, help="Burn in the prompt that created the image")
     parser.add_argument("--width", type=int, default=1920, help="Width of the output image")
     parser.add_argument("--height", type=int, default=1080, help="Height of the output image")
-    parser.add_argument("--music_volume", type=float, default=0.4, help="Volume for music audio playback")
+    parser.add_argument("--music_volume", type=float, default=0.6, help="Volume for music audio playback")
     parser.add_argument("--speech_volume", type=float, default=1.0, help="Volume for speech audio playback")
     parser.add_argument("--music_interval", type=float, default=60, help="Interval between music changes")
     parser.add_argument("--nomusic", action="store_true", default=False, help="Disable music")
