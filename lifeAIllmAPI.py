@@ -305,7 +305,7 @@ def main(args):
             header_message = run_llm(header_message, sender, api_endpoint, args.characters_per_line, args.sentence_count, args)
 
             # store the history
-            history.append(f"<s>[INST]{header_message['message']}[/INST]{header_message['text']}<s>")
+            history.append(f"<s>[INST]{qprompt_l}: {header_message['message']}[/INST]\n{aprompt_l}: {header_message['text']}</s>")
 
             segment_number = header_message["segment_number"]
             timestamp = header_message["timestamp"]
