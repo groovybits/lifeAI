@@ -284,7 +284,7 @@ def main(args):
 
             # create a history of the conversation with system prompt at the start
             tmp_history = []
-            tmp_history.append("<s><<SYS>>%s<</SYS>>[INST][/INST]</s>" % system_prompt.format( # add the system prompt
+            tmp_history.append("<s>[INST]<<SYS>>%s<</SYS>>[/INST]</s>" % system_prompt.format( # add the system prompt
                 assistant = header_message["ainame"], 
                 personality = header_message["aipersonality"], 
                 instructions = iprompt_l, 
