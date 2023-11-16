@@ -24,7 +24,7 @@ Diagram:
 - <https://github.com/mix1009/sdwebuiapi> Stable Diffusion WebUI using a local API in place of huggingface (faster)
 - <https://github.com/AUTOMATIC1111/stable-diffusion-webui> Stable Diffusion WebUI server, use [bin/start_sdwebui.sh](bin/start_sdwebui.sh) to start
 - <https://github.com/ggerganov/llama.cpp> Llama2 local LLM API server
-- <https://huggingface.co/darkstorm2150/Protogen_x3.4_Official_Release> Default image generation model Protogen
+- <https://civitai.com/models/3627/protogen-v22-anime-official-release> Default image generation model Protogen
 
 ## OpenAI GPT-* API Support!!!
 
@@ -231,7 +231,7 @@ You can restart, stop and update the separate parts then restart them without mu
 
 - Twitch Client can create personalities to use via !name <name> <personality> in chat.
 - Fully functional interation with twitch users.
-- Twitch streaming directly to RTMP (TODO: soon)
+- Twitch streaming directly to RTMP (TODO)
 
 ## News feed input via MediaStack
 
