@@ -205,7 +205,8 @@ def main():
 
         optimized_prompt = ""
         try:
-            logger.info(f"Prompt optimizer: sending text to LLM - {full_prompt}")
+            full_prompt_str = full_prompt.replace('\n','')
+            logger.info(f"Prompt optimizer: sending text to LLM - {full_prompt_str}")
             optimized_prompt = run_llm(full_prompt, api_endpoint, args)
 
             if not optimized_prompt.strip():
@@ -227,10 +228,11 @@ def main():
         # Send the processed message
         sender.send_json(header_message)
 
-        logger.info(f"Optimized: {mediaid} #{segment_number} {timestamp} {md5sum} - {optimized_prompt}")
+        optimized_prompt_str = optimized_prompt.replace('\n','')
+        logger.info(f"Optimized: {mediaid} #{segment_number} {timestamp} {md5sum} - {optimized_prompt_str}")
 
 if __name__ == "__main__":
-    prompt_template = "Use the following sentences to create a short and summarized {topic} Description for generating {topic}: "
+    prompt_template = "Create a short description of the following text summarized for generating {topic}: "
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--llm_port", type=int, default=8080)
