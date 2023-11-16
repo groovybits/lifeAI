@@ -76,6 +76,7 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
     current_tokens = 0
     characters = 0
     all_output = ""
+    usermatch = re.search(r"(\.|\!|\?|\])\s*\b\w+:", accumulated_text)
     with requests.post(api_url, json=completion_params, stream=True) as response:
         response.raise_for_status()
         for line in response.iter_lines():
@@ -96,12 +97,39 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
                         all_output += content
 
                         # When checking for the break point, make sure to use the same text cleaning method for consistency
-                        if (content.endswith("]\n")) or (len(accumulated_text) >= (characters_per_line * 1.5) and content.endswith(" ")) or (len(accumulated_text) >= characters_per_line and ('.' in content or '?' in content or '!' in content or '\n' in content)):
+                        if (content.endswith("]\n")) or (len(accumulated_text) >= characters_per_line and ('.' in content or '?' in content or '!' in content or '\n' in content)):
+                            remaining_text = ""
+                            remaining_text_tokens = 0
+
                             header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count)
                             current_tokens = 0
-                            header_message["tokens"] = 0
-                            header_message["text"] = ""
-                            accumulated_text = ""
+                            header_message["tokens"] = remaining_text_tokens
+                            header_message["text"] = remaining_text
+                            accumulated_text = remaining_text
+                        # check for a stop token like .,!?] and a following name without spaces and then a colon like . username:
+                        elif (len(accumulated_text.split(" ")) > 3) and accumulated_text.endswith(":") and (accumulated_text.split(" ")[-2].endswith(".") or accumulated_text.split(" ")[-2].endswith("!") or accumulated_text.split(" ")[-2].endswith("?") or accumulated_text.split(" ")[-2].endswith("]")) and len(accumulated_text.split(" ")[-1]) > 1:
+                            remaining_text = ""
+                            remaining_text_tokens = 0
+                            remaining_text = accumulated_text.split(" ")[-1]
+                            remaining_text_tokens = len(remaining_text.split())
+                            header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count)
+                            current_tokens = 0
+                            header_message["tokens"] = remaining_text_tokens
+                            header_message["text"] = remaining_text
+                            accumulated_text = remaining_text
+                        elif len(accumulated_text) >= (characters_per_line * 1.5) and (content.endswith(" ") or content.endswith(",") or content.startswith(" ")):
+                            remaining_text = ""
+                            remaining_text_tokens = 0
+                            if content.startswith(" ") and len(content) > 1:
+                                remaining_text = content[1:]
+                                remaining_text_tokens = len(remaining_text.split())
+                                # remove the duplicated end of accumulated text that contains the content token
+                                accumulated_text = accumulated_text[:-(len(content)-1)]
+                            header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count)
+                            current_tokens = 0
+                            header_message["tokens"] = remaining_text_tokens
+                            header_message["text"] = remaining_text
+                            accumulated_text = remaining_text
 
     # If there's any remaining text after the loop, send it as well
     if accumulated_text:
@@ -379,7 +407,7 @@ if __name__ == "__main__":
     parser.add_argument("--ai_name", type=str, default="GAIB")
     parser.add_argument("-e", "--episode", action="store_true", default=False, help="Episode mode, Output a TV Episode format script.")
     parser.add_argument("-p", "--personality", type=str, default="friendly helpful compassionate bodhisattva guru.", help="Personality of the AI, choices are 'friendly' or 'mean'.")
-    parser.add_argument("-tp", "--characters_per_line", type=int, default=80, help="Minimum number of characters per buffer, buffer window before output.")
+    parser.add_argument("-tp", "--characters_per_line", type=int, default=120, help="Minimum number of characters per buffer, buffer window before output. default 100")
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
     parser.add_argument("--nopurgecontext", action="store_true", default=False, help="Don't Purge context, warning this will cause memory issues!")
     parser.add_argument("--n_keep", type=int, default=0, help="Number of messages to keep for the context.")

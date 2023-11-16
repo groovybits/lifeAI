@@ -469,7 +469,7 @@ def main():
                 music = socket.recv()
 
                 # Print the header
-                print(f"Received music segment {type} #{segment_number} {timestamp}: {mediaid} {len(text)} characters")
+                logger.info(f"Received music segment {type} #{segment_number} {timestamp}: {mediaid} {len(text)} characters: {text[:20]}")
                 
                 save_json(message, mediaid)  # or image_message, if it's the one to be saved
 
@@ -480,15 +480,19 @@ def main():
                 # queue in music_buffer header and music
                 music_buffer.put((header_message, music))
 
+                print(f"M", end="", flush=True)
+
             if type == "speek":
                 # Now, receive the binary audio data
                 audio = socket.recv()
 
                 # Print the header
-                print(f"Received audio segment {type} #{segment_number} {timestamp}: {mediaid} {len(text)} characters")
+                logger.info(f"Received audio segment {type} #{segment_number} {timestamp}: {mediaid} {len(text)} characters: {text[:20]}")
 
                 # queue the header and audio together
                 audio_buffer.put((header_message, audio))
+
+                print(f"S", end="", flush=True)
 
             ## Image
             if type == "image":
@@ -496,20 +500,23 @@ def main():
                 image = socket.recv()
 
                 # Print the header
-                print(f"Received image segment {type} #{segment_number} {timestamp}: {mediaid} {len(text)} characters")
+                logger.info(f"Received image segment {type} #{segment_number} {timestamp}: {mediaid} {len(text)} characters: {text[:20]}")
 
                 try:
                     # Convert the bytes back to a PIL Image object
                     image = Image.open(io.BytesIO(image))
 
-                    print(f"Image Prompt: {optimized_prompt[:20]}\Original Text: {text[:10]}...\nOriginal Question:{message[:10]}...")
+                    logger.info(f"Image Prompt: {optimized_prompt[:20]}\Original Text: {text[:10]}...\nOriginal Question:{message[:10]}...")
 
                     # queue the header and image together
                     image_buffer.put((header_message, image))
                 except Exception as e:
                     logger.error(f"Error converting image to ascii: {e}")
+
+                print(f"I", end="", flush=True)
         else:
             ## No ZMQ message available, check for events
+            print(f".", end="", flush=True)
             time.sleep(0.1)
 
         ## Update the image if we are rendering during speaking
@@ -520,10 +527,10 @@ def main():
         if pygame.event.peek(AUDIO_END_EVENT_SPEECH):
             for event in pygame.event.get(AUDIO_END_EVENT_SPEECH):
                 if event.type == AUDIO_END_EVENT_SPEECH:
-                    print(f"Audio playback complete speech.")
+                    print(f"X", end="", flush=True)
                     audio_playback_complete_speech = True
                 else:
-                    print(f"Unknown event on get event: {event}")
+                    logger.error(f"Unknown event on get event: {event}")
 
         ## get an audio sample and header, get the text field from it, then get an image and header and burn in the text from the audio header to the image and render it while playing the audio
         if args.nobuffer and args.norender and not audio_buffer.empty() and audio_playback_complete_speech:
@@ -539,7 +546,7 @@ def main():
             playback(None, audio_asset, duration)
             last_sent_segments = time.time()
             audio_segment_number = audio_message["segment_number"]
-            print(f"Sent audio segment #{audio_message['segment_number']} at timestamp {audio_message['timestamp']}")
+            logger.info(f"Sent audio segment #{audio_message['segment_number']} at timestamp {audio_message['timestamp']}")
         elif not audio_buffer.empty() and not image_buffer.empty() and audio_playback_complete_speech:
             audio_message, audio_asset = audio_buffer.get()
             image_message, image_asset = image_buffer.get()
@@ -613,7 +620,7 @@ def main():
                             playback(image_np, audio_asset, duration)
                             last_sent_segments = time.time()
                             audio_segment_number = audio_message["segment_number"]
-                            print(f"Sent audio segment #{audio_message['segment_number']} at timestamp {audio_message['timestamp']}")
+                            logger.info(f"Sent audio segment #{audio_message['segment_number']} at timestamp {audio_message['timestamp']}")
         
         if not music_buffer.empty():
             if args.nomusic:
@@ -624,9 +631,9 @@ def main():
 
             if not music_buffer.empty() and (last_music_change == 0 or time.time() - last_music_change > args.music_interval):
                 music_message, music = music_buffer.get()
-                print(f"Music Prompt: {music_message['message']}\nOriginal Text: {music_message['text']}\nOriginal Question:{music_message['message']}")
+                logger.info(f"Loading Music: {music_message['mediaid']} {music_message['timestamp']} {music_message['segment_number']} {music_message['message'][:20]}")
                 if last_music_change > 0:
-                    print(f"Changing music because it's been {time.time() - last_music_change} seconds since the last music change.")
+                    logger.info(f"Last Music change was {time.time() - last_music_change} seconds since the last music change.")
                     bg_music.change_track(music)
                 else:
                     # Load the initial music track
@@ -634,7 +641,7 @@ def main():
 
                 last_music_change = time.time()
             else:
-                print(f"Skipping music because it's too soon since the last music change {time.time() - last_music_change}.")
+                logger.info(f"Skipping music because it's too soon since the last music change {time.time() - last_music_change}.")
             
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
