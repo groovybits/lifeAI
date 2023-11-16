@@ -96,7 +96,7 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
                         all_output += content
 
                         # When checking for the break point, make sure to use the same text cleaning method for consistency
-                        if content.endswith("]\n") or (len(accumulated_text) >= characters_per_line and ('.' in content or '?' in content or '!' in content or '\n' in content)):
+                        if (content.endswith("]\n")) or (len(accumulated_text) >= (characters_per_line * 1.5) and content.endswith(" ")) or (len(accumulated_text) >= characters_per_line and ('.' in content or '?' in content or '!' in content or '\n' in content)):
                             header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count)
                             current_tokens = 0
                             header_message["tokens"] = 0
