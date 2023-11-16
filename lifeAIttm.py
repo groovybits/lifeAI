@@ -79,7 +79,7 @@ def main():
             optimized_prompt = header_message["text"]
             logger.error(f"TTM: No optimized prompt, using original text.")
 
-        optimized_prompt = f"{messages_buffered} {optimized_text}"
+        optimized_prompt = f"{messages_buffered} {optimized_prompt}"
 
         logger.debug(f"Text to Music Recieved:\n{header_message}")
         logger.info(f"{header_message['mediaid']} {header_message['segment_number']} {header_message['timestamp']} Text to Music Recieved:\n{optimized_prompt}")

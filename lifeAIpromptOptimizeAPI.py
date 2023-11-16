@@ -42,26 +42,31 @@ def is_sensible(sentence):
 
 def clean_text(text):
     # Remove URLs
-    text = re.sub(r'http[s]?://\S+', '', text)
+    #text = re.sub(r'http[s]?://\S+', '', text)
     
     # Remove image tags or Markdown image syntax
-    text = re.sub(r'\!\[.*?\]\(.*?\)', '', text)
-    text = re.sub(r'<img.*?>', '', text)
+    #text = re.sub(r'\!\[.*?\]\(.*?\)', '', text)
+    #text = re.sub(r'<img.*?>', '', text)
     
     # Remove HTML tags
-    text = re.sub(r'<.*?>', '', text)
+    #text = re.sub(r'<.*?>', '', text)
     
     # Remove any inline code blocks
-    text = re.sub(r'`.*?`', '', text)
+    #text = re.sub(r'`.*?`', '', text)
     
     # Remove any block code segments
-    text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
+    #text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
     
     # Remove special characters and digits (optional, be cautious)
-    text = re.sub(r'[^a-zA-Z0-9\s.?,!]', '', text)
+    #text = re.sub(r'[^a-zA-Z0-9\s.?,!]', '', text)
     
     # Remove extra whitespace
-    text = ' '.join(text.split())
+    #text = ' '.join(text.split())
+
+    # clean text of [INST], [/INST], <<SYS>>, <</SYS>>, <s>, </s> tags
+    exclusions = ["[INST]", "[/INST]", "<<SYS>>", "<</SYS>>", "<s>", "</s>"]
+    for exclusion in exclusions:
+        text = text.replace(exclusion, "")
 
     # Extract sensible sentences
     sensible_sentences = extract_sensible_sentences(text)
@@ -196,7 +201,7 @@ def main():
                 text = " ".join(current_text_array)
                 current_text_array = []
 
-        full_prompt = f"<s>[INST]<<SYS>>{prompt}<</SYS>>[/INST]</s>\n<s>[INST]{message} - {text}[/INST]"
+        full_prompt = f"<s>[INST]<<SYS>>{prompt}<</SYS>>[/INST]</s><s>[INST]User: {message} - {text}[/INST]\nAssistant: "
 
         optimized_prompt = ""
         try:
@@ -236,9 +241,9 @@ if __name__ == "__main__":
     parser.add_argument("--output_port", type=int, default=3001)
     parser.add_argument("--topic", type=str, default="image", 
                         help="Topic to use for image generation, default 'image generation'")
-    parser.add_argument("--maxtokens", type=int, default=120)
-    parser.add_argument("--context", type=int, default=4096)
-    parser.add_argument("--temperature", type=float, default=0.3)
+    parser.add_argument("--maxtokens", type=int, default=200)
+    parser.add_argument("--context", type=int, default=32768)
+    parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("-d", "--debug", action="store_true", default=False)
     parser.add_argument("--qprompt", type=str, default="User", 
                         help="Prompt to use for image generation, default Text")
