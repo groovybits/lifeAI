@@ -283,7 +283,7 @@ if __name__ == "__main__":
     parser.add_argument("--hg_model", type=str, default="runwayml/stable-diffusion-v1-5", help="Huggingface Model ID to use, default unwayml/stable-diffusion-v1-5")
     parser.add_argument("--wait_time", type=int, default=0, help="Time in seconds to wait between image generations")
     parser.add_argument("--extend_prompt", action="store_true", help="Extend prompt past 77 token limit.")
-    parser.add_argument("--max_latency", type=int, default=30, help="Max latency for messages before they are throttled / combined")
+    parser.add_argument("--max_latency", type=int, default=60, help="Max latency for messages before they are throttled / combined")
     parser.add_argument("--service", type=str, default="sdwebui", help="Service to use for image generation: huggingface, openai, sdwebui, getimgai")
     parser.add_argument("--save_images", action="store_true", help="Save images to disk")
     parser.add_argument("--oai_image_model", type=str, default="dall-e-2", help="OpenAI image model to use")
