@@ -168,7 +168,7 @@ class AiTwitchBot(commands.Cog):
                 "aipersonality": aipersonality,
                 "ainame": ainame,
                 "history": history,
-                "maxtokens": 200,
+                "maxtokens": 500,
                 "voice_model": args.voice,
             }
             socket.send_json(client_request)
