@@ -196,7 +196,7 @@ def main():
                 text = " ".join(current_text_array)
                 current_text_array = []
 
-        full_prompt = f"<s>[INST]<<SYS>>{prompt}<</SYS>>[/INST]</s>\n<s>[INST]{args.qprompt}: {message} - {text}[/INST]\n{args.aprompt}:"
+        full_prompt = f"<s>[INST]<<SYS>>{prompt}<</SYS>>[/INST]</s>\n<s>[INST]{message} - {text}[/INST]"
 
         optimized_prompt = ""
         try:

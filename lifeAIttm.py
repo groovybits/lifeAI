@@ -82,9 +82,11 @@ def main():
         optimized_prompt = f"{messages_buffered} {optimized_prompt}"
 
         logger.debug(f"Text to Music Recieved:\n{header_message}")
-        logger.info(f"Text to Music Recieved:\n{optimized_prompt}")
+        logger.info(f"{header_message['mediaid']} {header_message['segment_number']} {header_message['timestamp']} Text to Music Recieved:\n{optimized_prompt}")
 
-        prompt = f"{args.genre} feeling and mood is {optimized_prompt}"
+        # send a general music style, with the original message plus a little of the optimized prompt
+        # this is to give the model a little more context yet optimized prompts for music are often not great
+        prompt = f"{args.genre} {header_message['message']} {optimized_prompt[:10]}"
 
         audio_values = generate_audio(prompt, 
                                                      args.negative_prompt,
@@ -117,7 +119,7 @@ def main():
             throttle = True
         
         logger.debug(f"Text to Music Sent:\n{header_message}")
-        logger.info(f"Text to Music of {duration} duration Sent:\n{optimized_prompt}")
+        logger.info(f"{header_message['mediaid']} {header_message['segment_number']} {header_message['timestamp']} Text to Music of {duration} duration Sent.")
     
 
 if __name__ == "__main__":
