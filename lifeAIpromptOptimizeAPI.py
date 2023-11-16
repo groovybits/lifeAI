@@ -225,7 +225,7 @@ def main():
         logger.info(f"Optimized: {mediaid} #{segment_number} {timestamp} {md5sum} - {optimized_prompt}")
 
 if __name__ == "__main__":
-    prompt_template = "Use the following sentences to create a short and summarized {topic} Description for generating multimodal {topic} from text."
+    prompt_template = "Use the following sentences to create a short and summarized {topic} Description for generating {topic}: "
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--llm_port", type=int, default=8080)
