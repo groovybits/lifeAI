@@ -64,8 +64,8 @@ def main():
                 message = receiver.recv_json()
                 if 'text' in message:
                     messages_buffered += message["text"] + " "
-                elif 'optimized_prompt' in message:
-                    messages_buffered += message["optimized_prompt"] + " "
+                elif 'optimized_text' in message:
+                    messages_buffered += message["optimized_text"] + " "
             logger.info(f"TTM: Throttling for {combine_time} seconds.")
 
         # read the message
@@ -73,13 +73,13 @@ def main():
        
         # fill in the variables form the header_message
         optimized_prompt = ""
-        if "optimized_prompt" in header_message:
-            optimized_prompt = header_message["optimized_prompt"]
+        if "optimized_text" in header_message:
+            optimized_prompt = header_message["optimized_text"]
         else:
             optimized_prompt = header_message["text"]
             logger.error(f"TTM: No optimized prompt, using original text.")
 
-        optimized_prompt = f"{messages_buffered} {optimized_prompt}"
+        optimized_prompt = f"{messages_buffered} {optimized_text}"
 
         logger.debug(f"Text to Music Recieved:\n{header_message}")
         logger.info(f"{header_message['mediaid']} {header_message['segment_number']} {header_message['timestamp']} Text to Music Recieved:\n{optimized_prompt}")
