@@ -280,7 +280,7 @@ if __name__ == "__main__":
     parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
     parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
-    parser.add_argument("-m", "--model", type=str, default="runwayml/stable-diffusion-v1-5", help="Model ID to use")
+    parser.add_argument("--hg_model", type=str, default="runwayml/stable-diffusion-v1-5", help="Huggingface Model ID to use, default unwayml/stable-diffusion-v1-5")
     parser.add_argument("--wait_time", type=int, default=0, help="Time in seconds to wait between image generations")
     parser.add_argument("--extend_prompt", action="store_true", help="Extend prompt past 77 token limit.")
     parser.add_argument("--max_latency", type=int, default=30, help="Max latency for messages before they are throttled / combined")
@@ -318,7 +318,7 @@ if __name__ == "__main__":
     ch.setFormatter(formatter)
     logger.addHandler(ch)
 
-    model_id = args.model
+    model_id = args.hg_model
 
     ## Disable NSFW filters
     pipe = None
