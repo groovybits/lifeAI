@@ -372,8 +372,7 @@ def main(args):
             
             tmp_history.append("<s>[INST]<<SYS>>%s<</SYS>>[/INST]</s>" % current_system_prompt)
             tmp_history.extend(history) # add the history of the conversation
-            tmp_history.append("<s>[INST]<<SYS>>%s<</SYS>>\n%s%s\n\n%s: %s[/INST]\n%s:" % (current_system_prompt,
-                                                                            prompt_context, 
+            tmp_history.append("<s>[INST]%s%s\n\n%s: %s[/INST]\n%s:" % (prompt_context, 
                                                                             user_prompt.format(user=header_message["username"], 
                                                                                 Q=qprompt_l, 
                                                                                 A=aprompt_l), 
