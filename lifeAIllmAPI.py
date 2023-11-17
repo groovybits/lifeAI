@@ -76,8 +76,10 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
     current_tokens = 0
     characters = 0
     all_output = ""
+    responses = []
     with requests.post(api_url, json=completion_params, stream=True) as response:
         response.raise_for_status()
+        responses.append(response)
         for line in response.iter_lines():
             if line:
                 decoded_line = line.decode('utf-8')
@@ -112,7 +114,7 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
                             header_message["text"] = remaining_text
                             accumulated_text = remaining_text
                         # check for a stop token like .,!?] and a following name without spaces and then a colon like . username:
-                        elif (len(accumulated_text.split(" ")) > 3) and accumulated_text.endswith(":") and (accumulated_text.split(" ")[-2].endswith(".") or accumulated_text.split(" ")[-2].endswith("!") or accumulated_text.split(" ")[-2].endswith("?") or accumulated_text.split(" ")[-2].endswith("]") or accumulated_text.split(" "[-2].endswith('"')) or accumulated_text.split(" "[-2].endswith(')'))) and len(accumulated_text.split(" ")[-1]) > 1:
+                        elif (len(accumulated_text.split(" ")) > 3) and accumulated_text.endswith(":") and (accumulated_text.split(" ")[-2].endswith(".") or accumulated_text.split(" ")[-2].endswith("!") or accumulated_text.split(" ")[-2].endswith("?") or accumulated_text.split(" ")[-2].endswith("]") or accumulated_text.split(" ")[-2].endswith('"') or accumulated_text.split(" ")[-2].endswith(')')) and len(accumulated_text.split(" ")[-1]) > 1:
                             remaining_text = ""
                             remaining_text_tokens = 0
                             remaining_text = accumulated_text.split(" ")[-1]
@@ -152,6 +154,12 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
     # If there's any remaining text after the loop, send it as well
     if accumulated_text:
         header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count)
+
+    # check if we didn't get tokens, if so output debug information
+    if tokens == 0:
+        logger.debug(f"LLM streaming API response all_output: {json.dumps(all_output)}")
+        logger.debug(f"LLM streaming API response completion_params: {json.dumps(completion_params)}")
+        logger.debug(f"LLM streaming API response responses: {json.dumps(responses)}")
 
     logger.info(f"LLM streamed API response: {tokens} tokens, {characters} characters.")
     header_message['text'] = all_output
