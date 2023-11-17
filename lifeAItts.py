@@ -310,9 +310,10 @@ def main():
             default_voice = 'en_US/hifi-tts_low#92',
             if voice_service != "mimic3":
                 voice_service = "mimic3"
-                voice_model = default_voice
+                if voice_model == None:
+                    voice_model = default_voice
                 service_switch = True
-                last_voice_model = default_voice
+                last_voice_model = voice_model
 
         # Guess gender
         gender = last_gender
