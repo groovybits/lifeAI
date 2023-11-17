@@ -2,6 +2,8 @@
 
 Try it <https://twitch.tv/groovyaibot> allows full interactive usage of Groovy Life AI.
 
+Presentation from Nov 2023 at the [Multimodal Weekly](https://twelvelabs-20253029.hs-sites.com/multimodal-weekly-1117): <https://groovylife.ai/mw1123presentation/>
+
 The Groovy Life AI community <https://groovylife.ai> for support and find others to discuss AI with.
 
 Modular python processes using zeromq to communicate between them. This allows mutiple chat models together and mixing of them into a mixer and out to twitch or where ever with ffmpeg/rtmp or anything ffmpeg can do. the nice part is using ffmpeg and packing audio/video into rtmp directly without OBS, and avoid all the overhead of need to decode it locally for broadcasting/streaming 😉.
