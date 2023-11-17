@@ -76,7 +76,6 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
     current_tokens = 0
     characters = 0
     all_output = ""
-    usermatch = re.search(r"(\.|\!|\?|\])\s*\b\w+:", accumulated_text)
     with requests.post(api_url, json=completion_params, stream=True) as response:
         response.raise_for_status()
         for line in response.iter_lines():
@@ -87,6 +86,9 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
                     message = json.loads(decoded_line[6:])
                     content = message.get('content', '')
 
+                    ## check for non-ascii characters and replace them with their ascii equivalent
+                    content = content.encode("ascii", "ignore").decode()
+
                     if content:  # Only add to accumulated text if there is content
                         print(content, end="")
                         tokens += 1
@@ -95,6 +97,9 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
                         accumulated_text += content
                         header_message["tokens"] = current_tokens
                         all_output += content
+
+                        ## match for a user name anywhere within the accumulated text of format username:
+                        usermatch = re.search(r"(\.|\!|\?|\]|\"|\))\s*\b\w+:", accumulated_text)
 
                         # When checking for the break point, make sure to use the same text cleaning method for consistency
                         if (content.endswith("]\n")) or (len(accumulated_text) >= characters_per_line and ('.' in content or '?' in content or '!' in content or '\n' in content)):
@@ -107,11 +112,24 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
                             header_message["text"] = remaining_text
                             accumulated_text = remaining_text
                         # check for a stop token like .,!?] and a following name without spaces and then a colon like . username:
-                        elif (len(accumulated_text.split(" ")) > 3) and accumulated_text.endswith(":") and (accumulated_text.split(" ")[-2].endswith(".") or accumulated_text.split(" ")[-2].endswith("!") or accumulated_text.split(" ")[-2].endswith("?") or accumulated_text.split(" ")[-2].endswith("]")) and len(accumulated_text.split(" ")[-1]) > 1:
+                        elif (len(accumulated_text.split(" ")) > 3) and accumulated_text.endswith(":") and (accumulated_text.split(" ")[-2].endswith(".") or accumulated_text.split(" ")[-2].endswith("!") or accumulated_text.split(" ")[-2].endswith("?") or accumulated_text.split(" ")[-2].endswith("]") or accumulated_text.split(" "[-2].endswith('"')) or accumulated_text.split(" "[-2].endswith(')'))) and len(accumulated_text.split(" ")[-1]) > 1:
                             remaining_text = ""
                             remaining_text_tokens = 0
                             remaining_text = accumulated_text.split(" ")[-1]
                             remaining_text_tokens = len(remaining_text.split())
+                            # remove remaining text from accumulated_text
+                            accumulated_text = accumulated_text[:-(len(remaining_text)+1)]
+                            header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count)
+                            current_tokens = 0
+                            header_message["tokens"] = remaining_text_tokens
+                            header_message["text"] = remaining_text
+                            accumulated_text = remaining_text
+                        elif usermatch:
+                            split_index = usermatch.start()
+                            remaining_text = accumulated_text[split_index+1:]
+                            remaining_text_tokens = len(remaining_text.split())
+                            accumulated_text = accumulated_text[:split_index+1]
+
                             header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count)
                             current_tokens = 0
                             header_message["tokens"] = remaining_text_tokens

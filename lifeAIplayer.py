@@ -294,7 +294,7 @@ def render(image, duration):
 
     cv2.imshow(args.title, image_bgr)
 
-    duration_ms = 10 #int(duration * 1000 - 200)
+    duration_ms = 1 #int(duration * 1000 - 200)
     update_image(duration_ms)
 
 def save_json(header, mediaid):
@@ -517,11 +517,12 @@ def main():
         else:
             ## No ZMQ message available, check for events
             print(f".", end="", flush=True)
-            time.sleep(0.1)
 
+        worked = False
         ## Update the image if we are rendering during speaking
         if not audio_playback_complete_speech:
-            update_image(10)
+            update_image(1)
+            worked = True
 
         # No message available, check for events
         if pygame.event.peek(AUDIO_END_EVENT_SPEECH):
@@ -531,6 +532,7 @@ def main():
                     audio_playback_complete_speech = True
                 else:
                     logger.error(f"Unknown event on get event: {event}")
+            worked = True
 
         ## get an audio sample and header, get the text field from it, then get an image and header and burn in the text from the audio header to the image and render it while playing the audio
         if args.nobuffer and args.norender and not audio_buffer.empty() and audio_playback_complete_speech:
@@ -547,6 +549,7 @@ def main():
             last_sent_segments = time.time()
             audio_segment_number = audio_message["segment_number"]
             logger.info(f"Sent audio segment #{audio_message['segment_number']} at timestamp {audio_message['timestamp']}")
+            worked = True
         elif not audio_buffer.empty() and not image_buffer.empty() and audio_playback_complete_speech:
             audio_message, audio_asset = audio_buffer.get()
             image_message, image_asset = image_buffer.get()
@@ -597,6 +600,8 @@ def main():
                 playback(image_np, audio_asset, duration)
             except Exception as e:
                 logger.error(f"Error playing back audio and displaying image: {e}")
+
+            worked = True
         else:
             # check last sent segments and if it's been more than 5 seconds, send a blank image and audio
             if time.time() - last_sent_segments > 15 and last_image_asset is not None:
@@ -621,12 +626,14 @@ def main():
                             last_sent_segments = time.time()
                             audio_segment_number = audio_message["segment_number"]
                             logger.info(f"Sent audio segment #{audio_message['segment_number']} at timestamp {audio_message['timestamp']}")
+                            worked = True
         
         if not music_buffer.empty():
             if args.nomusic:
                 music_message, music = music_buffer.get()
                 while not music_buffer.empty():
                     music_message, music = music_buffer.get()
+                    worked = True
                 continue
 
             if not music_buffer.empty() and (last_music_change == 0 or time.time() - last_music_change > args.music_interval):
@@ -640,8 +647,13 @@ def main():
                     bg_music.change_track(music)
 
                 last_music_change = time.time()
+                worked = True
             else:
                 logger.info(f"Skipping music because it's too soon since the last music change {time.time() - last_music_change}.")
+
+        ## avoid busy loop
+        if not worked:
+            time.sleep(0.1)
             
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
