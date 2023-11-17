@@ -388,7 +388,14 @@ def main(args):
             header_message = run_llm(header_message, sender, api_endpoint, args.characters_per_line, args.sentence_count, args)
 
             # store the history
-            history.append(f"<s>[INST]{qprompt_l}: {header_message['message']}[/INST]\n{aprompt_l}: {header_message['text']}</s>")
+            text = header_message["text"]
+            text = text.replace("<</USER>>","")
+             # clean text of [INST], [/INST], <<SYS>>, <</SYS>>, <s>, </s> tags
+            exclusions = ["[INST]", "[/INST]", "<<SYS>>", "<</SYS>>", "<s>", "</s>"]
+            for exclusion in exclusions:
+                text = text.replace(exclusion, "")
+            # remove any of the system prompt from the history
+            history.append(f"<s>[INST]{qprompt_l}: {header_message['message']}[/INST]\n{aprompt_l}: {text}</s>")
 
             segment_number = header_message["segment_number"]
             timestamp = header_message["timestamp"]
@@ -436,7 +443,7 @@ if __name__ == "__main__":
     parser.add_argument("-tp", "--characters_per_line", type=int, default=120, help="Minimum number of characters per buffer, buffer window before output. default 100")
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
     parser.add_argument("--nopurgecontext", action="store_true", default=False, help="Don't Purge context, warning this will cause memory issues!")
-    parser.add_argument("--n_keep", type=int, default=0, help="Number of messages to keep for the context.")
+    parser.add_argument("--n_keep", type=int, default=8, help="Number of messages to keep for the context.")
     parser.add_argument("--no_cache_prompt", action='store_true', help="Flag to disable caching of prompts.")
     parser.add_argument("--contextpct", type=float, default=0.75, help="Percentage of context to use for history.")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
