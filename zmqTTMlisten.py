@@ -31,7 +31,7 @@ def get_audio_duration(audio_samples):
 class BackgroundMusic(threading.Thread):
     def __init__(self):
         super().__init__()
-        pygame.mixer.init(frequency=32000, size=-16, channels=1, buffer=1024)
+        pygame.mixer.init(frequency=32000, size=-16, channels=args.channels, buffer=args.buffer_size)
         pygame.init()
         self.audio_buffer = None
         self.running = True
@@ -128,8 +128,10 @@ if __name__ == "__main__":
     parser.add_argument("--save_file", action="store_true", help="Save the received audio as WAV files")
     parser.add_argument("--show_hex", action="store_true", help="Show the hex representation of the audio payload")
     parser.add_argument("--audio_format", type=str, choices=["wav", "raw"], default="wav", help="Audio format to save as. Choices are 'wav' or 'raw'. Default is 'wav'.")
-    parser.add_argument("--volume", type=float, default=0.40, help="Playback volume (0.0 to 1.0, default is 0.40)")
+    parser.add_argument("--volume", type=float, default=0.30, help="Playback volume (0.0 to 1.0, default is 0.30)")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
+    parser.add_argument("--buffer_size", type=int, default=32786, help="Audio buffer size (default is 32786)")
+    parser.add_argument("--channels", type=int, default=2, help="Number of audio channels (default is 2)")
 
     args = parser.parse_args()
 

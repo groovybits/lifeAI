@@ -690,6 +690,7 @@ if __name__ == "__main__":
     parser.add_argument("--norender", action="store_true", default=False, help="Disable rendering of images")
     parser.add_argument("--nobuffer", action="store_true", default=False, help="Disable buffering of images")
     parser.add_argument("--title", type=str, default="GAIB The Groovy AI Bot", help="Title for the window")
+    parser.add_argument("--buffer_size", type=int, default=32768, help="Size of the buffer for images and audio")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO
@@ -720,7 +721,7 @@ if __name__ == "__main__":
     socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
     pygame.init()
-    pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=32768)
+    pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=args.buffer_size)
     AUDIO_END_EVENT_MUSIC = pygame.USEREVENT + 1
     AUDIO_END_EVENT_SPEECH = pygame.USEREVENT + 2
 

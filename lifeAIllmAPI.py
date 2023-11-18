@@ -316,7 +316,7 @@ def main(args):
                 "index": 0,
                 "text": "",
                 "maxtokens": client_request.get("maxtokens", args.maxtokens),
-                "voice_model": client_request.get("voice_model", "mimic3:en_US/cmu-arctic_low#eey:1.2")
+                "voice_model": client_request.get("voice_model", "mimic3:en_US/vctk_low#p303:1.5")
             }
             header_message['client_request'] = client_request
             
@@ -372,7 +372,8 @@ def main(args):
             
             tmp_history.append("<s>[INST]<<SYS>>%s<</SYS>>[/INST]</s>" % current_system_prompt)
             tmp_history.extend(history) # add the history of the conversation
-            tmp_history.append("<s>[INST]%s%s\n\n%s: %s[/INST]\n%s:" % (prompt_context, 
+            tmp_history.append("<s>[INST]%s\n\n%s%s\n\n%s: %s[/INST]\n%s:" % (current_system_prompt,
+                                                                              prompt_context, 
                                                                             user_prompt.format(user=header_message["username"], 
                                                                                 Q=qprompt_l, 
                                                                                 A=aprompt_l), 
