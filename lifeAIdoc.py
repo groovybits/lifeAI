@@ -100,7 +100,7 @@ def main():
         # context
         history = ""
         if 'history' in header_message:
-            history = header_message['history']
+            history = json.dumps(header_message['history'])
         else:
             history = ""
         message = ""
@@ -114,7 +114,7 @@ def main():
         logger.debug(f"received message: {message} in context: {history} {json.dumps(header_message)}\n")
 
         # look up in chroma db
-        logger.info(f"** Looking up {message} in chroma db...\n")
+        logger.info(f"looking up {message} in chroma db...\n")
         res = qa(message[:800])
         if res is None:
             logger.error(f"Error getting answer from Chroma DB: {res}")
@@ -130,8 +130,8 @@ def main():
         for document in docs:
             logger.debug(f"got document: {document.metadata}\n")
             source_doc = document.metadata["source"]
-            context_add = f" {document.page_content[:200]}"
-            logger.info(f"Adding to context from source {source_doc}: {context_add}\n")
+            context_add = f" {document.page_content}"
+            logger.info(f"Adding to context from source {document.metadata['source']}: {context_add}\n")
             history += f"{context_add}. "
 
         logger.info(f"got answer: {answer} in context: {history}\n")
@@ -151,7 +151,7 @@ if __name__ == "__main__":
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--max_size", type=int, default=32768, required=False, help="Maximum size of text to process")
     parser.add_argument("--max_tokens", type=int, default=4096, required=False, help="Maximum tokens to process")
-    parser.add_argument("--doc_count", type=int, default=3, required=False, help="Number of documents to return")
+    parser.add_argument("--doc_count", type=int, default=2, required=False, help="Number of documents to return")
     parser.add_argument("--model", type=str, default="models/ggml-all-MiniLM-L6-v2-f16.bin", required=False, help="GPT model to use")
     parser.add_argument("--embeddings", type=str, default="all-MiniLM-L6-v2", required=False, help="HuggingFace embedding model to use")
 

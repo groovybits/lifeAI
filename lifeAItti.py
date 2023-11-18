@@ -24,7 +24,6 @@ from dotenv import load_dotenv
 import os
 import requests
 import webuiapi
-import traceback
 
 load_dotenv()
 
@@ -205,23 +204,11 @@ def main():
         image = None
         if args.wait_time == 0 or last_image == None or time.time() - last_image_time >= args.wait_time:
             if args.service == "openai":
-                try:
-                    image = generate_openai(mediaid, args.oai_image_model, optimized_prompt, header_message["username"], args.save_images)
-                except Exception as e:
-                    logger.error(f"{traceback.format_exc()}")
-                    logger.error(f"Error generating image: {e}")
+                image = generate_openai(mediaid, args.oai_image_model, optimized_prompt, header_message["username"], args.save_images)
             elif args.service == "sdwebui":
-                try:
-                    image = generate_sd_webui(mediaid, optimized_prompt, args.save_images)
-                except Exception as e:
-                    logger.error(f"{traceback.format_exc()}")
-                    logger.error(f"Error generating image: {e}")
+                image = generate_sd_webui(mediaid, optimized_prompt, args.save_images)
             elif args.service == "getimgai":
-                try:
-                    image = generate_getimgai(mediaid, args.sdwebui_image_model, optimized_prompt)
-                except Exception as e:
-                    logger.error(f"{traceback.format_exc()}")
-                    logger.error(f"Error generating image: {e}")
+                image = generate_getimgai(mediaid, args.sdwebui_image_model, optimized_prompt)
             else:
                 if args.extend_prompt:
                     max_length = pipe.tokenizer.model_max_length

@@ -201,8 +201,8 @@ def main():
                 text = " ".join(current_text_array)
                 current_text_array = []
 
-        #full_prompt = f"<s>[INST]<<SYS>>You generate descriptive summaries that are short and rich with detail. {prompt}<</SYS>>[/INST]</s><s>[INST]{prompt}\n\n{message} - {text}[/INST]"
-        full_prompt = f"{prompt}\n\n{message}\n{text[:300]}"
+        full_prompt = f"<s>[INST]<<SYS>>{prompt}<</SYS>>[/INST]</s><s>[INST]User: {message} - {text}[/INST]\nAssistant: "
+
         optimized_prompt = ""
         try:
             full_prompt_str = full_prompt.replace('\n','')
@@ -232,7 +232,7 @@ def main():
         logger.info(f"Optimized: {mediaid} #{segment_number} {timestamp} {md5sum} - {optimized_prompt_str}")
 
 if __name__ == "__main__":
-    prompt_template = "create a prompt for text to {topic} generation of the following text:"
+    prompt_template = "Create a short description of the following text summarized for generating {topic}: "
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--llm_port", type=int, default=8080)
@@ -241,11 +241,11 @@ if __name__ == "__main__":
     parser.add_argument("--input_port", type=int, default=2000)
     parser.add_argument("--output_host", type=str, default="127.0.0.1")
     parser.add_argument("--output_port", type=int, default=3001)
-    parser.add_argument("--topic", type=str, default="picture", 
+    parser.add_argument("--topic", type=str, default="image", 
                         help="Topic to use for image generation, default 'image generation'")
-    parser.add_argument("--maxtokens", type=int, default=80)
+    parser.add_argument("--maxtokens", type=int, default=200)
     parser.add_argument("--context", type=int, default=4096)
-    parser.add_argument("--temperature", type=float, default=0.1)
+    parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("-d", "--debug", action="store_true", default=False)
     parser.add_argument("--qprompt", type=str, default="User", 
                         help="Prompt to use for image generation, default Text")
@@ -289,13 +289,13 @@ if __name__ == "__main__":
 
     # Set up the subscriber
     receiver = context.socket(zmq.SUB)
-    logger.info(f"Setup ZMQ in {args.input_host}:{args.input_port}")
+    print(f"Setup ZMQ in {args.input_host}:{args.input_port}")
     receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
     receiver.setsockopt_string(zmq.SUBSCRIBE, "")
 
     # Set up the publisher
     sender = context.socket(zmq.PUB)
-    logger.info(f"binded to ZMQ out {args.output_host}:{args.output_port}")
+    print(f"binded to ZMQ out {args.output_host}:{args.output_port}")
     sender.bind(f"tcp://{args.output_host}:{args.output_port}")
 
     main()
