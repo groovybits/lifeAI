@@ -86,7 +86,7 @@ def main():
 
         # send a general music style, with the original message plus a little of the optimized prompt
         # this is to give the model a little more context yet optimized prompts for music are often not great
-        prompt = f"{args.genre} {header_message['message']} {optimized_prompt[:10]}"
+        prompt = f"{args.genre} {header_message['message'][:30]} {optimized_prompt[:10]}"
 
         audio_values = generate_audio(prompt, 
                                                      args.negative_prompt,
@@ -124,7 +124,7 @@ def main():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input_port", type=int, default=4001, required=False, help="Port for receiving text input")
+    parser.add_argument("--input_port", type=int, default=2000, required=False, help="Port for receiving text input")
     parser.add_argument("--output_port", type=int, default=6002, required=False, help="Port for sending audio output")
     parser.add_argument("--target_lang", type=str, default="eng", help="Target language")
     parser.add_argument("--source_lang", type=str, default="eng", help="Source language")

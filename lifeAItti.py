@@ -272,7 +272,7 @@ def main():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input_port", type=int, default=3001, required=False, help="Port for receiving text input")
+    parser.add_argument("--input_port", type=int, default=2000, required=False, help="Port for receiving text input")
     parser.add_argument("--output_port", type=int, default=6002, required=False, help="Port for sending image output")
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Port for receiving text input")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending image output")
