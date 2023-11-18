@@ -3,7 +3,7 @@
         "args": ["python", "lifeAItwitchChat.py"]
     },
     "lifeAInewsCast": {
-        "args": ["python", "lifeAInewsCat.py"]
+        "args": ["python", "lifeAInewsCast.py"]
     },
     "lifeAIdoc": {
         "args": ["python", "lifeAIdoc.py"]
@@ -20,18 +20,6 @@
     "lifeAIttm": {
         "args": ["python", "lifeAIttm.py"]
     },
-    "lifeAIpromptOptimizeMusic": {
-        "args": ["python", "lifeAIpromptOptimizeAPU.py", 
-            "--input_port", "2000", 
-            "--output_port", "4001", 
-            "--topic", "music", 
-            "--llm_port", "8081"]
-    },
-     "lifeAIpromptOptimizeImages": {
-        "args": ["python", "lifeAIpromptOptimize.py", 
-            "--topic", "image generation", 
-            "--llm_port", "8082"]
-    },
     "lifeAIplayer": {
         "args": ["python", "lifeAIplayer.py", "--nomusic"]
     },
@@ -43,12 +31,6 @@
     },
     "LLMllamacpp01": {
         "args": ["server", "-m", "/Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf", "-c", "0", "--port", "8080"]
-    },
-    "LLMllamacpp02": {
-        "args": ["server", "-m", "/Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf", "-c", "0", "--port", "8081"]
-    },
-    "LLMllamacpp03": {
-        "args": ["server", "-m", "/Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf", "-c", "0", "--port", "8082"]
     },
     "Mimic3TTS": {
         "args": ["/opt/homebrew/bin/mimic3-server"]
