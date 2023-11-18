@@ -59,7 +59,7 @@ class BackgroundMusic(threading.Thread):
         with self.lock:
             pygame.mixer.music.stop()  # Stop the currently playing audio
             self.audio_buffer = audio_buffer
-            self.channel.fadeout(100)  # Fade out the audio
+            pygame.mixer.music.fadeout(100)  # Fade out the audio
 
     def stop(self):
         self.running = False
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     parser.add_argument("--save_file", action="store_true", help="Save the received audio as WAV files")
     parser.add_argument("--show_hex", action="store_true", help="Show the hex representation of the audio payload")
     parser.add_argument("--audio_format", type=str, choices=["wav", "raw"], default="wav", help="Audio format to save as. Choices are 'wav' or 'raw'. Default is 'wav'.")
-    parser.add_argument("--volume", type=float, default=0.30, help="Playback volume (0.0 to 1.0, default is 0.30)")
+    parser.add_argument("--volume", type=float, default=0.50, help="Playback volume (0.0 to 1.0, default is 0.50)")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--buffer_size", type=int, default=32786, help="Audio buffer size (default is 32786)")
     parser.add_argument("--channels", type=int, default=2, help="Number of audio channels (default is 2)")
