@@ -9,4 +9,5 @@ source bin/settings.sh
     --prompt "As Ai-chan I will get to the bottom of this story..." \
     --keywords "$KEYWORDS" \
     --voice "mimic3:en_US/vctk_low#p303:1.5" \
-    --gender "female"
+    --gender "female" \
+    --episode

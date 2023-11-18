@@ -678,7 +678,6 @@ if __name__ == "__main__":
     parser.add_argument("--input_host", type=str, required=False, default="127.0.0.1", help="Host for receiving image as PIL numpy arrays")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("-f", "--freq", type=int, default=22050, help="Sampling frequency for audio playback")
-    parser.add_argument("-c", "--channels", type=int, default=1, help="Number of channels for audio playback")
     parser.add_argument("--burn_prompt", action="store_true", default=False, help="Burn in the prompt that created the image")
     parser.add_argument("--width", type=int, default=1920, help="Width of the output image")
     parser.add_argument("--height", type=int, default=1080, help="Height of the output image")
@@ -689,7 +688,7 @@ if __name__ == "__main__":
     parser.add_argument("--save_assets", action="store_true", default=False, help="Save assets to disk")
     parser.add_argument("--norender", action="store_true", default=False, help="Disable rendering of images")
     parser.add_argument("--nobuffer", action="store_true", default=False, help="Disable buffering of images")
-    parser.add_argument("--title", type=str, default="GAIB The Groovy AI Bot", help="Title for the window")
+    parser.add_argument("--title", type=str, default="Groovy Life AI", help="Title for the window")
     parser.add_argument("--buffer_size", type=int, default=32768, help="Size of the buffer for images and audio")
     args = parser.parse_args()
 
@@ -721,7 +720,7 @@ if __name__ == "__main__":
     socket.setsockopt_string(zmq.SUBSCRIBE, "")
 
     pygame.init()
-    pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=args.buffer_size)
+    pygame.mixer.init(frequency=args.freq, size=-16, channels=2, buffer=args.buffer_size)
     AUDIO_END_EVENT_MUSIC = pygame.USEREVENT + 1
     AUDIO_END_EVENT_SPEECH = pygame.USEREVENT + 2
 
