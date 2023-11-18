@@ -50,7 +50,8 @@ class BackgroundMusic(threading.Thread):
         if audiobuf:
             pygame.mixer.music.load(audiobuf)
             pygame.mixer.music.set_volume(args.volume)  # Set the volume
-            pygame.mixer.music.play()  # -1 instructs Pygame to loop the audio indefinitely
+            # -1 instructs Pygame to loop the audio indefinitely
+            pygame.mixer.music.play(fade_ms=100)
             while pygame.mixer.music.get_busy():
                 pygame.time.Clock().tick(1)
 
@@ -58,6 +59,7 @@ class BackgroundMusic(threading.Thread):
         with self.lock:
             pygame.mixer.music.stop()  # Stop the currently playing audio
             self.audio_buffer = audio_buffer
+            self.channel.fadeout(100)  # Fade out the audio
 
     def stop(self):
         self.running = False
@@ -126,7 +128,7 @@ if __name__ == "__main__":
     parser.add_argument("--save_file", action="store_true", help="Save the received audio as WAV files")
     parser.add_argument("--show_hex", action="store_true", help="Show the hex representation of the audio payload")
     parser.add_argument("--audio_format", type=str, choices=["wav", "raw"], default="wav", help="Audio format to save as. Choices are 'wav' or 'raw'. Default is 'wav'.")
-    parser.add_argument("--volume", type=float, default=0.50, help="Playback volume (0.0 to 1.0, default is 0.75)")
+    parser.add_argument("--volume", type=float, default=0.40, help="Playback volume (0.0 to 1.0, default is 0.40)")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
 
     args = parser.parse_args()
