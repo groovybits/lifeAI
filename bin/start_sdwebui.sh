@@ -2,4 +2,4 @@
 #
 # https://github.com/AUTOMATIC1111/stable-diffusion-webui.git
 #
-./webui.sh --api --api-log --nowebui --port 7860 --skip-torch-cuda-test --no-half --use-cpu all
+cd stable-diffusion-webui/ && ./webui.sh --api --api-log --nowebui --port 7860 --skip-torch-cuda-test --no-half --use-cpu all
