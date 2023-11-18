@@ -1,2 +1,2 @@
-INTERVAL=600
-KEYWORDS="openai ai gpt anime animation cartoons comic books super heros music art"
+INTERVAL=800
+KEYWORDS="openai ai gpt anime animation cartoons comic books super heros music art crunchyroll funimation vrv hidive"
