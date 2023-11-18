@@ -273,6 +273,7 @@ def main():
                         "ainame": args.ainame,
                         "maxtokens": args.maxtokens,
                         "voice_model": args.voice,
+                        "gender": args.gender
                     }
                     socket.send_json(client_request)
                 else:
@@ -301,7 +302,8 @@ if __name__ == "__main__":
     parser.add_argument("-mt", "--maxtokens", type=int, default=2000, help="Max tokens per message")
     parser.add_argument("-v", "--voice", type=str, default="mimic3:en_US/vctk_low#p326:1.5", help="Voice model to use as default.")
     parser.add_argument("-replay", "--replay", action="store_true", default=False, help="Replay mode, replay the news stories from the database.")
-   
+    parser.add_argument("--gender", type=str, default="male", help="Default gender")
+
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO

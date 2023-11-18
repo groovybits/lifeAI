@@ -153,6 +153,9 @@ def main():
         else:
             voice_speed = args.length_scale
 
+        if 'gender' in header_message:
+            last_gender = header_message['gender']
+
         voice_set = False
         if 'voice_model' in header_message:
             voice_data = header_message["voice_model"]
