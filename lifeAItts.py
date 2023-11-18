@@ -85,7 +85,7 @@ def get_tts_audio(service, text, voice=None, noise_scale=None, noise_w=None, len
             'voice': voice or 'en_US/cmu-arctic_low#slt',
             'noiseScale': noise_scale or '0.333',
             'noiseW': noise_w or '0.333',
-            'lengthScale': length_scale or '1.0',
+            'lengthScale': length_scale or '1.5',
             'ssml': ssml or 'false',
             'audioTarget': audio_target or 'client'
         }
@@ -146,10 +146,10 @@ def main():
         service_switch = False
 
         ## set the defaults
-        voice_speed = "1.0"
+        voice_speed = "1.5"
         voice_model = None
         if tts_api == "mimic3":
-            voice_speed = "1.3"
+            voice_speed = "1.5"
         else:
             voice_speed = args.length_scale
 
@@ -480,7 +480,7 @@ if __name__ == "__main__":
     parser.add_argument("--voice", type=str, default='en_US/vctk_low#p303', help="Voice parameter for TTS API")
     parser.add_argument("--noise_scale", type=str, default='0.333', help="Noise scale parameter for TTS API")
     parser.add_argument("--noise_w", type=str, default='0.333', help="Noise weight parameter for TTS API")
-    parser.add_argument("--length_scale", type=str, default='1.0', help="Length scale parameter for TTS API")
+    parser.add_argument("--length_scale", type=str, default='1.5', help="Length scale parameter for TTS API")
     parser.add_argument("--ssml", type=str, default='false', help="SSML parameter for TTS API")
     parser.add_argument("--audio_target", type=str, default='client', help="Audio target parameter for TTS API")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
