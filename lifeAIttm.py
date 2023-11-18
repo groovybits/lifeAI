@@ -84,9 +84,12 @@ def main():
         logger.debug(f"Text to Music Recieved:\n{header_message}")
         logger.info(f"{header_message['mediaid']} {header_message['segment_number']} {header_message['timestamp']} Text to Music Recieved:\n{optimized_prompt}")
 
+        genre = args.genre
+        if 'genre' in header_message:
+            genre = header_message['genre']
         # send a general music style, with the original message plus a little of the optimized prompt
         # this is to give the model a little more context yet optimized prompts for music are often not great
-        prompt = f"{args.genre} {header_message['message'][:30]} {optimized_prompt[:10]}"
+        prompt = f"{genre} {header_message['message'][:30]} {optimized_prompt[:10]}"
 
         audio_values = generate_audio(prompt, 
                                                      args.negative_prompt,

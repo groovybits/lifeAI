@@ -209,7 +209,6 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--debug", action="store_true", default=False, help="Debug in a verbose manner.")
     parser.add_argument("-a", "--audio", action="store_true", default=False, help="Enable audio streaming, off by default.")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
-
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO

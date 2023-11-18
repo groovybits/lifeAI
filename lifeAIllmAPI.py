@@ -318,6 +318,10 @@ def main(args):
                 "maxtokens": client_request.get("maxtokens", args.maxtokens),
                 "voice_model": client_request.get("voice_model", "mimic3:en_US/vctk_low#p303:1.5")
             }
+
+            if 'genre' in client_request:
+                header_message['genre'] = client_request['genre']
+
             header_message['client_request'] = client_request
             
             logger.debug(f"LLM: received message: - {json.dumps(header_message)}\n")

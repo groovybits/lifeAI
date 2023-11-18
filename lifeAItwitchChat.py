@@ -178,6 +178,8 @@ class AiTwitchBot(commands.Cog):
                 client_request["voice_model"] = personalities_voice[ainame]
             if ainame in personalities_gender:
                 client_request["gender"] = personalities_gender[ainame]
+            if ainame in personalities:
+                client_request["genre"] = personalities[ainame]
             socket.send_json(client_request)
 
             await ctx.send(f"{ainame}: Thank you for the question {name}, I will try to answer it after I finish my current answer.")
@@ -228,7 +230,8 @@ class AiTwitchBot(commands.Cog):
                 "maxtokens": 500,
                 "aipersonality": "a musician and will compose an amazing piece of music for us.",
                 "ainame": "MusicGen",
-                "gender": args.gender
+                "gender": args.gender,
+                "genre": "music like"
             }
             socket.send_json(client_request)
 
@@ -282,7 +285,8 @@ class AiTwitchBot(commands.Cog):
                 "maxtokens": 500,
                 "aipersonality": "a digital artist and phtographer, you will compose an amazing piece of art or take an amazing photo image for us.",
                 "ainame": "ImageGen",
-                "gender": args.gender
+                "gender": args.gender,
+                "genre": "images like"
             }
             socket.send_json(client_request)
 
@@ -353,8 +357,9 @@ if __name__ == "__main__":
                         default="", 
                         help="Personality of the default bot")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
-    parser.add_argument("-v", "--voice", type=str, default="mimic3:en_US/hifi-tts_low#92:1.5", help="Voice model to use as default.")
+    parser.add_argument("-v", "--voice", type=str, default="mimic3:en_US/vctk_low#p303:1.5", help="Voice model to use as default.")
     parser.add_argument("--gender", type=str, default="male", help="Default gender of the bot.")
+    parser.add_argument("--genre", type=str, default="beautiful pretty anime magical girl, anime episode about that is a news reporter", help="Genre of images to produce")
 
     args = parser.parse_args()
 

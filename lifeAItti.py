@@ -192,11 +192,16 @@ def main():
             optimized_prompt = header_message["text"]
             logger.error(f"TTI: No optimized text, using original text.")
 
+        # genre
+        genre = args.genre
+        if "genre" in header_message:
+            genre = header_message["genre"]
+
         # Clean text
         optimized_prompt = clean_text(optimized_prompt)
 
         # create prompt
-        optimized_prompt = f"{args.genre} {header_message['message'][:80]}" # {optimized_prompt}"
+        optimized_prompt = f"{genre} {header_message['message'][:80]}" # {optimized_prompt}"
 
         logger.debug(f"Text to Image recieved optimized prompt:\n{header_message}.")
         logger.info(f"Text to Image using text as prompt #{segment_number}:\n - {optimized_prompt}")
