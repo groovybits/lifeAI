@@ -193,10 +193,10 @@ def main():
             logger.error(f"TTI: No optimized text, using original text.")
 
         # Clean text
-        optimized_prompt = clean_text(optimized_prompt[:1000])
+        optimized_prompt = clean_text(optimized_prompt)
 
         # create prompt
-        optimized_prompt = f"{args.genre} {optimized_prompt}"
+        optimized_prompt = f"{args.genre} {header_message['message'][:80]}" # {optimized_prompt}"
 
         logger.debug(f"Text to Image recieved optimized prompt:\n{header_message}.")
         logger.info(f"Text to Image using text as prompt #{segment_number}:\n - {optimized_prompt}")
@@ -293,7 +293,7 @@ if __name__ == "__main__":
     parser.add_argument("--style", type=str, default="vivid", help="Image style for dalle-3, standard or vivid")
     parser.add_argument("--quality", type=str, default="standard", help="Image quality for dalle-3, standard or hd")
     parser.add_argument("--webui_url", type=str, default="127.0.0.1:7860", help="URL for webui, default 127.0.0.1:7860")
-    parser.add_argument("--genre", type=str, default="beautiful pretty anime hand drawn scene", help="Genre for the model")
+    parser.add_argument("--genre", type=str, default="beautiful pretty anime magical girl, anime episode about ", help="Genre for the model")
 
     args = parser.parse_args()
 
