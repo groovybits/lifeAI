@@ -153,6 +153,7 @@ def main():
         else:
             voice_speed = args.length_scale
 
+        voice_set = False
         if 'voice_model' in header_message:
             voice_data = header_message["voice_model"]
             # "voice_model": "mimic3:en_US/cmu-arctic_low#eey:1.2",
@@ -161,13 +162,13 @@ def main():
             voice_model = voice_data.split(":")[1]
             voice_speed = voice_data.split(":")[2]
             logger.info(f"Text to Speech: Voice Model selected: {voice_model} at speed {voice_speed} using API {tts_api}.")
+            voice_set = True
         else:
             logger.info(f"Text to Speech: Voice Model default, no 'voice_model' in request: {voice_model} at speed {voice_speed} using API {tts_api}.")
 
         if tts_api == "openai":
             male_voices = ['alloy', 'echo', 'fabel', 'oynx']
             female_voices = ['nova', 'shimmer']
-            speaker_map['gabriella'] = {'voice': 'nova', 'gender': 'female'}
             default_voice = 'nova'
             if voice_service != "openai":
                 voice_service = "openai"
@@ -310,7 +311,7 @@ def main():
             default_voice = 'en_US/hifi-tts_low#92',
             if voice_service != "mimic3":
                 voice_service = "mimic3"
-                if voice_model == None:
+                if voice_model == None and not voice_set:
                     voice_model = default_voice
                 service_switch = True
                 last_voice_model = voice_model
@@ -401,7 +402,7 @@ def main():
                     logger.debug("Text to Speech: No speaker found, and no last speaker to default to.")
 
         # Outside of the for loop
-        if new_voice_model:
+        if new_voice_model and voice_set == False:
             logger.info(f"Text to Speech: Speaker found, switching from {last_voice_model} to voice {new_voice_model}.")
             last_voice_model = new_voice_model
             voice_model = new_voice_model

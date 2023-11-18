@@ -602,6 +602,16 @@ def main():
                 logger.error(f"Error playing back audio and displaying image: {e}")
 
             worked = True
+            audio_timestamp = audio_message["timestamp"]
+            image_timestamp = image_message["timestamp"]
+            audio_latency_delta = 0
+            image_latency_delta = 0
+            if audio_timestamp != 0:
+                audio_latency_delta = int(round(time.time()*1000)) - int(audio_timestamp)
+            if image_timestamp != 0:
+                image_latency_delta = int(round(time.time()*1000)) - int(image_timestamp)
+            logger.info(f"Sent audio segment #{audio_message['segment_number']} at timestamp {audio_message['timestamp']} with latency delta {audio_latency_delta} ms.")
+            logger.info(f"Sent image segment #{image_message['segment_number']} at timestamp {image_message['timestamp']} with latency delta {image_latency_delta} ms.")
         else:
             # check last sent segments and if it's been more than 5 seconds, send a blank image and audio
             if time.time() - last_sent_segments > 15 and last_image_asset is not None:
@@ -627,6 +637,13 @@ def main():
                             audio_segment_number = audio_message["segment_number"]
                             logger.info(f"Sent audio segment #{audio_message['segment_number']} at timestamp {audio_message['timestamp']}")
                             worked = True
+                            timestamp = audio_message["timestamp"]
+                            latency_delta = 0
+                            if timestamp != 0:
+                                latency_delta = int(round(time.time()*1000)) - int(timestamp)
+                            logger.info(
+                                f"Sent audio segment #{audio_message['segment_number']} at timestamp {audio_message['timestamp']} with latency delta {latency_delta} ms.")
+
         
         if not music_buffer.empty():
             if args.nomusic:
