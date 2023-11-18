@@ -300,9 +300,9 @@ if __name__ == "__main__":
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("-e", "--episode", action="store_true", default=False, help="Episode mode, Output a TV Episode format script.")
     parser.add_argument("-mt", "--maxtokens", type=int, default=2000, help="Max tokens per message")
-    parser.add_argument("-v", "--voice", type=str, default="mimic3:en_US/vctk_low#p326:1.5", help="Voice model to use as default.")
+    parser.add_argument("-v", "--voice", type=str, default="mimic3:en_US/vctk_low#p303:1.3", help="Voice model to use as default.")
     parser.add_argument("-replay", "--replay", action="store_true", default=False, help="Replay mode, replay the news stories from the database.")
-    parser.add_argument("--gender", type=str, default="male", help="Default gender")
+    parser.add_argument("--gender", type=str, default="female", help="Default gender")
 
     args = parser.parse_args()
 

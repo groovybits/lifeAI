@@ -149,7 +149,7 @@ def main():
         voice_speed = "1.0"
         voice_model = None
         if tts_api == "mimic3":
-            voice_speed = "1.5"
+            voice_speed = "1.3"
         else:
             voice_speed = args.length_scale
 
@@ -477,7 +477,7 @@ if __name__ == "__main__":
     parser.add_argument("--output_port", type=int, default=6002, required=False, help="Port for sending audio output")
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Host for receiving text input")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Host for sending audio output")
-    parser.add_argument("--voice", type=str, default='en_US/vctk_low#p326', help="Voice parameter for TTS API")
+    parser.add_argument("--voice", type=str, default='en_US/vctk_low#p303', help="Voice parameter for TTS API")
     parser.add_argument("--noise_scale", type=str, default='0.333', help="Noise scale parameter for TTS API")
     parser.add_argument("--noise_w", type=str, default='0.333', help="Noise weight parameter for TTS API")
     parser.add_argument("--length_scale", type=str, default='1.0', help="Length scale parameter for TTS API")
@@ -495,7 +495,7 @@ if __name__ == "__main__":
     parser.add_argument("--service", type=str, default="mimic3", help="TTS service to use. mms-tts, mimic3, openai")
     parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
     parser.add_argument("--cuda", action="store_true", default=False, help="offload to cuda GPU")
-    parser.add_argument("--gender", type=str, default="male", help="Gender default for characters without [m], [f], or [n] markers")
+    parser.add_argument("--gender", type=str, default="female", help="Gender default for characters without [m], [f], or [n] markers")
 
     args = parser.parse_args()
 
