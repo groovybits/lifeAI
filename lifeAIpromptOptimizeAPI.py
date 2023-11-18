@@ -244,7 +244,7 @@ if __name__ == "__main__":
     parser.add_argument("--topic", type=str, default="image", 
                         help="Topic to use for image generation, default 'image generation'")
     parser.add_argument("--maxtokens", type=int, default=200)
-    parser.add_argument("--context", type=int, default=32768)
+    parser.add_argument("--context", type=int, default=4096)
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("-d", "--debug", action="store_true", default=False)
     parser.add_argument("--qprompt", type=str, default="User", 

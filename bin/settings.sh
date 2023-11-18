@@ -1,2 +1,2 @@
 INTERVAL=360
-KEYWORDS="ai elon gpt openai artificial intelligence sony vr ar apple google netflix crunchyroll hulu disney"
+KEYWORDS="openai ai gpt anime animation cartoons comic books super heros music art"
