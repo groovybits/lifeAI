@@ -9,5 +9,5 @@ source bin/settings.sh
     --prompt "As Ai-chan turn this news story into a funny silly yet truthful and informative story. Make it fun and tie it into science with a buddhist mindset." \
     --keywords "$KEYWORDS" \
     --voice "mimic3:en_US/vctk_low#p303:1.5" \
-    --gender "female" $EPISODE \
+    --gender "female" $EPISODE $REPLAY \
     --genre_music "anime intro music, japanese rock band with guitar and driving rhythm."

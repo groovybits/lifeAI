@@ -3,7 +3,7 @@
         "args": ["python", "lifeAItwitchChat.py"]
     },
     "lifeAInewsCast": {
-        "args": ["python", "lifeAInewsCast.py"]
+        "args": ["sh", "bin/animegirl.sh"]
     },
     "lifeAIdoc": {
         "args": ["python", "lifeAIdoc.py"]
@@ -30,7 +30,7 @@
         "args": ["python", "lifeAIframesync.py", "--passthrough", "--output_host", "0.0.0.0"]
     },
     "LLMllamacpp01": {
-        "args": ["server", "-m", "/Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-alpha.Q2_K.gguf", "-c", "0", "--port", "8080"]
+        "args": ["server", "-m", "/Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-beta.Q8_0.gguf", "-c", "0", "--port", "8080", "-ngl", "-1"]
     },
     "Mimic3TTS": {
         "args": ["/opt/homebrew/bin/mimic3-server"]

@@ -42,7 +42,6 @@ class BackgroundMusic(threading.Thread):
             with self.lock:
                 if self.audio_buffer:
                     self.play_audio(self.audio_buffer)
-                    #self.audio_buffer = None  # Reset audio_buffer to prevent replaying the same buffer
             pygame.time.Clock().tick(1)  # Limit the while loop to 1 iteration per second
 
     def play_audio(self, audio_samples):
@@ -50,7 +49,6 @@ class BackgroundMusic(threading.Thread):
         if audiobuf:
             pygame.mixer.music.load(audiobuf)
             pygame.mixer.music.set_volume(args.volume)  # Set the volume
-            # -1 instructs Pygame to loop the audio indefinitely
             pygame.mixer.music.play(fade_ms=100)
             while pygame.mixer.music.get_busy():
                 pygame.time.Clock().tick(1)
@@ -91,26 +89,6 @@ def main():
             logger.debug(f"Received music segment mediaid: {header_message}")
             logger.info(f"Received music segment #{segment_number} mediaid: {mediaid}")
 
-            # Check if we need to output to a file
-            if args.save_file:
-                clean_id = mediaid.strip().replace(' ','')
-                audio_file = f"{args.output_directory}/{clean_id}/{segment_number}.wav"
-                ## create directory recrusively for the file if it doesn't exist
-                os.makedirs(os.path.dirname(audio_file), exist_ok=True)
-                if args.audio_format == "wav":
-                    with open(audio_file, 'wb') as f:
-                        f.write(audio_samples)
-                    logger.info(f"Audio saved to {audio_file} as WAV")
-                else:
-                    with open(audio_file, 'wb') as f:
-                        f.write(audio_samples)
-                    logger.info(f"Payload written to {audio_file}\n")
-
-            # Convert the payload to its hex representation and display
-            if args.show_hex:
-                payload_hex = audio_samples.hex()
-                print(f"Payload (Hex): {textwrap.fill(payload_hex, width=80)}\n", flush=True)
-
             # Signal thread to play new audio, sleep for duration so we don't interupt it
             if audio_samples:
                 bg_music.change_track(audio_samples)
@@ -125,10 +103,8 @@ if __name__ == "__main__":
     parser.add_argument("--input_port", type=int, default=6003, required=False, help="Port for receiving audio numpy arrays")
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Host for receiving audio input")
     parser.add_argument("--output_directory", default="music", type=str, help="Directory path to save the received wave files in")
-    parser.add_argument("--save_file", action="store_true", help="Save the received audio as WAV files")
-    parser.add_argument("--show_hex", action="store_true", help="Show the hex representation of the audio payload")
     parser.add_argument("--audio_format", type=str, choices=["wav", "raw"], default="wav", help="Audio format to save as. Choices are 'wav' or 'raw'. Default is 'wav'.")
-    parser.add_argument("--volume", type=float, default=0.65, help="Playback volume (0.0 to 1.0, default is 0.65)")
+    parser.add_argument("--volume", type=float, default=0.55, help="Playback volume (0.0 to 1.0, default is 0.55)")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--buffer_size", type=int, default=32786, help="Audio buffer size (default is 32786)")
     parser.add_argument("--channels", type=int, default=2, help="Number of audio channels (default is 2)")

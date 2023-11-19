@@ -298,22 +298,22 @@ def render(image, duration):
     duration_ms = 1 #int(duration * 1000 - 200)
     update_image(duration_ms)
 
-def save_json(header, mediaid):
-    assets_dir = "assets"
+def save_json(header, mediaid, type, segment_number):
+    assets_dir = f"assets/{mediaid}/{type}"
     os.makedirs(assets_dir, exist_ok=True)
-    with open(f"{assets_dir}/{mediaid}.json", 'w') as json_file:
-        json.dump(header, json_file, indent=4)
+    with open(f"{assets_dir}/{mediaid}_{type}_{segment_number}.json", 'w') as json_file:
+        json.dump(header, json_file)
 
-def save_asset(asset, mediaid, segment_number, asset_type):
-    directory = f"{asset_type}/{mediaid}"
+def save_asset(asset, mediaid, segment_number, type):
+    directory = f"assets/{mediaid}/{type}"
     os.makedirs(directory, exist_ok=True)
-    file_path = f"{directory}/{segment_number}"
+    file_path = f"{directory}/{mediaid}_{type}_{segment_number}"
 
-    if asset_type == "audio":
+    if type == "speek":
         file_path += ".wav"
         with open(file_path, 'wb') as file:
             file.write(asset)
-    elif asset_type == "images":
+    elif type == "image":
         file_path += ".png"
         img_byte_arr = io.BytesIO()
         asset.save(img_byte_arr, format="PNG")  # Save it as PNG or JPEG depending on your preference
@@ -321,7 +321,7 @@ def save_asset(asset, mediaid, segment_number, asset_type):
 
         with open(file_path, 'wb') as f:
             f.write(asset)
-    elif asset_type == "music":
+    elif type == "music":
         file_path += ".wav"
         with open(file_path, 'wb') as file:
             file.write(asset)
@@ -470,13 +470,15 @@ def main():
                 music = socket.recv()
 
                 # Print the header
-                logger.info(f"Received music segment {type} #{segment_number} {timestamp}: {mediaid} {len(text)} characters: {text[:20]}")
+                logger.info(f"Received {type} segment #{segment_number} {timestamp}: {mediaid} {len(text)} characters: {text[:20]}")
                 
-                save_json(message, mediaid)  # or image_message, if it's the one to be saved
-
-                if args.save_assets:
-                    # Save audio asset
-                    save_asset(music, mediaid, segment_number, "music")
+                try:
+                    if args.nosave == False:
+                        # Save audio asset
+                        save_json(header_message, mediaid, type, segment_number)
+                        save_asset(music, mediaid, segment_number, type)
+                except Exception as e:
+                    logger.error(f"Error saving music asset: {e}")
             
                 # queue in music_buffer header and music
                 music_buffer.put((header_message, music))
@@ -488,10 +490,17 @@ def main():
                 audio = socket.recv()
 
                 # Print the header
-                logger.info(f"Received audio segment {type} #{segment_number} {timestamp}: {mediaid} {len(text)} characters: {text[:20]}")
+                logger.info(f"Received {type} segment #{segment_number} {timestamp}: {mediaid} {len(text)} characters: {text[:20]}")
 
                 # queue the header and audio together
                 audio_buffer.put((header_message, audio))
+
+                try:
+                    if args.nosave == False:
+                        save_json(header_message, mediaid, type, segment_number)
+                        save_asset(image, mediaid, segment_number, type)
+                except Exception as e:
+                    logger.error(f"Error saving audio asset: {e}")
 
                 print(f"S", end="", flush=True)
 
@@ -506,14 +515,23 @@ def main():
                 try:
                     # Convert the bytes back to a PIL Image object
                     image = Image.open(io.BytesIO(image))
+                    payload_hex = image_to_ascii(image)
+                    print(f"\n{payload_hex}\n", flush=True)
 
                     logger.info(f"Image Prompt: {optimized_prompt[:20]}\Original Text: {text[:10]}...\nOriginal Question:{message[:10]}...")
 
                     # queue the header and image together
                     image_buffer.put((header_message, image))
                 except Exception as e:
-                    logger.error(f"Error converting image to ascii: {e}")
+                    logger.error(f"Error converting image: {e}")
 
+                try:
+                    if args.nosave == False:
+                        save_json(header_message, mediaid, type, segment_number)
+                        save_asset(image, mediaid, segment_number, type)
+                except Exception as e:
+                    logger.error(f"Error saving image asset: {e}")
+        
                 print(f"I", end="", flush=True)
         else:
             ## No ZMQ message available, check for events
@@ -581,23 +599,6 @@ def main():
                 image_np = process_new_image(image_asset, optimized_prompt, args, unique_image)
             else:
                 image_np = process_new_image(image_asset, text, args, unique_image)
-
-            ## write out json into a directory assets/{mediaid}.json with it pretty pretty printed, 
-            ## write out assets to file locations audio/ and images/ as mediaid/segment_number.wav 
-            ## and mediaid/segment_number.png too.
-            ## audio_message and image_message are the headers, image_np and audio_asset are the assets
-            # Save JSON header
-            try:
-                save_json(audio_message, mediaid)  # or image_message, if it's the one to be saved
-
-                if args.save_assets:
-                    # Save audio asset
-                    save_asset(audio_asset, mediaid, segment_number, "audio")
-
-                    # Save image asset
-                    save_asset(image_np, mediaid, segment_number, "images")
-            except Exception as e:
-                logger.error(f"Error saving assets: {e}")
 
             # Play audio and display image
             try:
@@ -687,15 +688,16 @@ if __name__ == "__main__":
     parser.add_argument("--burn_prompt", action="store_true", default=False, help="Burn in the prompt that created the image")
     parser.add_argument("--width", type=int, default=1920, help="Width of the output image")
     parser.add_argument("--height", type=int, default=1080, help="Height of the output image")
-    parser.add_argument("--music_volume", type=float, default=0.65, help="Volume for music audio playback, defualt is 0.65")
+    parser.add_argument("--music_volume", type=float, default=0.55, help="Volume for music audio playback, defualt is 0.55")
     parser.add_argument("--speech_volume", type=float, default=1.0, help="Volume for speech audio playback")
     parser.add_argument("--music_interval", type=float, default=60, help="Interval between music changes")
     parser.add_argument("--nomusic", action="store_true", default=False, help="Disable music")
-    parser.add_argument("--save_assets", action="store_true", default=False, help="Save assets to disk")
+    parser.add_argument("--nosave", action="store_true", default=False, help="Don't save assets to disk")
     parser.add_argument("--norender", action="store_true", default=False, help="Disable rendering of images")
     parser.add_argument("--nobuffer", action="store_true", default=False, help="Disable buffering of images")
     parser.add_argument("--title", type=str, default="Groovy Life AI", help="Title for the window")
     parser.add_argument("--buffer_size", type=int, default=32768, help="Size of the buffer for images and audio")
+    parser.add_argument("--show_ascii_art", action="store_true", default=False, help="Show images as ascii art")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO
