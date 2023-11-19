@@ -169,6 +169,7 @@ def main():
             while time.time() - start < combine_time:
                 header_message = receiver.recv_json()
                 header_message["stream"] = "image"
+                header_message["throttle"] = "true"
 
                 sender.send_json(header_message, zmq.SNDMORE)
                 sender.send(last_image)
@@ -185,6 +186,7 @@ def main():
         # get variables from header
         mediaid = header_message["mediaid"]
         segment_number = header_message["segment_number"]
+        header_message["throttle"] = "false"
         optimized_prompt = ""
         if "optimized_text" in header_message:
             optimized_prompt = header_message["optimized_text"]
@@ -201,7 +203,7 @@ def main():
         optimized_prompt = clean_text(optimized_prompt)
 
         # create prompt
-        optimized_prompt = f"{genre} {header_message['message'][:80]}" # {optimized_prompt}"
+        optimized_prompt = f"{genre} {header_message['message'][:120]}" # {optimized_prompt}"
 
         logger.debug(f"Text to Image recieved optimized prompt:\n{header_message}.")
         logger.info(f"Text to Image using text as prompt #{segment_number}:\n - {optimized_prompt}")

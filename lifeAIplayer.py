@@ -95,7 +95,7 @@ def create_filmstrip_images(center_image, side_images):
     return wide_image
 
 # Main function to process the new image
-def process_new_image(new_image, text, args):
+def process_new_image(new_image, text, args, unique_image=False):
     target_width = args.width  # This should be set to the desired width for 16:9 aspect ratio
     target_height = args.height  # This should be set to the height corresponding to the 16:9 aspect ratio
     
@@ -110,7 +110,8 @@ def process_new_image(new_image, text, args):
         final_image = add_text_to_image(new_image, text)
 
     # Add the new image to the queue for future use
-    past_images_queue.appendleft(new_image)
+    if unique_image:
+        past_images_queue.appendleft(new_image)
 
     return final_image
 
@@ -571,11 +572,15 @@ def main():
             if audio_message['timestamp'] > image_message['timestamp']:
                 logger.debug(f"Audio segment #{audio_message['segment_number']} is newer than image segment #{image_message['segment_number']}.")
 
+            unique_image = True
+            if "throttle" in image_message:
+                if image_message["throttle"] == "true":
+                    unique_image = False
             last_image_asset = image_asset.copy()
             if args.burn_prompt:
-                image_np = process_new_image(image_asset, optimized_prompt)
+                image_np = process_new_image(image_asset, optimized_prompt, args, unique_image)
             else:
-                image_np = process_new_image(image_asset, text, args)
+                image_np = process_new_image(image_asset, text, args, unique_image)
 
             ## write out json into a directory assets/{mediaid}.json with it pretty pretty printed, 
             ## write out assets to file locations audio/ and images/ as mediaid/segment_number.wav 
@@ -626,11 +631,12 @@ def main():
                             text = audio_message["text"]
                             optimized_prompt = text
                             duration = audio_message["duration"]
+                            new_image = False
                             if 'optimized_text' in audio_message:
                                 optimized_prompt = audio_message["optimized_text"]
                             else:
                                 optimized_prompt = text
-                            image_np = process_new_image(last_image_asset, optimized_prompt, args)
+                            image_np = process_new_image(last_image_asset, optimized_prompt, args, new_image)
                             audio_playback_complete_speech = False
                             playback(image_np, audio_asset, duration)
                             last_sent_segments = time.time()

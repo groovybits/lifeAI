@@ -157,9 +157,13 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
 
     # check if we didn't get tokens, if so output debug information
     if tokens == 0:
-        logger.debug(f"LLM streaming API response all_output: {json.dumps(all_output)}")
-        logger.debug(f"LLM streaming API response completion_params: {json.dumps(completion_params)}")
-        logger.debug(f"LLM streaming API response responses: {json.dumps(responses)}")
+        try:
+            logger.debug(f"LLM streaming API response all_output: {json.dumps(all_output)}")
+            logger.debug(f"LLM streaming API response completion_params: {json.dumps(completion_params)}")
+            logger.debug(f"LLM streaming API response responses: {json.dumps(responses)}")
+        except Exception as e:
+            logger.error(f"LLM streaming API response exception: {e}")
+            logger.error(f"{traceback.print_exc()}")
 
     logger.info(f"LLM streamed API response: {tokens} tokens, {characters} characters.")
     header_message['text'] = all_output
