@@ -28,6 +28,8 @@ chat_db = "db/chat.db"
 personalities = {}
 personalities_voice = {}
 personalities_gender = {}
+personalities_music = {}
+personalities_image = {}
 
 def clean_text(text):
     # Remove URLs
@@ -158,6 +160,14 @@ class AiTwitchBot(commands.Cog):
             if 'Episode' in question or 'Story' in question:
                 is_episode = "true"
 
+            # personality image and music
+            genre_music = ""
+            genre = ""
+            if ainame in personalities_music:
+                genre_music = personalities_music[ainame]
+            if ainame in personalities_image:
+                genre = personalities_image[ainame]
+
             # Send the message
             client_request = {
                 "segment_number": "0",
@@ -172,7 +182,10 @@ class AiTwitchBot(commands.Cog):
                 "history": history,
                 "maxtokens": 2000,
                 "voice_model": args.voice,
-                "gender": args.gender
+                "gender": args.gender,
+                "genre_music": genre_music,
+                "genre": genre,
+                "priority": 75
             }
             if ainame in personalities_voice and is_episode == "false":
                 client_request["voice_model"] = personalities_voice[ainame]
@@ -231,7 +244,9 @@ class AiTwitchBot(commands.Cog):
                 "aipersonality": "a musician and will compose an amazing piece of music for us.",
                 "ainame": "MusicGen",
                 "gender": args.gender,
-                "genre": "music like"
+                "genre_music": clean_text(prompt),
+                "genre": "",
+                "priority": 100
             }
             socket.send_json(client_request)
 
@@ -286,7 +301,9 @@ class AiTwitchBot(commands.Cog):
                 "aipersonality": "a digital artist and phtographer, you will compose an amazing piece of art or take an amazing photo image for us.",
                 "ainame": "ImageGen",
                 "gender": args.gender,
-                "genre": "images like"
+                "genre_music": "",
+                "genre": clean_text(prompt),
+                "priority": 100
             }
             socket.send_json(client_request)
 

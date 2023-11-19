@@ -323,8 +323,12 @@ def main(args):
                 "voice_model": client_request.get("voice_model", "mimic3:en_US/vctk_low#p303:1.5")
             }
 
-            if 'genre' in client_request:
+            if 'genre' in client_request and client_request['genre'] != "":
                 header_message['genre'] = client_request['genre']
+            if 'genre_music' in client_request and client_request['genre_music'] != "":
+                header_message['genre_music'] = client_request['genre_music']
+            if 'priority' in client_request and client_request['priority'] != "":
+                header_message['priority'] = client_request['priority']
 
             header_message['client_request'] = client_request
             

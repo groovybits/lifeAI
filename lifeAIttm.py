@@ -55,6 +55,7 @@ def main():
     last_audio = None
     while True:
         messages_buffered = ""
+        header_message = None
         if throttle:
             start = time.time()
             combine_time = max(0, (latency / 1000 - max_latency))
@@ -62,6 +63,13 @@ def main():
             # read and combine the messages for 60 seconds into a single message
             while time.time() - start < combine_time:
                 message = receiver.recv_json()
+                if 'priority' in message:
+                    priority = message['priority']
+                    if priority == 100:
+                        throttle = False
+                        header_message = message
+                        logger.info(f"TTM: Priority message received, no longer throttling.")
+                        break
                 if 'text' in message:
                     messages_buffered += message["text"] + " "
                 elif 'optimized_text' in message:
@@ -69,7 +77,8 @@ def main():
             logger.info(f"TTM: Throttling for {combine_time} seconds.")
 
         # read the message
-        header_message = receiver.recv_json()
+        if header_message is None:
+            header_message = receiver.recv_json()
        
         # fill in the variables form the header_message
         optimized_prompt = ""
@@ -85,11 +94,11 @@ def main():
         logger.info(f"{header_message['mediaid']} {header_message['segment_number']} {header_message['timestamp']} Text to Music Recieved:\n{optimized_prompt}")
 
         genre = args.genre
-        if 'genre' in header_message:
-            genre = header_message['genre']
+        if 'genre_music' in header_message and header_message['genre_music'] != "":
+            genre = header_message['genre_music']
         # send a general music style, with the original message plus a little of the optimized prompt
         # this is to give the model a little more context yet optimized prompts for music are often not great
-        prompt = f"{genre} {header_message['message'][:30]} {optimized_prompt[:10]}"
+        prompt = f"{genre}"
 
         audio_values = generate_audio(prompt, 
                                                      args.negative_prompt,
@@ -135,14 +144,14 @@ if __name__ == "__main__":
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Port for receiving text input")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending audio output")
     parser.add_argument("--model", type=str, required=False, default="facebook/musicgen-small", help="Text to music model to use")
-    parser.add_argument("--seconds", type=int, default=10, required=False, help="Seconds to create, default is 10")
+    parser.add_argument("--seconds", type=int, default=30, required=False, help="Seconds to create, default is 30")
     parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
     parser.add_argument("--cuda", action="store_true", default=False, help="offload to metal cuda GPU")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--guidance_scale", type=float, default=3.0, help="Guidance scale for the model")
     parser.add_argument("--seed", type=int, default=0, help="Seed for the model")
     parser.add_argument("--genre", type=str, default="upbeat happy pop music, energetic rocking beat. ", help="Genre for the model")
-    parser.add_argument("--max_latency", type=int, default=20, help="Max latency for messages before they are throttled / combined, should match --seconds in most cases.")
+    parser.add_argument("--max_latency", type=int, default=10, help="Max latency for messages before they are throttled / combined, should match --seconds in most cases.")
     parser.add_argument("--continuation", action="store_true", default=False, help="Continuation of the last audio")
     parser.add_argument("--negative_prompt", type=str, default="noise, static, crackles, pops, depressing, sad, slow, boring, annoying, stuttering", help="Negative prompt for the model")
     args = parser.parse_args()

@@ -166,10 +166,16 @@ def main():
             combine_time = max(0, (latency / 1000) - max_latency)
 
             # read and combine the messages for 60 seconds into a single message
+            priority = 0
             while time.time() - start < combine_time:
                 header_message = receiver.recv_json()
                 header_message["stream"] = "image"
                 header_message["throttle"] = "true"
+                if 'priority' in header_message:
+                    priority = header_message["priority"]
+                    if priority == 100:
+                        retry = True # keep header and continue with this message on loop
+                        break
 
                 sender.send_json(header_message, zmq.SNDMORE)
                 sender.send(last_image)
@@ -196,7 +202,7 @@ def main():
 
         # genre
         genre = args.genre
-        if "genre" in header_message:
+        if "genre" in header_message and header_message["genre"] != "":
             genre = header_message["genre"]
 
         # Clean text

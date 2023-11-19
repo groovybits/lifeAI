@@ -274,7 +274,9 @@ def main():
                         "maxtokens": args.maxtokens,
                         "voice_model": args.voice,
                         "gender": args.gender,
-                        "genre": args.aipersonality,
+                        "genre_music": args.genre_music,
+                        "genre": args.genre,
+                        "priority": 0
                     }
                     socket.send_json(client_request)
                 else:
@@ -304,7 +306,9 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--voice", type=str, default="mimic3:en_US/vctk_low#p303:1.5", help="Voice model to use as default.")
     parser.add_argument("-replay", "--replay", action="store_true", default=False, help="Replay mode, replay the news stories from the database.")
     parser.add_argument("--gender", type=str, default="female", help="Default gender")
-    parser.add_argument("--genre", type=str, default="", help="Default genre to send to image and music generation, defaults to aipersonality.")
+    parser.add_argument("--genre", type=str, default="", help="Default genre to send to image generation, defaults to aipersonality.")
+    parser.add_argument("--genre_music", type=str, default="newscast, breaking news, exiciting action oriented music with a upbeat happy, energetic sound and driving beat.", 
+                        help="Default genre to send to music generation, defaults to aipersonality.")
 
     args = parser.parse_args()
 
