@@ -109,7 +109,7 @@ class AiTwitchBot(commands.Cog):
             # Check our list of personalities
             if ainame_request not in personalities:
                 logger.info(f"--- {name} asked for character {ainame_request} but they don't exist, using default {ainame}.")
-                #await ctx.send(f"{name} the personality you have chosen is not in the list of personalities.")
+                await ctx.send(f"{name} the personality you have chosen is not in the list of personalities, which is case sensitive and can be listed using !personalities.")
                 #await ctx.send(f"Personalities:\n{json.dumps(personalities, )}\n")
             else:
                 ainame = ainame_request
@@ -148,8 +148,8 @@ class AiTwitchBot(commands.Cog):
             cursor.execute("SELECT content FROM messages WHERE user = ? ORDER BY timestamp", (name,))
             dbdata = cursor.fetchall()
             history = [ChatCompletionMessage(role="user", content=d[0]) for d in dbdata]
-            # truncate history array to 3 entries
-            history = history[-3:]
+            # truncate history array to 1 entries
+            history = history[-1:]
             # flatten history into a string representation
             history = " ".join([str(h) for h in history])
             history = clean_text(history).replace('\n', ' ')
@@ -157,7 +157,7 @@ class AiTwitchBot(commands.Cog):
             db_conn.close()
 
             is_episode = "false"
-            if 'Episode' in question or 'Story' in question:
+            if 'Episode' in question:
                 is_episode = "true"
 
             # personality image and music
@@ -180,7 +180,7 @@ class AiTwitchBot(commands.Cog):
                 "aipersonality": aipersonality,
                 "ainame": ainame,
                 "history": history,
-                "maxtokens": 2000,
+                "maxtokens": 800,
                 "voice_model": args.voice,
                 "gender": args.gender,
                 "genre_music": genre_music,
@@ -240,7 +240,8 @@ class AiTwitchBot(commands.Cog):
                 "username": name,
                 "source": "Twitch",
                 "message": clean_text(prompt),
-                "maxtokens": 500,
+                "maxtokens": 300,
+                "episode": "false",
                 "aipersonality": "a musician and will compose an amazing piece of music for us.",
                 "ainame": "MusicGen",
                 "gender": args.gender,
@@ -297,7 +298,7 @@ class AiTwitchBot(commands.Cog):
                 "source": "Twitch",
                 "episode": "false",
                 "message": clean_text(prompt),
-                "maxtokens": 500,
+                "maxtokens": 300,
                 "aipersonality": "a digital artist and phtographer, you will compose an amazing piece of art or take an amazing photo image for us.",
                 "ainame": "ImageGen",
                 "gender": args.gender,

@@ -130,33 +130,53 @@ def main():
     female_voice_index = 0
     speaker_map = {}
     last_speaker = None
-    voice_service = args.service
-    service_switch = False
+    switched_story = False
+    last_mediaid = 0
+    # voice, gender
+    male_voices = []
+    female_voices = []
+
+    tts_api = args.service
+    last_tts_api = ""
+
+    ## set the defaults
+    voice_speed = "1.5"
+    voice_model = None
+    voice_set = False
     while True:
         header_message = receiver.recv_json()
         segment_number = header_message["segment_number"]
         text = header_message["text"]
         episode = header_message["episode"]
+        mediaid = header_message["mediaid"]
 
-        # voice, gender
-        male_voices = []
-        female_voices = []
+        if last_mediaid != mediaid:
+            last_mediaid = mediaid
+            switched_story = True
+            last_gender = args.gender
+            last_voice_model = args.voice
+            male_voice_index = 0
+            female_voice_index = 0
+            speaker_map = {}
+            last_speaker = None
+            tts_api = args.service
 
-        tts_api = args.service
-        service_switch = False
+            ## set the defaults
+            voice_model = None
 
-        ## set the defaults
-        voice_speed = "1.5"
-        voice_model = None
-        if tts_api == "mimic3":
-            voice_speed = "1.5"
+            if tts_api == "mimic3":
+                voice_speed = "1.5"
+            else:
+                voice_speed = args.length_scale
+            voice_set = False
         else:
-            voice_speed = args.length_scale
+            switched_story = False
 
+        # request to change the gender
         if 'gender' in header_message:
             last_gender = header_message['gender']
 
-        voice_set = False
+        # request to switch the voice model
         if 'voice_model' in header_message:
             voice_data = header_message["voice_model"]
             # "voice_model": "mimic3:en_US/cmu-arctic_low#eey:1.2",
@@ -170,166 +190,157 @@ def main():
         else:
             logger.info(f"Text to Speech: Voice Model default, no 'voice_model' in request: {voice_model} at speed {voice_speed} using API {tts_api}.")
 
-        if tts_api == "openai":
-            male_voices = ['alloy', 'echo', 'fabel', 'oynx']
-            female_voices = ['nova', 'shimmer']
-            default_voice = 'nova'
-            if voice_service != "openai":
-                voice_service = "openai"
-                voice_model = default_voice
-                service_switch = True
-                last_voice_model = default_voice
-        elif tts_api == "mimic3":
-            male_voices = [
-                #'en_US/hifi-tts_low#6097',
-                #'en_US/hifi-tts_low#9017',
-                'en_US/vctk_low#p326',
-                'en_US/vctk_low#p259',
-                'en_US/vctk_low#p247',
-                'en_US/vctk_low#p263',
-                'en_US/vctk_low#p286',
-                'en_US/vctk_low#p270',
-                'en_US/vctk_low#p281',
-                'en_US/vctk_low#p271',
-                'en_US/vctk_low#p273',
-                'en_US/vctk_low#p284',
-                'en_US/vctk_low#p287',
-                'en_US/vctk_low#p360',
-                'en_US/vctk_low#p376',
-                'en_US/vctk_low#p304',
-                'en_US/vctk_low#p347',
-                'en_US/vctk_low#p311',
-                'en_US/vctk_low#p334',
-                'en_US/vctk_low#p316',
-                'en_US/vctk_low#p363',
-                'en_US/vctk_low#p275',
-                'en_US/vctk_low#p258',
-                'en_US/vctk_low#p232',
-                'en_US/vctk_low#p292',
-                'en_US/vctk_low#p272',
-                'en_US/vctk_low#p278',
-                'en_US/vctk_low#p298',
-                'en_US/vctk_low#p279',
-                'en_US/vctk_low#p285',
-                'en_US/vctk_low#p326', # super deep voice
-                'en_US/vctk_low#p254',
-                'en_US/vctk_low#p252',
-                'en_US/vctk_low#p345',
-                'en_US/vctk_low#p243',
-                'en_US/vctk_low#p227',
-                'en_US/vctk_low#p225',
-                'en_US/vctk_low#p251',
-                'en_US/vctk_low#p246',
-                'en_US/vctk_low#p226',
-                'en_US/vctk_low#p260',
-                'en_US/vctk_low#p245',
-                'en_US/vctk_low#p241',
-                'en_US/vctk_low#p237',
-                'en_US/vctk_low#p256',
-                'en_US/vctk_low#p302',
-                'en_US/vctk_low#p264',
-                'en_US/vctk_low#p225',
-                'en_US/cmu-arctic_low#rms',
-                'en_US/cmu-arctic_low#ksp',
-                'en_US/cmu-arctic_low#aew',
-                'en_US/cmu-arctic_low#bdl',
-                'en_US/cmu-arctic_low#jmk',
-                'en_US/cmu-arctic_low#fem',
-                'en_US/cmu-arctic_low#ahw',
-                'en_US/cmu-arctic_low#aup',
-                'en_US/cmu-arctic_low#gke'
-            ]
-            female_voices = [
-                'en_US/vctk_low#p303', #'en_US/hifi-tts_low#92',
-                'en_US/vctk_low#s5',
-                'en_US/vctk_low#p264',
-                'en_US/vctk_low#p239',
-                'en_US/vctk_low#p236',
-                'en_US/vctk_low#p250',
-                'en_US/vctk_low#p261',
-                'en_US/vctk_low#p283',
-                'en_US/vctk_low#p276',
-                'en_US/vctk_low#p277',
-                'en_US/vctk_low#p231',
-                'en_US/vctk_low#p238',
-                'en_US/vctk_low#p257',
-                'en_US/vctk_low#p329',
-                'en_US/vctk_low#p261',
-                'en_US/vctk_low#p310',
-                'en_US/vctk_low#p340',
-                'en_US/vctk_low#p330',
-                'en_US/vctk_low#p308',
-                'en_US/vctk_low#p314',
-                'en_US/vctk_low#p317',
-                'en_US/vctk_low#p339',
-                'en_US/vctk_low#p294',
-                'en_US/vctk_low#p305',
-                'en_US/vctk_low#p266',
-                'en_US/vctk_low#p318',
-                'en_US/vctk_low#p323',
-                'en_US/vctk_low#p351',
-                'en_US/vctk_low#p333',
-                'en_US/vctk_low#p313',
-                'en_US/vctk_low#p244',
-                'en_US/vctk_low#p307',
-                'en_US/vctk_low#p336',
-                'en_US/vctk_low#p312',
-                'en_US/vctk_low#p267',
-                'en_US/vctk_low#p297',
-                'en_US/vctk_low#p295',
-                'en_US/vctk_low#p288',
-                'en_US/vctk_low#p301',
-                'en_US/vctk_low#p280',
-                'en_US/vctk_low#p241',
-                'en_US/vctk_low#p268',
-                'en_US/vctk_low#p299',
-                'en_US/vctk_low#p300',
-                'en_US/vctk_low#p230',
-                'en_US/vctk_low#p269',
-                'en_US/vctk_low#p293',
-                'en_US/vctk_low#p262',
-                'en_US/vctk_low#p343',
-                'en_US/vctk_low#p229',
-                'en_US/vctk_low#p240',
-                'en_US/vctk_low#p248',
-                'en_US/vctk_low#p253',
-                'en_US/vctk_low#p233',
-                'en_US/vctk_low#p228',
-                'en_US/vctk_low#p282',
-                'en_US/vctk_low#p234',
-                'en_US/vctk_low#p303', # nice crackly voice
-                'en_US/vctk_low#p265',
-                'en_US/vctk_low#p306',
-                'en_US/vctk_low#p249',
-                'en_US/vctk_low#p362',
-                'en_US/ljspeech_low',
-                'en_US/cmu-arctic_low#ljm',
-                'en_US/cmu-arctic_low#slp',
-                'en_US/cmu-arctic_low#axp',
-                'en_US/cmu-arctic_low#eey',
-                'en_US/cmu-arctic_low#lnh',
-                'en_US/cmu-arctic_low#elb',
-                'en_US/cmu-arctic_low#slt'
-            ]
-            default_voice = 'en_US/vctk_low#p303',
-            if voice_service != "mimic3":
-                voice_service = "mimic3"
-                if voice_model == None and not voice_set:
+        # switched TTS Services
+        if tts_api != last_tts_api:
+            last_tts_api = tts_api
+            # OpenAI API
+            if tts_api == "openai":
+                male_voices = ['alloy', 'echo', 'fabel', 'oynx']
+                female_voices = ['nova', 'shimmer']
+                default_voice = 'nova'
+                if voice_model == None:
                     voice_model = default_voice
-                service_switch = True
-                last_voice_model = voice_model
+            elif tts_api == "mimic3":
+                male_voices = [
+                    #'en_US/hifi-tts_low#6097',
+                    #'en_US/hifi-tts_low#9017',
+                    'en_US/vctk_low#p326',
+                    'en_US/vctk_low#p259',
+                    'en_US/vctk_low#p247',
+                    'en_US/vctk_low#p263',
+                    'en_US/vctk_low#p286',
+                    'en_US/vctk_low#p270',
+                    'en_US/vctk_low#p281',
+                    'en_US/vctk_low#p271',
+                    'en_US/vctk_low#p273',
+                    'en_US/vctk_low#p284',
+                    'en_US/vctk_low#p287',
+                    'en_US/vctk_low#p360',
+                    'en_US/vctk_low#p376',
+                    'en_US/vctk_low#p304',
+                    'en_US/vctk_low#p347',
+                    'en_US/vctk_low#p311',
+                    'en_US/vctk_low#p334',
+                    'en_US/vctk_low#p316',
+                    'en_US/vctk_low#p363',
+                    'en_US/vctk_low#p275',
+                    'en_US/vctk_low#p258',
+                    'en_US/vctk_low#p232',
+                    'en_US/vctk_low#p292',
+                    'en_US/vctk_low#p272',
+                    'en_US/vctk_low#p278',
+                    'en_US/vctk_low#p298',
+                    'en_US/vctk_low#p279',
+                    'en_US/vctk_low#p285',
+                    'en_US/vctk_low#p326', # super deep voice
+                    'en_US/vctk_low#p254',
+                    'en_US/vctk_low#p252',
+                    'en_US/vctk_low#p345',
+                    'en_US/vctk_low#p243',
+                    'en_US/vctk_low#p227',
+                    'en_US/vctk_low#p225',
+                    'en_US/vctk_low#p251',
+                    'en_US/vctk_low#p246',
+                    'en_US/vctk_low#p226',
+                    'en_US/vctk_low#p260',
+                    'en_US/vctk_low#p245',
+                    'en_US/vctk_low#p241',
+                    'en_US/vctk_low#p237',
+                    'en_US/vctk_low#p256',
+                    'en_US/vctk_low#p302',
+                    'en_US/vctk_low#p264',
+                    'en_US/vctk_low#p225',
+                    'en_US/cmu-arctic_low#rms',
+                    'en_US/cmu-arctic_low#ksp',
+                    'en_US/cmu-arctic_low#aew',
+                    'en_US/cmu-arctic_low#bdl',
+                    'en_US/cmu-arctic_low#jmk',
+                    'en_US/cmu-arctic_low#fem',
+                    'en_US/cmu-arctic_low#ahw',
+                    'en_US/cmu-arctic_low#aup',
+                    'en_US/cmu-arctic_low#gke'
+                ]
+                female_voices = [
+                    'en_US/vctk_low#p303', #'en_US/hifi-tts_low#92',
+                    'en_US/vctk_low#s5',
+                    'en_US/vctk_low#p264',
+                    'en_US/vctk_low#p239',
+                    'en_US/vctk_low#p236',
+                    'en_US/vctk_low#p250',
+                    'en_US/vctk_low#p261',
+                    'en_US/vctk_low#p283',
+                    'en_US/vctk_low#p276',
+                    'en_US/vctk_low#p277',
+                    'en_US/vctk_low#p231',
+                    'en_US/vctk_low#p238',
+                    'en_US/vctk_low#p257',
+                    'en_US/vctk_low#p329',
+                    'en_US/vctk_low#p261',
+                    'en_US/vctk_low#p310',
+                    'en_US/vctk_low#p340',
+                    'en_US/vctk_low#p330',
+                    'en_US/vctk_low#p308',
+                    'en_US/vctk_low#p314',
+                    'en_US/vctk_low#p317',
+                    'en_US/vctk_low#p339',
+                    'en_US/vctk_low#p294',
+                    'en_US/vctk_low#p305',
+                    'en_US/vctk_low#p266',
+                    'en_US/vctk_low#p318',
+                    'en_US/vctk_low#p323',
+                    'en_US/vctk_low#p351',
+                    'en_US/vctk_low#p333',
+                    'en_US/vctk_low#p313',
+                    'en_US/vctk_low#p244',
+                    'en_US/vctk_low#p307',
+                    'en_US/vctk_low#p336',
+                    'en_US/vctk_low#p312',
+                    'en_US/vctk_low#p267',
+                    'en_US/vctk_low#p297',
+                    'en_US/vctk_low#p295',
+                    'en_US/vctk_low#p288',
+                    'en_US/vctk_low#p301',
+                    'en_US/vctk_low#p280',
+                    'en_US/vctk_low#p241',
+                    'en_US/vctk_low#p268',
+                    'en_US/vctk_low#p299',
+                    'en_US/vctk_low#p300',
+                    'en_US/vctk_low#p230',
+                    'en_US/vctk_low#p269',
+                    'en_US/vctk_low#p293',
+                    'en_US/vctk_low#p262',
+                    'en_US/vctk_low#p343',
+                    'en_US/vctk_low#p229',
+                    'en_US/vctk_low#p240',
+                    'en_US/vctk_low#p248',
+                    'en_US/vctk_low#p253',
+                    'en_US/vctk_low#p233',
+                    'en_US/vctk_low#p228',
+                    'en_US/vctk_low#p282',
+                    'en_US/vctk_low#p234',
+                    'en_US/vctk_low#p303', # nice crackly voice
+                    'en_US/vctk_low#p265',
+                    'en_US/vctk_low#p306',
+                    'en_US/vctk_low#p249',
+                    'en_US/vctk_low#p362',
+                    'en_US/ljspeech_low',
+                    'en_US/cmu-arctic_low#ljm',
+                    'en_US/cmu-arctic_low#slp',
+                    'en_US/cmu-arctic_low#axp',
+                    'en_US/cmu-arctic_low#eey',
+                    'en_US/cmu-arctic_low#lnh',
+                    'en_US/cmu-arctic_low#elb',
+                    'en_US/cmu-arctic_low#slt'
+                ]
+                default_voice = 'en_US/vctk_low#p303',
+                if voice_model == None:
+                    voice_model = default_voice
 
         # Guess gender
         gender = last_gender
 
         # Find and assign voices to speakers
         new_voice_model = None
-
-        if voice_model == None:
-            if service_switch:
-                voice_model = default_voice
-            else:
-                voice_model = last_voice_model
 
         # Regex pattern to find speaker names with different markers
         speaker_pattern = r'^(?:\[/INST\])?<<([A-Za-z]+)>>|^(?:\[\w+\])?([A-Za-z]+):'
@@ -408,8 +419,8 @@ def main():
         # Outside of the for loop
         if new_voice_model and voice_set == False:
             logger.info(f"Text to Speech: Speaker found, switching from {last_voice_model} to voice {new_voice_model}.")
-            last_voice_model = new_voice_model
             voice_model = new_voice_model
+            last_voice_model = voice_model
         else:
             logger.info(f"Text to Speech: Speaker not found, using default voice {voice_model}.")
             last_voice_model = voice_model

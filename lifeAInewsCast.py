@@ -36,10 +36,11 @@ def get_news(offset=0, keywords="ai", categories="technology,science,entertainme
     params = urllib.parse.urlencode({
         'access_key': os.environ['MEDIASTACK_API_KEY'],
         'categories': categories,
-        'countries': 'us',
-        'languages': 'en',
+        'countries': args.countries,
+        'languages': args.languages,
+        'sources': args.sources,
         'keywords': keywords,
-        'sort': 'published_desc',
+        'sort': args.sort,
         'limit': 100,
         'offset': offset,
         })
@@ -290,21 +291,25 @@ if __name__ == "__main__":
     default_personality = "You are Life AI's Groovy AI Bot GAIB. You are acting as a news reporter getting stories and analyzing them and presenting various thoughts and relations of them with a joyful compassionate wise perspective. Make the news fun and silly, joke and make comedy out of the world. Speak in a conversational tone referencing yourself and the person who asked the question if given.  Maintain your role without revealing that you're an AI Language model or your inability to access real-time information. Do not mention the text or sources used, treat the contextas something you are using as internal thought to generate responses as your role."
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--interval", type=int, default=120, required=False, help="interval to send messages in seconds, default is 90")
+    parser.add_argument("--interval", type=int, default=300, required=False, help="interval to send messages in seconds, default is 300")
     parser.add_argument("--output_port", type=int, default=8000, required=False, help="Port to send message to")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Host for sending message to.")
     parser.add_argument("--username", type=str, required=False, default="NewsAnchor", help="Username of sender")
     parser.add_argument("--keywords", type=str, required=False, default="ai anime manga llm buddhism cats artificial intelligence llama2 openai elon musk psychedelics", help="Keywords for news stories")
-    parser.add_argument("--categories", type=str, required=False, default="technology,science,entertainment", help="News stories categories")
+    parser.add_argument("--categories", type=str, required=False, default="technology,science,entertainment,-sports", help="News stories categories")
+    parser.add_argument("--languages", type=str, required=False, default="en", help="News stories languages")
+    parser.add_argument("--countries", type=str, required=False, default="us,in", help="News stories countries")
+    parser.add_argument("--sources", type=str, required=False, default="cnn,bbc-news,-fox-news,google-news,google-news-au,google-news-ca,google-news-in,google-news-uk,msnbc,nbc-news,news24,reuters,the-verge,the-wall-street-journal,the-washington-post,time,usa-today", help="News stories sources")
+    parser.add_argument("--sort", type=str, required=False, default="published_desc", help="News stories sort order, default published_desc")
     parser.add_argument("--prompt", type=str, required=False, default="Tell us about the news story in the context with humor and joy...",
                         help="Prompt to give context as a newstory feed")
     parser.add_argument("--aipersonality", type=str, required=False, default=f"{default_personality}", help="AI personality")
     parser.add_argument("--ainame", type=str, required=False, default="GAIB", help="AI name")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
-    parser.add_argument("-e", "--episode", action="store_true", default=False, help="Episode mode, Output a TV Episode format script.")
-    parser.add_argument("-mt", "--maxtokens", type=int, default=1000, help="Max tokens per message")
-    parser.add_argument("-v", "--voice", type=str, default="mimic3:en_US/vctk_low#p303:1.5", help="Voice model to use as default.")
-    parser.add_argument("-replay", "--replay", action="store_true", default=False, help="Replay mode, replay the news stories from the database.")
+    parser.add_argument("--episode", action="store_true", default=False, help="Episode mode, Output a TV Episode format script.")
+    parser.add_argument("--maxtokens", type=int, default=1000, help="Max tokens per message")
+    parser.add_argument("--voice", type=str, default="mimic3:en_US/vctk_low#p303:1.5", help="Voice model to use as default.")
+    parser.add_argument("--replay", action="store_true", default=False, help="Replay mode, replay the news stories from the database.")
     parser.add_argument("--gender", type=str, default="female", help="Default gender")
     parser.add_argument("--genre", type=str, default="", help="Default genre to send to image generation, defaults to aipersonality.")
     parser.add_argument("--genre_music", type=str, default="newscast, breaking news, exiciting action oriented music with a upbeat happy, energetic sound and driving beat.", 
