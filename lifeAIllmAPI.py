@@ -378,9 +378,9 @@ def main(args):
                 instructions = iprompt_l, 
                 output = oprompt_l)
             
-            tmp_history.append("<s>[INST]<<SYS>>%s<</SYS>>[/INST]</s>" % current_system_prompt)
+            #tmp_history.append("<s>[INST]<<SYS>>%s<</SYS>>[/INST]</s>" % current_system_prompt)
             tmp_history.extend(history) # add the history of the conversation
-            tmp_history.append("<s>[INST]%s%s\n\n%s: %s[/INST]\n%s:" % (
+            tmp_history.append("<s>[INST]<<SYS>>%s<</SYS>>\n%s%s\n\n%s: %s[/INST]\n%s:" % (current_system_prompt,
                                                                               prompt_context, 
                                                                             user_prompt.format(user=header_message["username"], 
                                                                                 Q=qprompt_l, 
@@ -451,7 +451,7 @@ if __name__ == "__main__":
     parser.add_argument("-tp", "--characters_per_line", type=int, default=120, help="Minimum number of characters per buffer, buffer window before output. default 100")
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
     parser.add_argument("--nopurgecontext", action="store_true", default=False, help="Don't Purge context, warning this will cause memory issues!")
-    parser.add_argument("--n_keep", type=int, default=2, help="Number of messages to keep for the context.")
+    parser.add_argument("--n_keep", type=int, default=1, help="Number of messages to keep for the context.")
     parser.add_argument("--no_cache_prompt", action='store_true', help="Flag to disable caching of prompts.")
     parser.add_argument("--contextpct", type=float, default=0.75, help="Percentage of context to use for history.")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")

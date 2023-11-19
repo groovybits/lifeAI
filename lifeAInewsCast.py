@@ -273,7 +273,8 @@ def main():
                         "ainame": args.ainame,
                         "maxtokens": args.maxtokens,
                         "voice_model": args.voice,
-                        "gender": args.gender
+                        "gender": args.gender,
+                        "genre": args.aipersonality,
                     }
                     socket.send_json(client_request)
                 else:
@@ -303,6 +304,7 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--voice", type=str, default="mimic3:en_US/vctk_low#p303:1.5", help="Voice model to use as default.")
     parser.add_argument("-replay", "--replay", action="store_true", default=False, help="Replay mode, replay the news stories from the database.")
     parser.add_argument("--gender", type=str, default="female", help="Default gender")
+    parser.add_argument("--genre", type=str, default="", help="Default genre to send to image and music generation, defaults to aipersonality.")
 
     args = parser.parse_args()
 
@@ -366,6 +368,9 @@ if __name__ == "__main__":
     socket = context.socket(zmq.PUSH)
     logger.info("connect to send message: %s:%d" % (args.output_host, args.output_port))
     socket.connect(f"tcp://{args.output_host}:{args.output_port}")
+
+    if args.genre == "":
+        args.genre = args.aipersonality
 
     main()
 

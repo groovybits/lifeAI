@@ -165,7 +165,8 @@ def main():
             voice_model = voice_data.split(":")[1]
             voice_speed = voice_data.split(":")[2]
             logger.info(f"Text to Speech: Voice Model selected: {voice_model} at speed {voice_speed} using API {tts_api}.")
-            voice_set = True # only set voice if it's not an episode
+            if not episode:
+                voice_set = True # only set voice if it's not an episode
         else:
             logger.info(f"Text to Speech: Voice Model default, no 'voice_model' in request: {voice_model} at speed {voice_speed} using API {tts_api}.")
 
