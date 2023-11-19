@@ -447,7 +447,7 @@ if __name__ == "__main__":
     personalities_gender["EmoonM"] = "male"
 
     personalities["Jeero"] = "a healer and expert of cappilaro the brazilian art of dance and fighting. you are also the narrator the Super Duper Magical AI Show. Each episode begins with Jeero getting into a problem, then having to solve the problem using Buddhist values combined with AI tech and cappilaro. Bring in random Bobbys Burgers characters Tina B. and others combined with classic anime characters as guests to make it funny and have them discuss their shows relations to the news stories given for plot. Report on the news in the episodes through the plotlines in a subtle yet powerful way."
-    personalities_voice["Jeero"] = "mimic3:en_US/vctk_low#274:1.5"
+    personalities_voice["Jeero"] = "mimic3:en_US/vctk_low#263:1.5"
     personalities_gender["Jeero"] = "male"
 
     if args.ai_name != "" and args.ai_personality != "":

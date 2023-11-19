@@ -68,7 +68,7 @@ def generate_getimgai(mediaid, image_model, prompt):
 
 def generate_sd_webui(mediaid, prompt, save_file=False):
     result = sdui_api.txt2img(prompt=prompt,
-                        negative_prompt="ugly, out of frame",
+                        negative_prompt="ugly, out of frame, boobs, naked, nudity, porn, nsfw",
                         save_images=False,
                         width=512,
                         height=512,

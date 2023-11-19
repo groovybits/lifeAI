@@ -165,8 +165,7 @@ def main():
             voice_model = voice_data.split(":")[1]
             voice_speed = voice_data.split(":")[2]
             logger.info(f"Text to Speech: Voice Model selected: {voice_model} at speed {voice_speed} using API {tts_api}.")
-            if not episode:
-                voice_set = True # only set voice if it's not an episode
+            voice_set = True # only set voice if it's not an episode
         else:
             logger.info(f"Text to Speech: Voice Model default, no 'voice_model' in request: {voice_model} at speed {voice_speed} using API {tts_api}.")
 
@@ -187,7 +186,6 @@ def main():
                 'en_US/vctk_low#p259',
                 'en_US/vctk_low#p247',
                 'en_US/vctk_low#p263',
-                'en_US/vctk_low#p274',
                 'en_US/vctk_low#p286',
                 'en_US/vctk_low#p270',
                 'en_US/vctk_low#p281',
@@ -196,7 +194,6 @@ def main():
                 'en_US/vctk_low#p284',
                 'en_US/vctk_low#p287',
                 'en_US/vctk_low#p360',
-                'en_US/vctk_low#p274',
                 'en_US/vctk_low#p376',
                 'en_US/vctk_low#p304',
                 'en_US/vctk_low#p347',
