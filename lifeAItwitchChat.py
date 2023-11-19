@@ -155,7 +155,7 @@ class AiTwitchBot(commands.Cog):
             db_conn.close()
 
             is_episode = "false"
-            if 'episode' in question.lower() or 'story' in question.lower():
+            if 'Episode' in question or 'Story' in question:
                 is_episode = "true"
 
             # Send the message
@@ -174,11 +174,11 @@ class AiTwitchBot(commands.Cog):
                 "voice_model": args.voice,
                 "gender": args.gender
             }
-            if ainame in personalities_voice:
+            if ainame in personalities_voice and is_episode == "false":
                 client_request["voice_model"] = personalities_voice[ainame]
-            if ainame in personalities_gender:
+            if ainame in personalities_gender and is_episode == "false":
                 client_request["gender"] = personalities_gender[ainame]
-            if ainame in personalities:
+            if ainame in personalities and is_episode == "false":
                 client_request["genre"] = personalities[ainame]
             socket.send_json(client_request)
 
