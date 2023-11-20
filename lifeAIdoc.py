@@ -135,7 +135,7 @@ def main():
             source_doc = document.metadata["source"]
             context_add = f"{clean_text(source_doc)} {clean_text(document.page_content)}"
             logger.info(f"Adding to context from source {source_doc}: {context_add}\n")
-            history.insert(0, f"{context_add}")
+            history.append(f"{context_add}")
 
         logger.info(f"Sending message from answer: {answer} with history: {json.dumps(history)}\n")
         header_message['history'] = history
