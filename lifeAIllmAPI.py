@@ -103,7 +103,7 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
                         ## match for a user name anywhere within the accumulated text of format username:
                         usermatch = re.search(r"(\.|\!|\?|\]|\"|\))\s*\b\w+:", accumulated_text)
                         usermatch_brackets = re.search(r"\[(\.|\!|\?|\]|\"|\))\s*\b\w+:\]", accumulated_text)
-
+                        speaker_pattern = re.search(r'^(?:\[/INST\])?<<([A-Za-z]+)>>|^(?:\[\w+\])?([A-Za-z]+):', accumulated_text)
 
                         # When checking for the break point, make sure to use the same text cleaning method for consistency
                         if (content.endswith("]\n")) or (len(accumulated_text) >= characters_per_line and ('.' in content or '?' in content or '!' in content or '\n' in content)):
@@ -124,6 +124,18 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
                             # remove remaining text from accumulated_text
                             accumulated_text = accumulated_text[:-(len(remaining_text)+1)]
                             header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count)
+                            current_tokens = 0
+                            header_message["tokens"] = remaining_text_tokens
+                            header_message["text"] = remaining_text
+                            accumulated_text = remaining_text
+                        elif speaker_pattern:
+                            split_index = speaker_pattern.start()
+                            remaining_text = accumulated_text[split_index+1:]
+                            remaining_text_tokens = len(remaining_text.split())
+                            accumulated_text = accumulated_text[:split_index+1]
+
+                            header_message = send_group(
+                                accumulated_text, zmq_sender, header_message.copy(), sentence_count)
                             current_tokens = 0
                             header_message["tokens"] = remaining_text_tokens
                             header_message["text"] = remaining_text

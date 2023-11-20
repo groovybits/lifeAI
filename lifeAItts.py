@@ -25,7 +25,7 @@ import torch
 from transformers import VitsModel, AutoTokenizer
 from transformers import logging as trlogging
 from pydub import AudioSegment
-import gender_guesser.detector as gender
+import gender_guesser.detector as gender_guess
 from openai import OpenAI
 
 trlogging.set_verbosity_error()
@@ -157,7 +157,6 @@ def main():
             last_voice_model = args.voice
             male_voice_index = 0
             female_voice_index = 0
-            speaker_map = {}
             last_speaker = None
             tts_api = args.service
 
@@ -356,23 +355,29 @@ def main():
                     if speaker not in speaker_map:
                         guessed_gender = d.get_gender(speaker.split()[0])  # assuming the first word is the name
                         
-                        if guessed_gender in ['male', 'mostly_male']:
-                            gender = "male"
-                        elif guessed_gender in ['female', 'mostly_female']:
-                            gender = "female"
-                        else:
-                            gender = "nonbinary"
-
+                        gender_marker = None
                         # Identify gender from text if not determined by name
                         if re.search(r'\[m\]', text):
-                            gender = "male"
+                            gender_marker = "male"
                         elif re.search(r'\[f\]', text):
-                            gender = "female"
+                            gender_marker = "female"
                         elif re.search(r'\[n\]', text):
-                            gender = "nonbinary"
+                            gender_marker = "nonbinary"
+
+                        gender_g = None
+                        if gender_marker == None:
+                            if guessed_gender in ['male', 'mostly_male']:
+                                gender_g = "male"
+                            elif guessed_gender in ['female', 'mostly_female']:
+                                gender_g = "female"
+
+                        if gender_marker:
+                            gender = gender_marker
+                        elif gender_g:
+                            gender = gender_g
                         else:
                             gender = last_gender
-
+                        
                         last_gender = gender
 
                         if gender == "male":
@@ -552,6 +557,6 @@ if __name__ == "__main__":
 
     openai_client = OpenAI()
 
-    d = gender.Detector(case_sensitive=False)
+    d = gender_guess.Detector(case_sensitive=False)
 
     main()
