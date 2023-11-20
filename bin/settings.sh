@@ -14,5 +14,5 @@ KEYWORDS="$AIKEYWORDS $ANIMEKEYWORDS"
 # technology - Technology News
 CATEGORIES="technology,science,business,entertainment,health"
 #REPLAY="--replay"
-#EPISODE="--episode"
+EPISODE="--episode"
 
