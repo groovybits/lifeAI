@@ -96,8 +96,7 @@ def get_news(offset=0, keywords="ai", categories="technology,science,entertainme
                                     logger.info(f"Replaying story from database... {mediaid} {story['title']}")
                         except Exception as e:
                             logger.error(f"{traceback.print_exc()}")
-                            logger.error(f"Error inserting into database: {e}")
-                            found = True
+                            logger.error(f"Error inserting into database: {json.dumps(story)} {e}")
                 db.close()
                 if not found:
                     logger.error(f"Found no new stories.")
@@ -170,25 +169,36 @@ def main():
 
     pagination = 0
     failures = 0
+    successes = 0
     while True:
         logger.info(f"Getting news from Media Stack...")
         try:
             news_json_result = get_news(pagination, args.keywords, args.categories)
             if news_json_result == None:
                 logger.error(f"Error getting news from Media Stack, retrying in 30 seconds...")
-                if failures > 5:
-                    pagination = 0
-                    logger.error(f"Too many failures, resetting pagination to 0.")
+                pagination = 0
+                logger.error(f"Too many failures, resetting pagination to 0.")
                 time.sleep(30)
                 failures += 1
                 continue
+            elif news_json_result == {}:
+                # no news stories found, continue to next iteration pagination
+                logger.error(f"No news stories found, incrementing pagination from {pagination} and retrying {failures}...")
+                pagination += 100
+                time.sleep(3)
+                continue
+
+            # Success
+            pagination += 100
+            failures = 0
+            successes += 1
         except Exception as e:
             logger.error(f"{traceback.print_exc()}")
-            logger.error(f"Error getting news from Media Stack: {e}")
+            logger.error(f"Error {failures} getting news {pagination} from database: {e}")
             time.sleep(30)
+            failures += 1
+            pagination = 0
             continue
-
-        pagination += 100
 
         # iterate through the db fo news stories that haven't been played with 0 in the played column
         db = sqlite3.connect('db/news.db')
@@ -210,22 +220,22 @@ def main():
                     "category": row[8],
                     "language": row[9],
                     "country": row[10],
-                    "published_at": row[11]
+                    "published_at": row[11],
+                    "played": row[12]
                 })
         else:
-            logger.error(f"Error getting news from database: {e}")
+            logger.error(f"Error {failures} getting news {pagination} from database: {e}")
             time.sleep(30)
             continue
         db.close()
 
         if 'data' in news_json and len(news_json['data']) > 0:
             count = len(news_json['data'])
-            logger.info(f"got news feed with {count} articles from Media Stack.")
+            logger.info(f"#{successes}/{failures} got news feed {pagination} with {count} articles from Media Stack.")
             for story in news_json['data']:
                 logger.debug(f"Story: {story}")
                 if 'description' in story:
-                    # check if story is in db as unread with 0 for the played column
-                    
+                    # check if story is in db as unread with 0 for the played column 
                     try:
                         db = sqlite3.connect('db/news.db')
                         cursor = db.cursor()
@@ -252,8 +262,8 @@ def main():
                         logger.error(f"Empty news story! Skipping... {json.dumps(news_json)}")
                         continue
 
-                    message = f"\"{title}\" - {description[:500]}"
-                    logger.info(f"Sending message {message}")
+                    message = f"\"{title}\" - {description[:40]}"
+                    logger.info(f"Sending message {message} by {username}")
                     logger.debug(f"Sending story {story} by {username} - {description}")
 
                     is_episode = "false"
@@ -284,8 +294,6 @@ def main():
                     logger.error("News: Found an empty story! %s" % json.dumps(story))
 
                 time.sleep(args.interval)
-
-        pagination += 100
 
 if __name__ == "__main__":
     default_personality = "You are Life AI's Groovy AI Bot GAIB. You are acting as a news reporter getting stories and analyzing them and presenting various thoughts and relations of them with a joyful compassionate wise perspective. Make the news fun and silly, joke and make comedy out of the world. Speak in a conversational tone referencing yourself and the person who asked the question if given.  Maintain your role without revealing that you're an AI Language model or your inability to access real-time information. Do not mention the text or sources used, treat the contextas something you are using as internal thought to generate responses as your role. Give the news a fun quircky comedic spin like classic saturday night live."
