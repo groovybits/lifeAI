@@ -102,6 +102,8 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
 
                         ## match for a user name anywhere within the accumulated text of format username:
                         usermatch = re.search(r"(\.|\!|\?|\]|\"|\))\s*\b\w+:", accumulated_text)
+                        usermatch_brackets = re.search(r"\[(\.|\!|\?|\]|\"|\))\s*\b\w+:\]", accumulated_text)
+
 
                         # When checking for the break point, make sure to use the same text cleaning method for consistency
                         if (content.endswith("]\n")) or (len(accumulated_text) >= characters_per_line and ('.' in content or '?' in content or '!' in content or '\n' in content)):
@@ -128,6 +130,18 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
                             accumulated_text = remaining_text
                         elif usermatch:
                             split_index = usermatch.start()
+                            remaining_text = accumulated_text[split_index+1:]
+                            remaining_text_tokens = len(remaining_text.split())
+                            accumulated_text = accumulated_text[:split_index+1]
+
+                            header_message = send_group(
+                                accumulated_text, zmq_sender, header_message.copy(), sentence_count)
+                            current_tokens = 0
+                            header_message["tokens"] = remaining_text_tokens
+                            header_message["text"] = remaining_text
+                            accumulated_text = remaining_text
+                        elif usermatch_brackets:
+                            split_index = usermatch_brackets.start()
                             remaining_text = accumulated_text[split_index+1:]
                             remaining_text_tokens = len(remaining_text.split())
                             accumulated_text = accumulated_text[:split_index+1]
@@ -463,14 +477,14 @@ if __name__ == "__main__":
     parser.add_argument("--input_port", type=int, default=1500)
     parser.add_argument("--output_host", type=str, default="127.0.0.1")
     parser.add_argument("--output_port", type=int, default=2000)
-    parser.add_argument("--maxtokens", type=int, default=2000)
+    parser.add_argument("--maxtokens", type=int, default=1200)
     parser.add_argument("--context", type=int, default=32768, help="Size of context for LLM so we can measure history fill.")
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("-d", "--debug", action="store_true", default=False)
     parser.add_argument("--ai_name", type=str, default="GAIB")
     parser.add_argument("-e", "--episode", action="store_true", default=False, help="Episode mode, Output a TV Episode format script.")
     parser.add_argument("-p", "--personality", type=str, default="friendly helpful compassionate bodhisattva guru.", help="Personality of the AI, choices are 'friendly' or 'mean'.")
-    parser.add_argument("-tp", "--characters_per_line", type=int, default=180, help="Minimum number of characters per buffer, buffer window before output. default 100")
+    parser.add_argument("-tp", "--characters_per_line", type=int, default=150, help="Minimum number of characters per buffer, buffer window before output. default 100")
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
     parser.add_argument("--nopurgecontext", action="store_true", default=False, help="Don't Purge context, warning this will cause memory issues!")
     parser.add_argument("--n_keep", type=int, default=24, help="Number of messages to keep for the context.")

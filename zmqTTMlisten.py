@@ -104,7 +104,7 @@ if __name__ == "__main__":
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Host for receiving audio input")
     parser.add_argument("--output_directory", default="music", type=str, help="Directory path to save the received wave files in")
     parser.add_argument("--audio_format", type=str, choices=["wav", "raw"], default="wav", help="Audio format to save as. Choices are 'wav' or 'raw'. Default is 'wav'.")
-    parser.add_argument("--volume", type=float, default=0.55, help="Playback volume (0.0 to 1.0, default is 0.55)")
+    parser.add_argument("--volume", type=float, default=0.50, help="Playback volume (0.0 to 1.0, default is 0.50)")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--buffer_size", type=int, default=32786, help="Audio buffer size (default is 32786)")
     parser.add_argument("--channels", type=int, default=2, help="Number of audio channels (default is 2)")
