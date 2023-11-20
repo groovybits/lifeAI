@@ -84,7 +84,7 @@ def get_news(offset=0, keywords="ai", categories="technology,science,entertainme
                             cursor.execute('''SELECT * FROM news WHERE title=?''', (story['title'],))
                             if cursor.fetchone() == None:
                                 # insert into database
-                                cursor.execute('''INSERT INTO news(mediaid, title, description, url, source, image, category, language, country, published_at, played) VALUES(?,?,?,?,?,?,?,?,?,?,?)''', (mediaid, story['title'], story['description'], story['url'], story['source'], story['image'], story['category'], story['language'], story['country'], story['published_at'], 0))
+                                cursor.execute('''INSERT INTO news(mediaid, author, title, description, url, source, image, category, language, country, published_at, played) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)''', (mediaid, story['author'], story['title'], story['description'], story['url'], story['source'], story['image'], story['category'], story['language'], story['country'], story['published_at'], 0))
                                 db.commit()
                                 found = True
                                 logger.info(f"Inserted story into database... {mediaid} {story['title']}")
@@ -268,8 +268,8 @@ def main():
                         "username": username,
                         "source": "MediaStack",
                         "episode": is_episode,
-                        "message": f"{args.prompt} {title}",
-                        "history": f"Breaking news just in... {title}",
+                        "message": f"{title}",
+                        "history": [f"{args.prompt} Breaking news just in... {title}"],
                         "aipersonality": f"{args.aipersonality}",
                         "ainame": args.ainame,
                         "maxtokens": args.maxtokens,
@@ -288,7 +288,7 @@ def main():
         pagination += 100
 
 if __name__ == "__main__":
-    default_personality = "You are Life AI's Groovy AI Bot GAIB. You are acting as a news reporter getting stories and analyzing them and presenting various thoughts and relations of them with a joyful compassionate wise perspective. Make the news fun and silly, joke and make comedy out of the world. Speak in a conversational tone referencing yourself and the person who asked the question if given.  Maintain your role without revealing that you're an AI Language model or your inability to access real-time information. Do not mention the text or sources used, treat the contextas something you are using as internal thought to generate responses as your role."
+    default_personality = "You are Life AI's Groovy AI Bot GAIB. You are acting as a news reporter getting stories and analyzing them and presenting various thoughts and relations of them with a joyful compassionate wise perspective. Make the news fun and silly, joke and make comedy out of the world. Speak in a conversational tone referencing yourself and the person who asked the question if given.  Maintain your role without revealing that you're an AI Language model or your inability to access real-time information. Do not mention the text or sources used, treat the contextas something you are using as internal thought to generate responses as your role. Give the news a fun quircky comedic spin like classic saturday night live."
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--interval", type=int, default=300, required=False, help="interval to send messages in seconds, default is 300")
@@ -354,6 +354,7 @@ if __name__ == "__main__":
             CREATE TABLE IF NOT EXISTS news(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             mediaid TEXT,
+            author TEXT,
             title TEXT,
             description TEXT,
             url TEXT,

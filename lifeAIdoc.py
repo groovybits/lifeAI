@@ -98,11 +98,14 @@ def main():
         header_message = receiver.recv_json()
 
         # context
-        history = ""
-        if 'history' in header_message:
-            history = json.dumps(header_message['history'])
-        else:
-            history = ""
+        history = []
+        # check if history is an array, if not make it one
+        if 'history' in header_message and type(header_message['history']) is not list:
+            history = [header_message['history']]
+        elif 'history' in header_message:
+            history = header_message['history']
+        
+        # message
         message = ""
         if 'message' in header_message:
             message = header_message['message']
@@ -111,7 +114,7 @@ def main():
 
         message = clean_text(message)
 
-        logger.debug(f"received message: {message} in context: {history} {json.dumps(header_message)}\n")
+        logger.debug(f"received message: {message} in context: {json.dumps(history)} {json.dumps(header_message)}\n")
 
         # look up in chroma db
         logger.info(f"looking up {message} in chroma db...\n")
@@ -125,20 +128,17 @@ def main():
         if 'source_documents' not in res:
             logger.error(f"Error getting answer from Chroma DB: {res}")
             return None
-        logger.debug(f"got answer: {res['result']} in context: {history}\n")
+        logger.debug(f"got answer: {res['result']}.\n")
         answer, docs = res['result'], res['source_documents']
         for document in docs:
             logger.debug(f"got document: {document.metadata}\n")
             source_doc = document.metadata["source"]
-            context_add = f" {document.page_content}"
-            logger.info(f"Adding to context from source {document.metadata['source']}: {context_add}\n")
-            history += f"{context_add}. "
+            context_add = f"{clean_text(source_doc)} {clean_text(document.page_content)}"
+            logger.info(f"Adding to context from source {source_doc}: {context_add}\n")
+            history.insert(0, f"{context_add}")
 
-        logger.info(f"got answer: {answer} in context: {history}\n")
-        header_message['history'] = clean_text(history)
-
-        # send the processed message
-        logger.info(f"sending message: {message} in context: {history} {json.dumps(header_message)}\n")
+        logger.info(f"Sending message from answer: {answer} with history: {json.dumps(history)}\n")
+        header_message['history'] = history
 
         sender.send_json(header_message)
       
@@ -151,7 +151,7 @@ if __name__ == "__main__":
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--max_size", type=int, default=32768, required=False, help="Maximum size of text to process")
     parser.add_argument("--max_tokens", type=int, default=4096, required=False, help="Maximum tokens to process")
-    parser.add_argument("--doc_count", type=int, default=2, required=False, help="Number of documents to return")
+    parser.add_argument("--doc_count", type=int, default=4, required=False, help="Number of documents to return")
     parser.add_argument("--model", type=str, default="models/ggml-all-MiniLM-L6-v2-f16.bin", required=False, help="GPT model to use")
     parser.add_argument("--embeddings", type=str, default="all-MiniLM-L6-v2", required=False, help="HuggingFace embedding model to use")
 

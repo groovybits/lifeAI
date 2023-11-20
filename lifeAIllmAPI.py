@@ -201,7 +201,7 @@ def send_group(text, zmq_sender, header_message, sentence_count):
 
     return header_message
 
-def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_count, args):
+def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_count, stoptokens, args):
     logger.info(f"LLM generating text for media id {header_message['mediaid']}.")
 
     # Prepare the message to send to the LLM
@@ -220,6 +220,7 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
         "temperature": args.temperature,
         "characters_per_line": characters_per_line,
         "sentence_count": sentence_count,
+        "stoptokens": stoptokens,
     }
 
     try:
@@ -230,6 +231,12 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
             'stream': True,
         }
 
+        if stoptokens != "":
+            stoptokens_array = []
+            stoptokens_array.append("</s>")
+            stoptokens_array = stoptokens.split(",")
+            completion_params['stop'] = stoptokens_array
+            
         if int(header_message["maxtokens"]) > 0:
             completion_params['n_predict'] = int(header_message["maxtokens"])
         
@@ -314,7 +321,7 @@ def main(args):
                 "episode": client_request.get("episode", is_episode),
                 "ainame": client_request.get("ainame", args.ai_name),
                 "aipersonality": client_request.get("aipersonality", args.personality),
-                "context": client_request.get("history", ""),
+                "context": client_request.get("history", []),
                 "tokens": 0,
                 "md5sum": "",
                 "index": 0,
@@ -349,12 +356,7 @@ def main(args):
                         history = history[i+1:]
                         break
 
-            prompt_context = ""
-    
-            if "context" in header_message and header_message["context"]:
-                prompt_context = "Context: %s\n" % header_message["context"].replace("\n", " ").replace("\r", " ").replace("\t", " ").replace("  ", " ")
-                if prompt_context == "Context: \n":
-                    prompt_context = ""
+            tmp_history = []
 
             qprompt_l = qprompt
             aprompt_l = aprompt
@@ -362,30 +364,46 @@ def main(args):
             iprompt_l = iprompt
 
             # Setup episode mode if enabled
+            stoptokens = "Question:"
             if header_message["episode"] == "true":
+                stoptokens = "Plotline:"
                 qprompt_l = "Plotline"
                 aprompt_l = "Episode"
                 oprompt_l = "episode"
                 iprompt_l = ("Output as a full length TV episode formatted as character speaker parts with the syntax of 'name: lines' "
                              " where the speaker name has a colon after it then the speaker lines separated by new lines per speakers. "
-                             "create a unique plotline and a surprise ending. Do not use spaces in character names. "
+                             "Do not use spaces in character names. Speak in first person as the characters, do not summarize the scenes."
                              "keep speakers in separate paragraphs from one another always starting with the speaker name followed by a colon, "
                              "always break lines with 2 line breaks before changing speakers. Do not speak in run on sentences, "
                              "make sure they all are less than 120 lines before a period. Use the name 'narrator:' for any meta talk. "
-                             "Make it like a transcript easy to automate reading and speaking.")
+                             "Make it like a transcript easy to automate reading and speaking per speaker easily. do not output more than one episode.")
 
             # create a history of the conversation with system prompt at the start
-            tmp_history = []
             current_system_prompt = system_prompt.format( # add the system prompt
                 assistant = header_message["ainame"], 
                 personality = header_message["aipersonality"], 
                 instructions = iprompt_l, 
                 output = oprompt_l)
             
-            #tmp_history.append("<s>[INST]<<SYS>>%s<</SYS>>[/INST]</s>" % current_system_prompt)
+            media_type = header_message["mediatype"]
+            
+            tmp_history.append("<s>[INST]<<SYS>>%s<</SYS>>[/INST]</s>" % current_system_prompt)
             tmp_history.extend(history) # add the history of the conversation
-            tmp_history.append("<s>[INST]<<SYS>>%s<</SYS>>\n%s%s\n\n%s: %s[/INST]\n%s:" % (current_system_prompt,
-                                                                              prompt_context, 
+            if "context" in header_message and header_message["context"]:
+                # check if context is an array or string
+                if isinstance(header_message["context"], list):
+                    # create llama2 formatted history list of history conversation of each list member
+                    for i in range(len(header_message["context"])-1, -1, -1):
+                        if media_type == "News":
+                            tmp_history.append(
+                                f"<s>[INST]Give me a news story.[/INST]{header_message['context'][i]}</s>")
+                        else:
+                            tmp_history.append(
+                                f"<s>[INST]{header_message['context'][i]}[/INST]</s>")
+                elif isinstance(header_message["context"], str) and header_message["context"] != "":
+                    tmp_history.append(
+                        f"<s>[INST]{header_message['context']}[/INST]</s>")
+            tmp_history.append("<s>[INST]<<SYS>>%s<</SYS>>\n%s\n\n%s: %s[/INST]\n%s:" % (current_system_prompt,
                                                                             user_prompt.format(user=header_message["username"], 
                                                                                 Q=qprompt_l, 
                                                                                 A=aprompt_l), 
@@ -397,7 +415,7 @@ def main(args):
             logger.info(f"LLM: generated prompt: - {header_message['llm_prompt']}")
 
             # Call LLM function to process the request
-            header_message = run_llm(header_message, sender, api_endpoint, args.characters_per_line, args.sentence_count, args)
+            header_message = run_llm(header_message, sender, api_endpoint, args.characters_per_line, args.sentence_count, stoptokens, args)
 
             # store the history
             text = header_message["text"]
@@ -455,9 +473,9 @@ if __name__ == "__main__":
     parser.add_argument("-tp", "--characters_per_line", type=int, default=120, help="Minimum number of characters per buffer, buffer window before output. default 100")
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
     parser.add_argument("--nopurgecontext", action="store_true", default=False, help="Don't Purge context, warning this will cause memory issues!")
-    parser.add_argument("--n_keep", type=int, default=1, help="Number of messages to keep for the context.")
+    parser.add_argument("--n_keep", type=int, default=24, help="Number of messages to keep for the context.")
     parser.add_argument("--no_cache_prompt", action='store_true', help="Flag to disable caching of prompts.")
-    parser.add_argument("--contextpct", type=float, default=0.75, help="Percentage of context to use for history.")
+    parser.add_argument("--contextpct", type=float, default=0.50, help="Percentage of context to use for history.")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--llm_port", type=int, default=8080)
     parser.add_argument("--llm_host", type=str, default="127.0.0.1")

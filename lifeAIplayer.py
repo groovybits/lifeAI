@@ -311,6 +311,8 @@ def save_asset(asset, mediaid, segment_number, type):
 
     if type == "speek":
         file_path += ".wav"
+        asset = io.BytesIO(asset)
+        asset.seek(0)
         with open(file_path, 'wb') as file:
             file.write(asset)
     elif type == "image":
