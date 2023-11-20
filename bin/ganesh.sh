@@ -9,4 +9,6 @@ source bin/settings.sh
     --prompt "Hello and welcome to the Ganesh show where we discuss spiritual traditions from India" \
     --keywords "$KEYWORDS" $EPISODE $REPLAY \
     --voice "mimic3:en_US/vctk_low#p259:1.5" \
-    --gender "male"
+    --gender "male" \
+    --genre "Ganesh hindu deity as a news caster" \
+    --genre_music "Indian classical music for hinduism diety kirtan"

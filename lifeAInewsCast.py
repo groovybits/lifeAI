@@ -320,7 +320,7 @@ if __name__ == "__main__":
     parser.add_argument("--replay", action="store_true", default=False, help="Replay mode, replay the news stories from the database.")
     parser.add_argument("--gender", type=str, default="female", help="Default gender")
     parser.add_argument("--genre", type=str, default="", help="Default genre to send to image generation, defaults to aipersonality.")
-    parser.add_argument("--genre_music", type=str, default="newscast, breaking news, exiciting action oriented music with a upbeat happy, energetic sound and driving beat.", 
+    parser.add_argument("--genre_music", type=str, default="newscast, breaking news, exiciting action oriented music with a upbeat happy, energetic sound and mellow rythm.", 
                         help="Default genre to send to music generation, defaults to aipersonality.")
 
     args = parser.parse_args()
