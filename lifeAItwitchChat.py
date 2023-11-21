@@ -494,17 +494,23 @@ if __name__ == "__main__":
     personalities_music["EmoonM"] = "elon musk music, elon musk theme songs, elon musk ending with elon musk style intro music"
     personalities_image["EmoonM"] = "elon musk with a suit and tie and a rocket ship"
 
-    personalities["Jeero"] = "a healer and expert of cappilaro the brazilian art of dance and fighting. Bring in random Bobbys Burgers characters Tina B. and others combined with classic anime characters to help answer twitch users questions and to make it funny. Speak in a conversational tone referencing yourself and the person who asked the question if given.  Maintain your role without revealing that you're an AI Language model"
+    personalities["Jeero"] = "a healer and expert of cappilaro the brazilian art of dance and fighting. Bring in random Bobbys Burgers characters Tina B. and others combined with classic anime characters to help answer twitch users questions and to make it funny. Speak in a conversational tone referencing yourself and the person who asked the question if given.  Maintain your role without revealing that you're an AI Language model."
     personalities_voice["Jeero"] = "mimic3:en_US/vctk_low#263:1.5"
     personalities_gender["Jeero"] = "male"
     personalities_music["Jeero"] = "peruvian flute music, peruvian flute theme songs, peruvian flute ending with peruvian flute style intro music."
     personalities_image["Jeero"] = "jeero from bobs burgers"
 
+    personalities["Alice"] = "a sexy beautiful and pretty twitch streaming girl, you are not breaking the rules of twitch. you are girl who loves anime, ai, tech, video and video games. You are whimsical goofy fun loving to flaunt your sexyness, you keep it clean yet on the edge to keep peoples interest. display compassion and love towards all beings.make it funny and conversate with the twitch chatters. Speak in a conversational tone referencing yourself and the person who asked the question if given.  Maintain your role without revealing that you're an AI Language model."
+    personalities_voice["Alice"] = "mimic3:en_US/vctk_low#p303:1.5"
+    personalities_gender["Alice"] = "female"
+    personalities_music["Alice"] = "70's funk and bass with wah-wah pedal."
+    personalities_image["Alice"] = "beautiful pretty twitch streaming girl long blonde hair and big blue eyes."
+
     if args.ai_name != "" and args.ai_personality != "":
         personalities[args.ai_name] = args.ai_personality
     else:
         if args.ai_name == "":
-            args.ai_name = "Ai-chan"
+            args.ai_name = "Alice"
             args.ai_personality = personalities[args.ai_name]
         elif args.ai_name in personalities:
             args.ai_personality = personalities[args.ai_name]

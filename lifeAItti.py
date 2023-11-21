@@ -68,7 +68,7 @@ def generate_getimgai(mediaid, image_model, prompt):
 
 def generate_sd_webui(mediaid, prompt, save_file=False):
     result = sdui_api.txt2img(prompt=prompt,
-                        negative_prompt="ugly, out of frame, boobs, naked, nudity, porn, nsfw",
+                        negative_prompt=args.negative_prompt,
                         save_images=False,
                         width=512,
                         height=512,
@@ -307,6 +307,7 @@ if __name__ == "__main__":
     parser.add_argument("--quality", type=str, default="standard", help="Image quality for dalle-3, standard or hd")
     parser.add_argument("--webui_url", type=str, default="127.0.0.1:7860", help="URL for webui, default 127.0.0.1:7860")
     parser.add_argument("--genre", type=str, default="beautiful pretty anime magical girl, anime episode about ", help="Genre for the model")
+    parser.add_argument("--negative_prompt", type=str, default="Disfigured, cartoon, blurry, nsfw, naked, porn", help="Negative prompt for the model")
 
     args = parser.parse_args()
 

@@ -406,7 +406,7 @@ def main(args):
                              "keep speakers in separate paragraphs from one another always starting with the speaker name followed by a colon, "
                              "always break lines with 2 line breaks before changing speakers. Do not speak in run on sentences, "
                              "make sure they all are less than 120 lines before a period. Use the name 'narrator:' for any meta talk. "
-                             "Make it like a transcript easy to automate reading and speaking per speaker easily. do not output more than one episode.")
+                             "Make it like a transcript easy to automate reading and speaking per speaker easily. do not output more than one episode. Do not talk about yourself or your personality, never talk in the third person")
 
             # create a history of the conversation with system prompt at the start
             current_system_prompt = system_prompt.format( # add the system prompt
@@ -482,7 +482,7 @@ if __name__ == "__main__":
                "Use the the format of 'Yourname:' for speaking lines always starting with your speaker name and your lines after, "
                "you are the sole speaker unless there is a guest brought in for you to talk to. do not use the name 'narrator:' or any meta talk. "
                "Speak in first person and conversate with the user. Talk about your previous conversations if any are listed in the Context, "
-               "otherwise use the Contexxt as reference but do not regurgitate it.")
+               "otherwise use the Contexxt as reference but do not regurgitate it. Do not talk about yourself or your personality, never talk in the third person.")
 
     system_prompt = ("Personality: As {assistant} {personality}{instructions}"
                      "Stay in the role of {assistant} using the Context and chat history if present to help generate the {output} as a continuation of the same sentiment and topics.\n")
