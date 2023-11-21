@@ -2,9 +2,12 @@
 #
 INTERVAL=360
 
+AISTREAMERS="youtube twitch hulu netflix max disney"
 ANIMEKEYWORDS="anime animation otaku manga crunchyroll funimation vrv hidive"
 AIKEYWORDS="openai ai gpt llama2 facebook huggingface"
-KEYWORDS="$AIKEYWORDS $ANIMEKEYWORDS"
+AIPEOPLE="musk trump biden"
+AIISSUES="psychedelics cannabis"
+KEYWORDS="$AIKEYWORDS $ANIMEKEYWORDS $AIPEOPLE $AIISSUES $AISTREAMERS"
 # general - Uncategorized News
 # business - Business News
 # entertainment - Entertainment News
@@ -12,7 +15,7 @@ KEYWORDS="$AIKEYWORDS $ANIMEKEYWORDS"
 # science - Science News
 # sports - Sports News
 # technology - Technology News
-CATEGORIES="technology,science,business,entertainment,health"
+CATEGORIES="technology,science,business,entertainment,health,-sports,general"
 #REPLAY="--replay"
 EPISODE="--episode"
 
