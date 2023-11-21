@@ -10,5 +10,5 @@ source bin/settings.sh
     --keywords "$KEYWORDS" \
     --voice "mimic3:en_US/vctk_low#p303:1.5" \
     --gender "female" $EPISODE $REPLAY \
-    --genre "a beautify pretty sexy twitch streaming girl and blonde hair and big blue eyes with skimpy clothes showing lots of cleavage, yet safe for work, doing a news cast." \
+    --genre "a beautify pretty sexy twitch streaming girl and blonde hair and big blue eyes with cute revealing clothing, yet safe for work, doing a news cast." \
     --genre_music "70's funk and bass."
