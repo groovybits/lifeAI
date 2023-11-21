@@ -30,7 +30,7 @@
         "args": ["python", "lifeAIframesync.py", "--passthrough", "--output_host", "0.0.0.0"]
     },
     "LLMllamacpp01": {
-        "args": ["server", "-m", "/Volumes/BrahmaSSD/LLM/models/GGUF/zephyr-7b-beta.Q8_0.gguf", "-c", "0", "--port", "8080", "-ngl", "-1"]
+        "args": ["server", "-m", "/Volumes/BrahmaSSD/LLM/models/GGUF/llama-2-70b-chat.Q4_K_M.gguf", "-c", "0", "--port", "8080", "-ngl", "60", "-t", "24"]
     },
     "Mimic3TTS": {
         "args": ["/opt/homebrew/bin/mimic3-server"]

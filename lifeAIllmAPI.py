@@ -265,6 +265,8 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
             stoptokens_array = []
             stoptokens_array = stoptokens.split(",")
             stoptokens_array.append("</s>")
+            stoptokens_array.append("<|")
+            stoptokens_array.append(f"\n{header_message['username']}:")
             completion_params['stop'] = stoptokens_array
             
         if int(header_message["maxtokens"]) > 0:
@@ -374,8 +376,8 @@ def main(args):
 
             ## keep history arrays members total bytes under the args.context size
             # read through history array from newest member and count bytes, once they equal or are more than args.context size, remove the oldest member
-            if args.n_keep > 0:
-                while len(history) > args.n_keep:
+            if args.history_keep > 0:
+                while len(history) > args.history_keep:
                     history = history[1:]
             
             if args.purgehistory:
@@ -433,8 +435,7 @@ def main(args):
                 elif isinstance(header_message["context"], str) and header_message["context"] != "":
                     tmp_history.append(
                         f"<s>[INST]{header_message['context']}[/INST]</s>")
-            tmp_history.append("<s>[INST]<<SYS>>%s<</SYS>>\n%s\n\n%s: %s[/INST]\n%s:" % (current_system_prompt,
-                                                                            user_prompt.format(user=header_message["username"], 
+            tmp_history.append("<s>[INST]%s\n\n%s: %s[/INST]\n%s:" % ( user_prompt.format(user=header_message["username"], 
                                                                                 Q=qprompt_l, 
                                                                                 A=aprompt_l), 
                                                                                     qprompt_l, 
@@ -494,7 +495,7 @@ if __name__ == "__main__":
     parser.add_argument("--output_host", type=str, default="127.0.0.1")
     parser.add_argument("--output_port", type=int, default=2000)
     parser.add_argument("--maxtokens", type=int, default=1200)
-    parser.add_argument("--context", type=int, default=32768, help="Size of context for LLM so we can measure history fill.")
+    parser.add_argument("--context", type=int, default=4096, help="Size of context for LLM so we can measure history fill.")
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("-d", "--debug", action="store_true", default=False)
     parser.add_argument("--ai_name", type=str, default="GAIB")
@@ -503,9 +504,9 @@ if __name__ == "__main__":
     parser.add_argument("-tp", "--characters_per_line", type=int, default=120, help="Minimum number of characters per buffer, buffer window before output. default 100")
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
     parser.add_argument("--purgehistory", action="store_true", default=False, help="Purge history, may cause continuity issues.")
-    parser.add_argument("--n_keep", type=int, default=8, help="Number of messages to keep for the context.")
+    parser.add_argument("--history_keep", type=int, default=4, help="Number of messages to keep for the context.")
     parser.add_argument("--no_cache_prompt", action='store_true', help="Flag to disable caching of prompts.")
-    parser.add_argument("--contextpct", type=float, default=0.25, help="Percentage of context to use for history.")
+    parser.add_argument("--contextpct", type=float, default=0.33, help="Percentage of context to use for history.")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--llm_port", type=int, default=8080)
     parser.add_argument("--llm_host", type=str, default="127.0.0.1")

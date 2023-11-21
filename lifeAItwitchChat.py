@@ -263,8 +263,16 @@ class AiTwitchBot(commands.Cog):
             name = ctx.message.author.name
            
             ## get the name and the personality
+            list_personalities = []
+            characters = 0
             for name, personality in personalities.items():
-                await ctx.send(f"{name}: {personality[:100]}")            
+                list_personalities.append(f"{name}")
+                characters += len(name) + 2
+                if characters > 400:
+                    await ctx.send(",\n".join(list_personalities))
+                    list_personalities = []
+                    characters = 0
+            await ctx.send(",\n".join(list_personalities))
         except Exception as e:
             logger.error("Error in listpersonalities command twitch bot: %s" % str(e))
 
