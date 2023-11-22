@@ -315,7 +315,7 @@ if __name__ == "__main__":
     parser.add_argument("--ainame", type=str, required=False, default="GAIB", help="AI name")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--episode", action="store_true", default=False, help="Episode mode, Output a TV Episode format script.")
-    parser.add_argument("--maxtokens", type=int, default=1000, help="Max tokens per message")
+    parser.add_argument("--maxtokens", type=int, default=0, help="Max tokens per message")
     parser.add_argument("--voice", type=str, default="mimic3:en_US/vctk_low#p303:1.5", help="Voice model to use as default.")
     parser.add_argument("--replay", action="store_true", default=False, help="Replay mode, replay the news stories from the database.")
     parser.add_argument("--gender", type=str, default="female", help="Default gender")

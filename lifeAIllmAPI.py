@@ -247,9 +247,11 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
     header_message["segment_number"] += 1
     header_message["text"] = ""
 
+    maxtokens = int(header_message["maxtokens"])
+
     # Add llm info to header
     header_message["llm_info"] = {
-        "maxtokens": args.maxtokens,
+        "maxtokens": maxtokens,
         "temperature": args.temperature,
         "characters_per_line": characters_per_line,
         "sentence_count": sentence_count,
@@ -260,7 +262,6 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
         completion_params = {
             'prompt': header_message["llm_prompt"],
             'temperature': args.temperature,
-            'max_tokens': header_message["maxtokens"],
             'stream': True,
         }
 
@@ -272,7 +273,7 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
             stoptokens_array.append(f"\n{header_message['username']}:")
             completion_params['stop'] = stoptokens_array
             
-        if int(header_message["maxtokens"]) > 0:
+        if int(maxtokens) > 0:
             completion_params['n_predict'] = int(header_message["maxtokens"])
         
         retries = 0
@@ -515,7 +516,7 @@ if __name__ == "__main__":
     parser.add_argument("--input_port", type=int, default=1500)
     parser.add_argument("--output_host", type=str, default="127.0.0.1")
     parser.add_argument("--output_port", type=int, default=2000)
-    parser.add_argument("--maxtokens", type=int, default=1200)
+    parser.add_argument("--maxtokens", type=int, default=0)
     parser.add_argument("--context", type=int, default=4096, help="Size of context for LLM so we can measure history fill.")
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("-d", "--debug", action="store_true", default=False)
@@ -525,9 +526,9 @@ if __name__ == "__main__":
     parser.add_argument("-tp", "--characters_per_line", type=int, default=120, help="Minimum number of characters per buffer, buffer window before output. default 100")
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
     parser.add_argument("--purgehistory", action="store_true", default=False, help="Purge history, may cause continuity issues.")
-    parser.add_argument("--history_keep", type=int, default=4, help="Number of messages to keep for the context.")
+    parser.add_argument("--history_keep", type=int, default=3, help="Number of messages to keep for the context.")
     parser.add_argument("--no_cache_prompt", action='store_true', help="Flag to disable caching of prompts.")
-    parser.add_argument("--contextpct", type=float, default=0.33, help="Percentage of context to use for history.")
+    parser.add_argument("--contextpct", type=float, default=0.20, help="Percentage of context to use for history.")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--llm_port", type=int, default=8080)
     parser.add_argument("--llm_host", type=str, default="127.0.0.1")

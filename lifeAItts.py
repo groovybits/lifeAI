@@ -168,6 +168,8 @@ def main():
             else:
                 voice_speed = args.length_scale
             voice_set = False
+
+            logger.info(f"New media id {mediaid}, resetting speaker map and voice model. map: {speaker_map}")
         else:
             switched_story = False
 
@@ -414,10 +416,10 @@ def main():
                 else:
                     # No new speaker found, use last speaker and gender if available
                     if last_speaker:
+                        logger.info(f"Text to Speech: Continuing with last speaker: {last_speaker} {gender} and voice {new_voice_model}.")
                         speaker = last_speaker
                         gender = last_gender
                         new_voice_model = speaker_map[speaker]['voice'] if speaker in speaker_map else last_voice_model
-                        logger.info(f"Text to Speech: Continuing with last speaker: {speaker} and voice {new_voice_model}.")
                     else:
                         logger.debug("Text to Speech: No speaker found, and no last speaker to default to.")
 
