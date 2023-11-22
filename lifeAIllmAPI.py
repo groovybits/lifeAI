@@ -264,7 +264,7 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
             'stream': True,
         }
 
-        if stoptokens != "":
+        if stoptokens != "" and header_message["episode"] == "false":
             stoptokens_array = []
             stoptokens_array = stoptokens.split(",")
             stoptokens_array.append("</s>")
