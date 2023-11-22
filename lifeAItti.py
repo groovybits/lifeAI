@@ -209,7 +209,7 @@ def main():
         optimized_prompt = clean_text(optimized_prompt)
 
         # create prompt
-        optimized_prompt = f"{genre} {header_message['message'][:120]}" # {optimized_prompt}"
+        optimized_prompt = f"{genre} {header_message['message'][:30]} {optimized_prompt[:80]}"
 
         logger.debug(f"Text to Image recieved optimized prompt:\n{header_message}.")
         logger.info(f"Text to Image using text as prompt #{segment_number}:\n - {optimized_prompt}")
