@@ -190,10 +190,13 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
         try:
             logger.debug(f"LLM streaming API response all_output: {json.dumps(all_output)}")
             logger.debug(f"LLM streaming API response completion_params: {json.dumps(completion_params)}")
-            logger.debug(f"LLM streaming API response responses: {json.dumps(responses)}")
+            logger.debug(f"LLM streaming API response responses: {responses}")
         except Exception as e:
             logger.error(f"LLM streaming API response exception: {e}")
             logger.error(f"{traceback.print_exc()}")
+
+        logger.error(f"Retrying LLM streaming API response: {tokens} tokens, {characters} characters.")
+        return None
 
     logger.info(f"LLM streamed API response: {tokens} tokens, {characters} characters.")
     header_message['text'] = all_output
@@ -272,13 +275,28 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
         if int(header_message["maxtokens"]) > 0:
             completion_params['n_predict'] = int(header_message["maxtokens"])
         
+        retries = 0
         # Start a new thread to stream the API response and send it back to the client
-        header_message = stream_api_response(header_message.copy(), 
+        message = header_message.copy()
+        header_message = stream_api_response(message.copy(), 
                                              api_url, 
                                              completion_params, 
                                              zmq_sender, 
                                              characters_per_line, 
                                              sentence_count)
+        
+        while header_message is None:
+            retries += 1
+            logger.error(f"LLM: failed to get a response from the LLM API, retrying... {retries}")
+            # retry the request
+            header_message = stream_api_response(message.copy(),
+                                                    api_url,
+                                                    completion_params,
+                                                    zmq_sender,
+                                                    characters_per_line,
+                                                    sentence_count)
+            if header_message is None:
+                time.sleep(1)
         
         # Send end frame
         # Prepare the message to send to the LLM
@@ -286,6 +304,9 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
         end_header["text"] = f"{args.end_message}"
         end_header["timestamp"] = int(round(time.time() * 1000))
         send_data(zmq_sender, end_header.copy())
+
+        # Add a delay to prevent a tight loop and rest the LLM
+        time.sleep(3)
 
     except Exception as e:
         logger.error(f"LLM exception: {e}")
