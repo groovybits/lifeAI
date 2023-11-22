@@ -171,35 +171,6 @@ def main():
     failures = 0
     successes = 0
     while True:
-        logger.info(f"Getting news from Media Stack...")
-        try:
-            news_json_result = get_news(pagination, args.keywords, args.categories)
-            if news_json_result == None:
-                logger.error(f"Error getting news from Media Stack, retrying in 30 seconds...")
-                pagination = 0
-                logger.error(f"Too many failures, resetting pagination to 0.")
-                time.sleep(30)
-                failures += 1
-                continue
-            elif news_json_result == {}:
-                # no news stories found, continue to next iteration pagination
-                logger.error(f"No news stories found, incrementing pagination from {pagination} and retrying {failures}...")
-                pagination += 100
-                time.sleep(3)
-                continue
-
-            # Success
-            pagination += 100
-            failures = 0
-            successes += 1
-        except Exception as e:
-            logger.error(f"{traceback.print_exc()}")
-            logger.error(f"Error {failures} getting news {pagination} from database: {e}")
-            time.sleep(30)
-            failures += 1
-            pagination = 0
-            continue
-
         # iterate through the db fo news stories that haven't been played with 0 in the played column
         db = sqlite3.connect('db/news.db')
         cursor = db.cursor()
@@ -226,7 +197,6 @@ def main():
         else:
             logger.error(f"Error {failures} getting news {pagination} from database: {e}")
             time.sleep(30)
-            continue
         db.close()
 
         if 'data' in news_json and len(news_json['data']) > 0:
@@ -294,6 +264,43 @@ def main():
                     logger.error("News: Found an empty story! %s" % json.dumps(story))
 
                 time.sleep(args.interval)
+        else:
+            logger.error(f"Error {failures} getting news {pagination} from database: {e}")
+            time.sleep(3)
+            failures += 1
+
+        logger.info(f"Getting news from Media Stack...")
+        try:
+            news_json_result = get_news(
+                pagination, args.keywords, args.categories)
+            if news_json_result == None:
+                logger.error(
+                    f"Error getting news from Media Stack, retrying in 30 seconds...")
+                pagination = 0
+                logger.error(f"Too many failures, resetting pagination to 0.")
+                time.sleep(30)
+                failures += 1
+                continue
+            elif news_json_result == {}:
+                # no news stories found, continue to next iteration pagination
+                logger.error(
+                    f"No news stories found, incrementing pagination from {pagination} and retrying {failures}...")
+                pagination += 100
+                time.sleep(3)
+                continue
+
+            # Success
+            pagination += 100
+            failures = 0
+            successes += 1
+        except Exception as e:
+            logger.error(f"{traceback.print_exc()}")
+            logger.error(
+                f"Error {failures} getting news {pagination} from database: {e}")
+            time.sleep(30)
+            failures += 1
+            pagination = 0
+            continue
 
 if __name__ == "__main__":
     default_personality = "You are Life AI's Groovy AI Bot GAIB. You are acting as a news reporter getting stories and analyzing them and presenting various thoughts and relations of them with a joyful compassionate wise perspective. Make the news fun and silly, joke and make comedy out of the world. Speak in a conversational tone referencing yourself and the person who asked the question if given.  Maintain your role without revealing that you're an AI Language model or your inability to access real-time information. Do not mention the text or sources used, treat the contextas something you are using as internal thought to generate responses as your role. Give the news a fun quircky comedic spin like classic saturday night live."
