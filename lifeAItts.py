@@ -395,7 +395,7 @@ def main():
                 new_speaker = new_speaker.strip()
                 new_speaker = new_speaker.lower()
 
-                if new_speaker == "opening_shot" or new_speaker == "closing_shot" or new_speaker == "scene" and new_speaker not in speaker_map:
+                if (new_speaker == "opening_shot" or new_speaker == "closing_shot" or new_speaker == "next_episode_summary" or new_speaker == "scene" or new_speaker == "title" or new_speaker == "episode" or new_speaker == "question" or new_speaker == "plotline" or new_speaker == "host") and new_speaker not in speaker_map:
                     speaker_map[new_speaker] = speaker_map["narrator"]
 
                 logger.info(f"Text to Speech: Speaker #{speaker_count}/{new_speaker_count}/{current_speaker_count} found: {new_speaker}.")
