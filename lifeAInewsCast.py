@@ -113,8 +113,8 @@ def get_news(offset=0, keywords="ai", categories="technology,science,entertainme
         return None
 
 def clean_text(text):
-    # truncate to 800 characters max
-    text = text[:300]
+    # truncate to N characters max
+    text = text[:1000]
     # Remove URLs
     text = re.sub(r'http[s]?://\S+', '', text)
     
