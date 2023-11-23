@@ -10,5 +10,5 @@ source bin/settings.sh
     --keywords "$KEYWORDS" \
     --voice "mimic3:en_US/vctk_low#p303:1.5" \
     --gender "female" $EPISODE $REPLAY \
-    --genre "animated drawing of a beautiful pretty hippy woman from the 60's with long blonde hair and big blue eyes and busty with cleavage. psychedelic patterns and fractals around her like bright trippy light." \
+    --genre "colorful bright vibrant animated drawing of a beautiful pretty hippy woman from the 60's with long blonde hair and big blue eyes and busty with cleavage. psychedelic patterns and fractals around her like bright trippy light." \
     --genre_music "60's hippie music. mamas and the papas style jefferson airplane."
