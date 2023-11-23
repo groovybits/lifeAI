@@ -367,7 +367,7 @@ def main():
                 
                 # if not an espiode then switch to the custom voice
                 if not is_episode:
-                    speaker = header_message["ainame"]
+                    speaker = ainame
                     logger.info(
                         f"Text to Speech: Speaker switch from {last_speaker} to {speaker}.")
         else:
