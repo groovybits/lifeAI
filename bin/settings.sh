@@ -1,6 +1,6 @@
 # Configuration setting
 #
-INTERVAL=360
+INTERVAL=300
 
 AISTREAMERS="youtube twitch hulu netflix max disney"
 ANIMEKEYWORDS="anime animation otaku manga crunchyroll funimation vrv hidive"

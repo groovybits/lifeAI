@@ -400,17 +400,17 @@ def main():
                 speaker_found = False
                 found_speaker = None
                 for speaker_key in speaker_map:
-                    if speaker_key in speaker:
+                    if speaker_key in new_speaker or new_speaker in speaker_key:
                         speaker_found = True
                         found_speaker = speaker_key
                         break
 
                 if speaker_found:
                     # check if we are really the same speaker
-                    logger.info(f"Text to Speech: Speaker #{speaker_count}/{new_speaker_count}/{current_speaker_count} fuzzy match found: {found_speaker}.")
+                    logger.info(f"Text to Speech: Speaker {speaker} #{speaker_count}/{new_speaker_count}/{current_speaker_count} fuzzy match found: {found_speaker}.")
                     #new_speaker = found_speaker
                 
-                if speaker not in speaker_map:                    
+                if new_speaker not in speaker_map:                    
                     gender_marker = None
                     # Identify gender from text if not determined by name
                     if re.search(r'\[m\]', line):
