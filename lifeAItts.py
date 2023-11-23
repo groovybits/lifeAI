@@ -27,6 +27,7 @@ from transformers import logging as trlogging
 from pydub import AudioSegment
 import gender_guesser.detector as gender_guess
 from openai import OpenAI
+import json
 
 trlogging.set_verbosity_error()
 
@@ -124,83 +125,75 @@ def get_tts_audio(service, text, voice=None, noise_scale=None, noise_w=None, len
         return audiobuf.getvalue()
 
 def main():
-    last_gender = args.gender
-    last_voice_model = args.voice
+    voice_set = False
+    gender = args.gender
+    last_gender = gender
+    voice_model = args.voice
+    last_voice_model = voice_model
     male_voice_index = 0
     female_voice_index = 0
     speaker_map = {}
-    last_speaker = None
-    switched_story = False
-    last_mediaid = 0
+    speaker = "Narrator"
+    last_speaker = speaker
+    mediaid = 0
+    last_mediaid = mediaid
     # voice, gender
     male_voices = []
     female_voices = []
+    speaker_count = 0
 
     tts_api = args.service
-    last_tts_api = ""
+    last_tts_api = "" # start off with no last TTS API so initializes
+    voice_speed = "1.5" # default speed for mimic3, else they are too fast (higher slower)
 
-    ## set the defaults
-    voice_speed = "1.5"
-    voice_model = None
-    voice_set = False
+    speaker_map[speaker] = {"gender": gender, "voice": voice_model}
+
     while True:
         header_message = receiver.recv_json()
         segment_number = header_message["segment_number"]
         text = header_message["text"]
-        episode = header_message["episode"]
+        episode_msg = header_message["episode"]
         mediaid = header_message["mediaid"]
+
+        is_episode = False
+        if episode_msg == "true":
+            is_episode = True
+        else:
+            is_episode = False
 
         if last_mediaid != mediaid:
             last_mediaid = mediaid
-            switched_story = True
-            last_gender = args.gender
-            last_voice_model = args.voice
+            voice_model = args.voice
+            last_voice_model = voice_model
+            gender = args.gender
+            last_gender = gender
             male_voice_index = 0
             female_voice_index = 0
-            last_speaker = None
+            speaker = header_message['ainame']
+            last_speaker = speaker
             tts_api = args.service
 
             ## set the defaults
             voice_model = None
+            voice_speed = "1.5"
+            speaker_count = 0
 
-            if tts_api == "mimic3":
-                voice_speed = "1.5"
-            else:
-                voice_speed = args.length_scale
-            voice_set = False
-
-            logger.info(f"New media id {mediaid}, resetting speaker map and voice model. map: {speaker_map}")
-        else:
-            switched_story = False
-
-        # request to change the gender
-        if 'gender' in header_message:
-            last_gender = header_message['gender']
-
-        # request to switch the voice model
+        header_voice_model = None
         if 'voice_model' in header_message:
-            voice_data = header_message["voice_model"]
-            # "voice_model": "mimic3:en_US/cmu-arctic_low#eey:1.2",
-            # TTS API, Voice Model to use, Voice Model Speed to use
-            tts_api = voice_data.split(":")[0]
-            voice_model = voice_data.split(":")[1]
-            voice_speed = voice_data.split(":")[2]
-            logger.info(f"Text to Speech: Voice Model selected: {voice_model} at speed {voice_speed} using API {tts_api}.")
-            if not episode:
-                voice_set = True # only set voice if it's not an episode
-        else:
-            logger.info(f"Text to Speech: Voice Model default, no 'voice_model' in request: {voice_model} at speed {voice_speed} using API {tts_api}.")
+            header_voice_model = header_message["voice_model"]
+            tts_api = header_voice_model.split(":")[0]
+            logger.info(f"Text to Speech: Header voice model {header_voice_model}.")
 
         # switched TTS Services
         if tts_api != last_tts_api:
             last_tts_api = tts_api
+            speaker_map = {} # reset the speaker map
             # OpenAI API
             if tts_api == "openai":
                 male_voices = ['alloy', 'echo', 'fabel', 'oynx']
                 female_voices = ['nova', 'shimmer']
                 default_voice = 'nova'
-                if voice_model == None:
-                    voice_model = default_voice
+                voice_model = default_voice
             elif tts_api == "mimic3":
                 male_voices = [
                     #'en_US/hifi-tts_low#6097',
@@ -334,110 +327,195 @@ def main():
                     'en_US/cmu-arctic_low#slt'
                 ]
                 default_voice = 'en_US/vctk_low#p303',
-                if voice_model == None:
-                    voice_model = default_voice
+                voice_model = default_voice
 
-        # Guess gender
-        gender = last_gender
+        # request to change the gender
+        gender_custom = None
+        gender_override = False
+        if 'gender' in header_message:
+            gender_custom = header_message['gender']
+            gender_override = True
+
+        voice_model_custom = None
+        voice_speed_custom = None
+        voice_override = False
+        # request to switch the voice model
+        if header_voice_model:
+            voice_data = header_voice_model
+            # "voice_model": "mimic3:en_US/cmu-arctic_low#eey:1.2",
+            # TTS API, Voice Model to use, Voice Model Speed to use
+            tts_api = voice_data.split(":")[0]
+            voice_model_custom = voice_data.split(":")[1]
+            voice_speed_custom = voice_data.split(":")[2]
+            voice_override = True  # only set voice if it's not an episode
+            logger.info(
+                f"Text to Speech: Custom settings {voice_model_custom} at speed {voice_speed_custom} using API {tts_api}.")
+
+            # Custom speaker name
+            ainame = header_message["ainame"].lower()
+
+            # add custom voice to speaker map
+            if ainame not in speaker_map:
+                mapped_gender = last_gender
+                if gender_override:
+                    mapped_gender = gender_custom
+                speaker_map[ainame] = {
+                    "gender": mapped_gender, "voice": voice_model_custom}
+                
+                logger.info(
+                    f"Added speaker from ainame {ainame} of gender {mapped_gender} with voice {voice_model_custom}.")
+                
+                # if not an espiode then switch to the custom voice
+                if not is_episode:
+                    speaker = header_message["ainame"]
+                    logger.info(
+                        f"Text to Speech: Speaker switch from {last_speaker} to {speaker}.")
+        else:
+            logger.info(
+                f"Text to Speech: Default settings {voice_model} at speed {voice_speed} using API {tts_api}.")
 
         # Find and assign voices to speakers
-        new_voice_model = None
+        story_voice_model = None
+        story_gender = None
+        new_speaker_count = 0
+        current_speaker_count = 0
 
         # Regex pattern to find speaker names with different markers
-        speaker_pattern = r'^(?:\[/INST\])?<<([A-Za-z]+)>>|^(?:\[\w+\])?([A-Za-z]+):'
+        #speaker_pattern = r'^(?:\[/INST\])?<<([A-Za-z]+)>>|^(?:\[\w+\])?([A-Za-z]+):'
+        # find speaker names that may have a space in them at the start of lines like . new speaker: lines or after other punctuation endings or newlines
+        speaker_pattern = r'(?:(?:\[/INST\])?<<([A-Za-z0-9_\)\(]+)>>|^(?:\[\w+\])?([A-Za-z0-9_\)\()]+):)'
 
-        if not voice_set:
-            for line in text.split('\n'):
-                speaker_match = re.search(speaker_pattern, line)
-                if speaker_match:
-                    # Extracting speaker name from either of the capturing groups
-                    speaker = speaker_match.group(1) or speaker_match.group(2)
-                    speaker = speaker.strip()
+        # Find speaker names in the text and derive gender from name, setup speaker map
+        for line in text.split('\n'):
+            speaker_match = re.search(speaker_pattern, line)
+            if speaker_match:
+                # Extracting speaker name from either of the capturing groups
+                new_speaker = speaker_match.group(1) or speaker_match.group(2)
+                new_speaker = new_speaker.strip()
+                new_speaker = new_speaker.lower()
 
-                    if speaker not in speaker_map:
-                        guessed_gender = d.get_gender(speaker.split()[0])  # assuming the first word is the name
-                        
-                        gender_marker = None
-                        # Identify gender from text if not determined by name
-                        if re.search(r'\[m\]', text):
-                            gender_marker = "male"
-                        elif re.search(r'\[f\]', text):
-                            gender_marker = "female"
-                        elif re.search(r'\[n\]', text):
-                            gender_marker = "nonbinary"
+                logger.info(f"Text to Speech: Speaker #{speaker_count}/{new_speaker_count}/{current_speaker_count} found: {new_speaker}.")
 
-                        gender_g = None
-                        if gender_marker == None:
-                            if guessed_gender in ['male', 'mostly_male']:
-                                gender_g = "male"
-                            elif guessed_gender in ['female', 'mostly_female']:
-                                gender_g = "female"
+                # check fuzzy match through speaker map
+                speaker_found = False
+                found_speaker = None
+                for speaker_key in speaker_map:
+                    if speaker_key in speaker:
+                        speaker_found = True
+                        found_speaker = speaker_key
+                        break
 
-                        if gender_marker:
-                            gender = gender_marker
-                        elif gender_g:
-                            gender = gender_g
-                        else:
-                            gender = last_gender
-                        
-                        last_gender = gender
+                if speaker_found:
+                    # check if we are really the same speaker
+                    logger.info(f"Text to Speech: Speaker #{speaker_count}/{new_speaker_count}/{current_speaker_count} fuzzy match found: {found_speaker}.")
+                    #new_speaker = found_speaker
+                
+                if speaker not in speaker_map:                    
+                    gender_marker = None
+                    # Identify gender from text if not determined by name
+                    if re.search(r'\[m\]', line):
+                        gender_marker = "male"
+                    elif re.search(r'\[f\]', line):
+                        gender_marker = "female"
+                    elif re.search(r'\[n\]', line):
+                        gender_marker = "nonbinary"
 
-                        if gender == "male":
+                    gender_g = None
+                    if gender_marker == None:
+                        guessed_gender = d.get_gender(new_speaker.split('_')[0])  # assuming the first word is the name
+                        if guessed_gender in ['male', 'mostly_male']:
+                            gender_g = "male"
+                        elif guessed_gender in ['female', 'mostly_female']:
+                            gender_g = "female"
+
+                    if gender_marker:
+                        story_gender = gender_marker
+                    elif gender_g:
+                        story_gender = gender_g
+                    else:
+                        story_gender = last_gender
+                    
+                    if story_gender == "male":
+                        if male_voice_index > len(male_voices):
+                            male_voice_index = 0
+                        voice_choice = male_voices[male_voice_index % len(male_voices)]
+                        male_voice_index += 1
+                    else:  # Female and nonbinary use female voices
+                        if female_voice_index > len(female_voices):
+                            female_voice_index = 0
+                        voice_choice = female_voices[female_voice_index % len(female_voices)]
+                        female_voice_index += 1
+
+                    logger.info(f"Adding new speaker {new_speaker} {voice_choice} {story_gender}")
+
+                    speaker = new_speaker
+                    speaker_map[speaker] = {'voice': voice_choice, 'gender': story_gender}
+                    story_voice_model = voice_choice
+                    speaker_count += 1
+                    new_speaker_count += 1
+                else:
+                    story_voice_model = speaker_map[speaker]['voice']
+                    story_gender = speaker_map[speaker]['gender']
+                    if story_voice_model not in female_voices and story_voice_model not in male_voices:
+                        logger.error(f"Text to Speech: ERROR Voice model {story_voice_model} not found in voice list, reassigning.")
+                        if story_gender == "male":
                             if male_voice_index > len(male_voices):
                                 male_voice_index = 0
-                            voice_choice = male_voices[male_voice_index % len(male_voices)]
+                            story_voice_model = male_voices[male_voice_index]
                             male_voice_index += 1
-                        else:  # Female and nonbinary use female voices
+                        else:
                             if female_voice_index > len(female_voices):
                                 female_voice_index = 0
-                            voice_choice = female_voices[female_voice_index % len(female_voices)]
+                            story_voice_model = female_voices[female_voice_index]
                             female_voice_index += 1
 
-                        speaker_map[speaker] = {'voice': voice_choice, 'gender': gender}
-                        new_voice_model = voice_choice
-                        last_speaker = speaker  # Update the last speaker
-                    else:
-                        new_voice_model = speaker_map[speaker]['voice']
-                        gender = speaker_map[speaker]['gender']
-                        if new_voice_model not in female_voices and new_voice_model not in male_voices:
-                            if gender == "male":
-                                if male_voice_index > len(male_voices):
-                                    male_voice_index = 0
-                                new_voice_model = male_voices[male_voice_index]
-                            else:
-                                if female_voice_index > len(female_voices):
-                                    female_voice_index = 0
-                                new_voice_model = female_voices[female_voice_index]
-                        last_gender = gender
-                        last_speaker = speaker  # Update the last speaker
+                current_speaker_count += 1
+                logger.info(
+                    f"Text to Speech: Speaker switch from {last_speaker} to #{current_speaker_count}/{speaker_count} {speaker} who is {story_gender} with voice {story_voice_model}.")
+                break # only one speaker
 
-                    logger.info(f"Text to Speech: Speaker found: {speaker} with voice {speaker_map[speaker]['voice']}.")
-                    break  # If you want to process one speaker at a time, otherwise remove this line
-                else:
-                    # No new speaker found, use last speaker and gender if available
-                    if last_speaker:
-                        logger.info(f"Text to Speech: Continuing with last speaker: {last_speaker} {gender} and voice {new_voice_model}.")
-                        speaker = last_speaker
-                        gender = last_gender
-                        new_voice_model = speaker_map[speaker]['voice'] if speaker in speaker_map else last_voice_model
-                    else:
-                        logger.debug("Text to Speech: No speaker found, and no last speaker to default to.")
+        # show speaker map
+        if new_speaker_count > 0:
+            logger.info(f"Text to Speech: Current Speaker map: {json.dumps(speaker_map)}")
 
-        # Outside of the for loop
-        if new_voice_model and voice_set == False:
-            logger.info(f"Text to Speech: Speaker found, switching from {last_voice_model} to voice {new_voice_model}.")
-            voice_model = new_voice_model
-            last_voice_model = voice_model
+        # Check if we found speakers and are not in episode mode or forced to override
+        if is_episode:
+            if story_voice_model:
+                if story_gender:
+                    gender = story_gender
+                logger.info(f"Text to Speech: {speaker}/{gender} Speaker #{speaker_count}/{new_speaker_count}/{current_speaker_count} found, using {story_voice_model} instead of {voice_model}.")
+                voice_model = story_voice_model
+            else:
+                # keep the last values used
+                voice_model = last_voice_model
+                story_gender = last_gender
         else:
-            logger.info(f"Text to Speech: Speaker not found, using default voice {voice_model}.")
-            last_voice_model = voice_model
+            if voice_override:
+                logger.info(
+                    f"Text to Speech: {speaker}/{gender} Speaker #{speaker_count}/{new_speaker_count}/{current_speaker_count} found, using {voice_model_custom} instead of {voice_model}.")
+                # custom voice for single speaker mode
+                voice_model = voice_model_custom
+                voice_speed = voice_speed_custom
+            else:
+                voice_model = last_voice_model
+            if gender_override:
+                logger.info(f"Using custom gender {gender_custom} instead of {gender}")
+                gender = gender_custom
+            else:
+                gender = last_gender
+
+        # Last gender
+        last_gender = gender
+        last_voice_model = voice_model
+        last_speaker = speaker  # Update the last speaker
         
         # clean text of end of line spaces after punctuation
         text = clean_text(text)
         text = re.sub(r'([.,!?;:])\s+', r'\1', text)
 
+        text_flat = text.replace('\n', ' ').replace('\r', '')
         logger.debug("Text to Speech received request:\n%s" % header_message)
-        logger.info(f"Text to Speech received request #{segment_number}:\n{text}")
+        logger.info(f"Text to Speech received request {speaker} {voice_model} {gender} #{segment_number}: {text_flat[:20]}...")
 
         # add ssml tags
         if args.ssml == 'true' and tts_api == "mimic3":
@@ -450,7 +528,7 @@ def main():
             audio_blob = get_tts_audio(
                 tts_api,
                 text,
-                voice=last_voice_model,
+                voice=voice_model,
                 noise_scale=args.noise_scale,
                 noise_w=args.noise_w,
                 length_scale=voice_speed,
@@ -482,7 +560,7 @@ def main():
         sender.send(audiobuf.getvalue())
 
         logger.debug(f"Text to Speech: sent audio #{segment_number}\n{header_message}")
-        logger.info(f"Text to Speech: sent audio #{segment_number} of {duration} duration.\n{text}")
+        logger.info(f"Text to Speech: sent audio #{segment_number} of {duration} duration.")
 
         header_message = None
         text = ""
@@ -493,7 +571,7 @@ if __name__ == "__main__":
     parser.add_argument("--output_port", type=int, default=6002, required=False, help="Port for sending audio output")
     parser.add_argument("--input_host", type=str, default="127.0.0.1", required=False, help="Host for receiving text input")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Host for sending audio output")
-    parser.add_argument("--voice", type=str, default='en_US/vctk_low#p303', help="Voice parameter for TTS API")
+    parser.add_argument("--voice", type=str, default='en_US/vctk_low#p323', help="Voice parameter for TTS API")
     parser.add_argument("--noise_scale", type=str, default='0.333', help="Noise scale parameter for TTS API")
     parser.add_argument("--noise_w", type=str, default='0.333', help="Noise weight parameter for TTS API")
     parser.add_argument("--length_scale", type=str, default='1.5', help="Length scale parameter for TTS API")
@@ -507,7 +585,7 @@ if __name__ == "__main__":
     parser.add_argument("--service", type=str, default="mimic3", help="TTS service to use. mms-tts, mimic3, openai")
     parser.add_argument("--metal", action="store_true", default=False, help="offload to metal mps GPU")
     parser.add_argument("--cuda", action="store_true", default=False, help="offload to cuda GPU")
-    parser.add_argument("--gender", type=str, default="female", help="Gender default for characters without [m], [f], or [n] markers")
+    parser.add_argument("--gender", type=str, default="male", help="Gender default for characters without [m], [f], or [n] markers")
 
     args = parser.parse_args()
 
@@ -535,13 +613,13 @@ if __name__ == "__main__":
     context = zmq.Context()
     # Set up the subscriber
     receiver = context.socket(zmq.SUB)
-    print(f"Setup ZMQ in {args.input_host}:{args.input_port}")
+    logger.info(f"Setup ZMQ in {args.input_host}:{args.input_port}")
     receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
     receiver.setsockopt_string(zmq.SUBSCRIBE, "")
 
     # Set up the publisher
     sender = context.socket(zmq.PUSH)
-    print(f"binded to ZMQ out {args.output_host}:{args.output_port}")
+    logger.info(f"connected to ZMQ out {args.output_host}:{args.output_port}")
     sender.connect(f"tcp://{args.output_host}:{args.output_port}")
 
     model = None

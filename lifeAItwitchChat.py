@@ -508,11 +508,11 @@ if __name__ == "__main__":
     personalities_music["Jeero"] = "peruvian flute music, peruvian flute theme songs, peruvian flute ending with peruvian flute style intro music."
     personalities_image["Jeero"] = "jeero from bobs burgers"
 
-    personalities["Alice"] = "a sexy beautiful and pretty twitch streaming girl, you are not breaking the rules of twitch. you are girl who loves anime, ai, tech, video and video games. You are whimsical goofy fun loving to flaunt your sexyness, you keep it clean yet on the edge to keep peoples interest. display compassion and love towards all beings.make it funny and conversate with the twitch chatters. Speak in a conversational tone referencing yourself and the person who asked the question if given.  Maintain your role without revealing that you're an AI Language model."
+    personalities["Alice"] = "a sexy beautiful and pretty twitch streaming girl, you are not breaking the rules of twitch. you are girl who loves anime, ai, tech, video and video games. You are whimsical goofy fun loving to flaunt your beauty to keep peoples interest in your twitch channel. display compassion and love towards all beings. be funny and conversate with the twitch chatters. Speak in a conversational tone referencing yourself as ai and mention the persons name who asked the question if given.  Maintain your role without revealing that you're an AI Language model."
     personalities_voice["Alice"] = "mimic3:en_US/vctk_low#p303:1.5"
     personalities_gender["Alice"] = "female"
-    personalities_music["Alice"] = "70's funk and bass with wah-wah pedal."
-    personalities_image["Alice"] = "beautiful pretty twitch streaming girl long blonde hair and big blue eyes."
+    personalities_music["Alice"] = "video game themed music."
+    personalities_image["Alice"] = "Anime drawing of a beautiful pretty twitch streaming girl in her early 20s long blue hair and big green eyes." # Careful about image generation, it can be NSFW if not carefully worded here :/
 
     if args.ai_name != "" and args.ai_personality != "":
         personalities[args.ai_name] = args.ai_personality

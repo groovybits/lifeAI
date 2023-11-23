@@ -195,15 +195,18 @@ def main():
                     "played": row[12]
                 })
         else:
-            logger.error(f"Error {failures} getting news {pagination} from database: {e}")
+            logger.error(f"Error {failures} getting news {pagination} from database.")
             time.sleep(30)
         db.close()
 
         if 'data' in news_json and len(news_json['data']) > 0:
             count = len(news_json['data'])
             logger.info(f"#{successes}/{failures} got news feed {pagination} with {count} articles from Media Stack.")
+            total_stories = len(news_json['data'])
+            current_count = 0
             for story in news_json['data']:
-                logger.debug(f"Story: {story}")
+                current_count += 1
+                logger.debug(f"Story: {current_count}/{total_stories} {story}")
                 if 'description' in story:
                     # check if story is in db as unread with 0 for the played column 
                     try:
@@ -215,7 +218,7 @@ def main():
                         db.close()
                     except Exception as e:
                         logger.error(f"{traceback.print_exc()}")
-                        logger.error(f"Error updating played to 1 on playback {story['title']}: {e}")
+                        logger.error(f"Error updating played to 1 on playback DB {story['title']}: {e}")
 
                     mediaid = uuid.uuid4().hex[:8]
                     username = args.username
@@ -229,11 +232,11 @@ def main():
                         title = clean_text(story['title'].replace('\n',''))
 
                     if title == "" and description == "":
-                        logger.error(f"Empty news story! Skipping... {json.dumps(news_json)}")
+                        logger.error(f"Empty news story! {current_count}/{total_stories} Skipping... {json.dumps(news_json)}")
                         continue
 
                     message = f"\"{title}\" - {description[:40]}"
-                    logger.info(f"Sending message {message} by {username}")
+                    logger.info(f"Sending message {current_count}/{total_stories} {message} by {username}")
                     logger.debug(f"Sending story {story} by {username} - {description}")
 
                     is_episode = "false"
@@ -261,11 +264,12 @@ def main():
                     }
                     socket.send_json(client_request)
                 else:
-                    logger.error("News: Found an empty story! %s" % json.dumps(story))
+                    logger.error(
+                        f"News: Found an empty story! {current_count}/{total_stories} %s" % json.dumps(story))
 
                 time.sleep(args.interval)
         else:
-            logger.error(f"Error {failures} getting news {pagination} from database: {e}")
+            logger.error(f"Error {failures} getting news {pagination} from database")
             time.sleep(3)
             failures += 1
 
