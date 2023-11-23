@@ -512,7 +512,13 @@ if __name__ == "__main__":
     personalities_voice["Alice"] = "mimic3:en_US/vctk_low#p303:1.5"
     personalities_gender["Alice"] = "female"
     personalities_music["Alice"] = "video game themed music."
-    personalities_image["Alice"] = "Anime drawing of a beautiful pretty twitch streaming girl in her early 20s long blue hair and big green eyes." # Careful about image generation, it can be NSFW if not carefully worded here :/
+    personalities_image["Alice"] = "animated drawing of a beautiful pretty woman with long blonde hair and big blue eyes and busty with cleavage." # Careful about image generation, it can be NSFW if not carefully worded here :/
+
+    personalities["CuteCats"] = "a cute cat, you are a cute cat who loves to play and be petted. You are a "
+    personalities_voice["CuteCats"] = "mimic3:en_US/vctk_low#p303:1.5"
+    personalities_gender["CuteCats"] = "female"
+    personalities_music["CuteCats"] = "cat themed music."
+    personalities_image["CuteCats"] = "animated drawing of a cute cat with big eyes and a cute face."
 
     if args.ai_name != "" and args.ai_personality != "":
         personalities[args.ai_name] = args.ai_personality

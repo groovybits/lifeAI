@@ -10,4 +10,5 @@ source bin/settings.sh
     --keywords "$KEYWORDS" \
     --voice "mimic3:en_US/vctk_low#p326:1.5" \
     --gender "male" $EPISODE $REPLAY \
+    --genre "Yoda from star wars." \
     --genre_music "star wars style intro music, orchestra sounding building up."
