@@ -9,4 +9,5 @@ source bin/settings.sh
     --prompt "Hello and welcome to the Gaibriella show!" \
     --keywords "$KEYWORDS" $EPISODE $REPLAY \
     --voice "mimic3:en_US/vctk_low#p303:1.5" \
-    --gender "female" 
+    --gender "female" \
+    --genre_music "Indian classical music for hinduism diety kirtan"

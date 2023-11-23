@@ -311,7 +311,6 @@ def save_asset(asset, mediaid, segment_number, type):
 
     if type == "speek":
         file_path += ".wav"
-        asset = np.frombuffer(asset, dtype=np.int16)
         with open(file_path, 'wb') as file:
             file.write(asset)
     elif type == "image":
@@ -499,7 +498,7 @@ def main():
                 try:
                     if args.nosave == False:
                         save_json(header_message, mediaid, type, segment_number)
-                        save_asset(image, mediaid, segment_number, type)
+                        save_asset(audio, mediaid, segment_number, type)
                 except Exception as e:
                     logger.error(f"Error saving audio asset: {e}")
 

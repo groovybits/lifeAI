@@ -9,4 +9,6 @@ source bin/settings.sh
     --prompt "Hello and welcome to the Super Duper Magical AI show!" \
     --keywords "$KEYWORDS" $EPISODE $REPLAY \
     --voice "mimic3:en_US/vctk_low#p227:1.5" \
-    --gender "male"
+    --gender "male" \
+    --genre "Eloon M business man and inventor." \
+    --genre_music "tesla star trek music."

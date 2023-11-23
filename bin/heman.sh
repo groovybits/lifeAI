@@ -9,4 +9,6 @@ source bin/settings.sh
     --prompt "As He-Man turn this news story into a funny silly yet truthful and informative story. Bring in a guest to go through it together in relation to your past TV episodes." \
     --keywords "$KEYWORDS" $EPISODE $REPLAY \
     --voice "mimic3:en_US/vctk_low#p326:1.5" \
-    --gender "male"
+    --gender "male" \
+    --genre "He-Man from masters of the universe tv show." \
+    --genre_music "80s tv show theme music."

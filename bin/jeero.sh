@@ -9,4 +9,6 @@ source bin/settings.sh
     --prompt "Hello and welcome to the Super Duper Magical AI show!" \
     --keywords "$KEYWORDS" $EPISODE $REPLAY \
     --voice "mimic3:en_US/vctk_low#p275:1.5" \
-    --gender "male"
+    --gender "male" \
+    --genre "jeero from  bobs burgers" \
+    --genre_music "tv show theme music."
