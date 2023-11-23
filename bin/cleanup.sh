@@ -8,7 +8,6 @@ fi
 find logs -type f -mmin +$MINUTES_TO_KEEP -delete
 find assets -type f -mmin +$MINUTES_TO_KEEP -delete
 
-find logs -type f -empty -delete
-find assets -type f -empty -delete
+find assets -type d -empty -delete
 
 touch logs/.keep
