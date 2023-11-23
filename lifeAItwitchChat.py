@@ -79,6 +79,8 @@ class AiTwitchBot(commands.Cog):
     async def event_message(self, message):
         'Runs every time a message is sent in chat.'
         try:
+            logger.info(f"--- e from {message.author.name}: {message.content}")
+            
             if message.author.name.lower() == os.environ['BOT_NICK'].lower():
                 return
 
@@ -86,14 +88,15 @@ class AiTwitchBot(commands.Cog):
             if message.echo:
                 return
 
-            logger.info(f"--- Received message from {message.author.name}: {message.content}")
             await self.bot.handle_commands(message)
         except Exception as e:
             logger.error("Error in event_message twitch bot: %s" % str(e))
 
-    @commands.command(name="message")
-    async def chat_request(self, ctx: commands.Context):
+    @commands.command(name="message", aliases=("question", "ask", "chat", "say"))
+    async def message(self, ctx: commands.Context):
         try:
+            command_name = ctx.message.content.split()[0].replace('!', '')
+            logger.info(f"--- Got command {command_name} from {ctx.author} for ai name: {self.ai_name} and personality: {self.ai_personality}")
             question = ctx.message.content.replace(f"!message ", '')
             name = ctx.message.author.name
             ainame = self.ai_name
@@ -109,7 +112,7 @@ class AiTwitchBot(commands.Cog):
             # Check our list of personalities
             if ainame_request not in personalities:
                 logger.info(f"--- {name} asked for character {ainame_request} but they don't exist, using default {ainame}.")
-                await ctx.send(f"{name} the personality you have chosen is not in the list of personalities, which is case sensitive and can be listed using !personalities.")
+                #await ctx.send(f"{name} the personality you have chosen is not in the list of personalities, which is case sensitive and can be listed using !personalities.")
                 #await ctx.send(f"Personalities:\n{json.dumps(personalities, )}\n")
             else:
                 ainame = ainame_request
@@ -251,6 +254,8 @@ class AiTwitchBot(commands.Cog):
             }
             socket.send_json(client_request)
 
+            logger.info(f"--- {name} sent music request: {prompt} {json.dumps(ctx)}")
+
             logger.debug(f"twitch client sent music request: {client_request} ")
         except Exception as e:
             logger.error("Error in music command twitch bot: %s" % str(e))
@@ -316,6 +321,8 @@ class AiTwitchBot(commands.Cog):
             }
             socket.send_json(client_request)
 
+            logger.info(f"--- {name} sent image request: {prompt} {json.dumps(ctx)}")
+
             logger.debug(f"twitch client sent image request: {client_request} ")
 
         except Exception as e:
@@ -346,6 +353,8 @@ class AiTwitchBot(commands.Cog):
             # add to the personalities known
             if name not in personalities:
                 personalities[name] = personality
+
+            logger.info(f"--- {name} sent name request: {personality} {json.dumps(ctx)}")
         except Exception as e:
             logger.error("Error in name command twitch bot: %s" % str(e))
 
