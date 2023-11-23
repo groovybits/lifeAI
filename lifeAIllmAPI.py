@@ -139,7 +139,7 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
                             remaining_text = ""
                             remaining_text_tokens = 0
 
-                            header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count)
+                            header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count, tokens)
                             current_tokens = 0
                             header_message["tokens"] = remaining_text_tokens
                             header_message["text"] = remaining_text
@@ -152,7 +152,7 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
                             remaining_text_tokens = len(remaining_text.split())
                             # remove remaining text from accumulated_text
                             accumulated_text = accumulated_text[:-(len(remaining_text)+1)]
-                            header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count)
+                            header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count, tokens)
                             current_tokens = 0
                             header_message["tokens"] = remaining_text_tokens
                             header_message["text"] = remaining_text
@@ -163,13 +163,12 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
                             remaining_text_tokens = len(remaining_text.split())
                             accumulated_text = accumulated_text[:split_index+1]
 
-                            header_message = send_group(
-                                accumulated_text, zmq_sender, header_message.copy(), sentence_count)
+                            header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count, tokens)
                             current_tokens = 0
                             header_message["tokens"] = remaining_text_tokens
                             header_message["text"] = remaining_text
                             accumulated_text = remaining_text
-                        elif len(accumulated_text) >= (characters_per_line * 1.5) and (content.endswith(" ") or content.endswith(",") or content.startswith(" ")):
+                        elif len(accumulated_text) >= (characters_per_line * 2.5) and (content.endswith(" ") or content.endswith(",") or content.startswith(" ")):
                             remaining_text = ""
                             remaining_text_tokens = 0
                             if content.startswith(" ") and len(content) > 1:
@@ -177,7 +176,7 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
                                 remaining_text_tokens = len(remaining_text.split())
                                 # remove the duplicated end of accumulated text that contains the content token
                                 accumulated_text = accumulated_text[:-(len(content)-1)]
-                            header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count)
+                            header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count, tokens)
                             current_tokens = 0
                             header_message["tokens"] = remaining_text_tokens
                             header_message["text"] = remaining_text
@@ -185,7 +184,7 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
 
     # If there's any remaining text after the loop, send it as well
     if accumulated_text:
-        header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count)
+        header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count, tokens)
 
     # check if we didn't get tokens, if so output debug information
     if tokens == 0:
@@ -204,7 +203,7 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
     header_message['text'] = all_output
     return header_message
 
-def send_group(text, zmq_sender, header_message, sentence_count):
+def send_group(text, zmq_sender, header_message, sentence_count, total_tokens):
     #sensible_sentences = extract_sensible_sentences(text)
     #text = ' '.join(sensible_sentences)
 
@@ -230,7 +229,8 @@ def send_group(text, zmq_sender, header_message, sentence_count):
             header_message["text"] = combined_lines
             header_message["timestamp"] = int(round(time.time() * 1000))
             send_data(zmq_sender, header_message.copy())
-            logger.info(f"LLM: sent text #{header_message['segment_number']} {header_message['timestamp']} {header_message['md5sum']}:\n - {combined_lines[:30]}...")
+            text_length = len(combined_lines)
+            logger.info(f"LLM: sent text #{header_message['segment_number']} {header_message['timestamp']} {header_message['md5sum']} {header_message['tokens']}/{total_tokens} tokens {text_length} characters:\n - {combined_lines[:30]}...")
             header_message["segment_number"] += 1
             header_message["text"] = ""
 
