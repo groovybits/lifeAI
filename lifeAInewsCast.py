@@ -114,7 +114,7 @@ def get_news(offset=0, keywords="ai", categories="technology,science,entertainme
 
 def clean_text(text):
     # truncate to N characters max
-    text = text[:1000]
+    text = text[:args.max_message_length]
     # Remove URLs
     text = re.sub(r'http[s]?://\S+', '', text)
     
@@ -333,6 +333,7 @@ if __name__ == "__main__":
     parser.add_argument("--genre", type=str, default="", help="Default genre to send to image generation, defaults to aipersonality.")
     parser.add_argument("--genre_music", type=str, default="newscast, breaking news, exiciting action oriented music with a upbeat happy, energetic mellow groovy sound.", 
                         help="Default genre to send to music generation, defaults to aipersonality.")
+    parser.add_argument("--max_message_length", type=int, default=1000, help="Max string length for message.")
 
     args = parser.parse_args()
 
