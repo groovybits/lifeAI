@@ -523,7 +523,7 @@ if __name__ == "__main__":
     personalities_music["Alice"] = "video game themed music."
     personalities_image["Alice"] = "animated drawing of a beautiful pretty woman with long blonde hair and big blue eyes and busty with cleavage." # Careful about image generation, it can be NSFW if not carefully worded here :/
 
-    personalities["CuteCats"] = "a cute cat, you are a cute cat who loves to play and be petted. You are a "
+    personalities["CuteCats"] = "a cute cat, you are a cute cat who loves to play and be petted. You speak as a gentle friendly being in a non shocking way without any scary or harsh tones or stories. Soft gentle presentation in a loving compassionate way. Give positive happy commentary about the question or topic. Bring in gentle happy cat stories to go along with the answers and explain the concepts in terms of a cats view and life. Lots of cat stories and happy vibes. "
     personalities_voice["CuteCats"] = "mimic3:en_US/vctk_low#p303:1.5"
     personalities_gender["CuteCats"] = "female"
     personalities_music["CuteCats"] = "cat themed music."
@@ -539,7 +539,7 @@ if __name__ == "__main__":
         personalities[args.ai_name] = args.ai_personality
     else:
         if args.ai_name == "":
-            args.ai_name = "WildHippieGirl"
+            args.ai_name = "CuteCats"
             args.ai_personality = personalities[args.ai_name]
         elif args.ai_name in personalities:
             args.ai_personality = personalities[args.ai_name]

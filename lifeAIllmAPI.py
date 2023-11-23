@@ -405,7 +405,7 @@ def main(args):
                 while len(history) > args.history_keep:
                     history = history[1:]
             
-            if args.purgehistory:
+            if not args.nopurgehistory:
                 history_bytes = 0
                 for i in range(len(history)-1, -1, -1):
                     history_bytes += len(history[i])
@@ -528,7 +528,7 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--personality", type=str, default="friendly helpful compassionate bodhisattva guru.", help="Personality of the AI, choices are 'friendly' or 'mean'.")
     parser.add_argument("-tp", "--characters_per_line", type=int, default=120, help="Minimum number of characters per buffer, buffer window before output. default 100")
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
-    parser.add_argument("--purgehistory", action="store_true", default=False, help="Purge history, may cause continuity issues.")
+    parser.add_argument("--nopurgehistory", action="store_true", default=False, help="Don't Purge history, may cause context fill issues.")
     parser.add_argument("--history_keep", type=int, default=12, help="Number of messages to keep for the context.")
     parser.add_argument("--no_cache_prompt", action='store_true', help="Flag to disable caching of prompts.")
     parser.add_argument("--contextpct", type=float, default=0.20, help="Percentage of context to use for history.")
