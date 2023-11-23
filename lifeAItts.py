@@ -133,7 +133,7 @@ def main():
     male_voice_index = 0
     female_voice_index = 0
     speaker_map = {}
-    speaker = "Narrator"
+    speaker = "narrator"
     last_speaker = speaker
     mediaid = 0
     last_mediaid = mediaid
@@ -169,7 +169,7 @@ def main():
             last_gender = gender
             male_voice_index = 0
             female_voice_index = 0
-            speaker = header_message['ainame']
+            speaker = "narrator"
             last_speaker = speaker
             tts_api = args.service
 
@@ -188,6 +188,7 @@ def main():
         if tts_api != last_tts_api:
             last_tts_api = tts_api
             speaker_map = {} # reset the speaker map
+            speaker_map[speaker] = {"gender": gender, "voice": voice_model}
             # OpenAI API
             if tts_api == "openai":
                 male_voices = ['alloy', 'echo', 'fabel', 'oynx']
@@ -383,7 +384,7 @@ def main():
         # Regex pattern to find speaker names with different markers
         #speaker_pattern = r'^(?:\[/INST\])?<<([A-Za-z]+)>>|^(?:\[\w+\])?([A-Za-z]+):'
         # find speaker names that may have a space in them at the start of lines like . new speaker: lines or after other punctuation endings or newlines
-        speaker_pattern = r'(?:(?:\[/INST\])?<<([A-Za-z0-9_\)\(]+)>>|^(?:\[\w+\])?([A-Za-z0-9_\)\()]+):)'
+        speaker_pattern = r'(?:(?:\[/INST\])?<<([A-Za-z0-9_\)\(\-]+)>>|^(?:\[\w+\])?([A-Za-z0-9_\)\(\-)]+):)'
 
         # Find speaker names in the text and derive gender from name, setup speaker map
         for line in text.split('\n'):
@@ -393,6 +394,9 @@ def main():
                 new_speaker = speaker_match.group(1) or speaker_match.group(2)
                 new_speaker = new_speaker.strip()
                 new_speaker = new_speaker.lower()
+
+                if new_speaker == "opening_shot" or new_speaker == "closing_shot" or new_speaker == "scene" and new_speaker not in speaker_map:
+                    speaker_map[new_speaker] = speaker_map["narrator"]
 
                 logger.info(f"Text to Speech: Speaker #{speaker_count}/{new_speaker_count}/{current_speaker_count} found: {new_speaker}.")
 
@@ -422,11 +426,21 @@ def main():
 
                     gender_g = None
                     if gender_marker == None:
-                        guessed_gender = d.get_gender(new_speaker.split('_')[0])  # assuming the first word is the name
-                        if guessed_gender in ['male', 'mostly_male']:
+                        new_speaker_lc = new_speaker.lower()
+                        if new_speaker_lc == "he-man":
                             gender_g = "male"
-                        elif guessed_gender in ['female', 'mostly_female']:
+                        elif new_speaker_lc == "she-ra":
                             gender_g = "female"
+                        elif new_speaker_lc == "skeletor":
+                            gender_g = "male"
+                        elif new_speaker_lc == "teela":
+                            gender_g = "female"
+                        else:
+                            guessed_gender = d.get_gender(new_speaker.split('_')[0])  # assuming the first word is the name
+                            if guessed_gender in ['male', 'mostly_male']:
+                                gender_g = "male"
+                            elif guessed_gender in ['female', 'mostly_female']:
+                                gender_g = "female"
 
                     if gender_marker:
                         story_gender = gender_marker
