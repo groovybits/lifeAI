@@ -454,8 +454,14 @@ def main():
                     speaker_count += 1
                     new_speaker_count += 1
                 else:
-                    story_voice_model = speaker_map[speaker]['voice']
-                    story_gender = speaker_map[speaker]['gender']
+                    if new_speaker in speaker_map:
+                        story_voice_model = speaker_map[new_speaker]['voice']
+                        story_gender = speaker_map[new_speaker]['gender']
+                    else:
+                        logger.error(f"Text to Speech: ERROR Speaker {new_speaker} not found in speaker map, reassigning.")
+                        story_voice_model = last_voice_model
+                        story_gender = last_gender
+                    speaker = new_speaker
                     if story_voice_model not in female_voices and story_voice_model not in male_voices:
                         logger.error(f"Text to Speech: ERROR Voice model {story_voice_model} not found in voice list, reassigning.")
                         if story_gender == "male":
