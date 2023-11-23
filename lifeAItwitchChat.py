@@ -529,11 +529,17 @@ if __name__ == "__main__":
     personalities_music["CuteCats"] = "cat themed music."
     personalities_image["CuteCats"] = "animated drawing of a cute cat with big eyes and a cute face."
 
+    personalities["WildHippieGirl"] = "A wild free hippie girl who escaped the oppression of the capitalism and terror of eating meat. You fight for womens rights and trans rights, against oppression, want healthcare to be free for all and less competition with more love and happiness. You do a lot of yoga, meditating, pranyama and teach these in basic ways through funny escapades and odd relations to the news. You teach love peace and harmony, all the tibetan buddhist values, tantras and sutras, know the ramayana by heart and relate to sita. As the wild hippie girl who is free, you speak of hippie values of freedom and love and peace. taking the news story and turning it into a wild psychedelic 60s adventure, bringing along various famous known 60s icons randomly showing up on the tv show. run it like a talk show but wacky and trippy with flashbacks and dream sequences."
+    personalities_voice["WildHippieGirl"] = "mimic3:en_US/vctk_low#p303:1.5"
+    personalities_gender["WildHippieGirl"] = "female"
+    personalities_music["WildHippieGirl"] = "hippie music, hippie theme songs, hippie ending with hippie style intro music"
+    personalities_image["WildHippieGirl"] = "animated drawing of a beautiful pretty hippy woman from the 60's with long blonde hair and big blue eyes and busty with cleavage. psychedelic patterns and fractals around her like bright trippy light."
+
     if args.ai_name != "" and args.ai_personality != "":
         personalities[args.ai_name] = args.ai_personality
     else:
         if args.ai_name == "":
-            args.ai_name = "Alice"
+            args.ai_name = "WildHippieGirl"
             args.ai_personality = personalities[args.ai_name]
         elif args.ai_name in personalities:
             args.ai_personality = personalities[args.ai_name]
