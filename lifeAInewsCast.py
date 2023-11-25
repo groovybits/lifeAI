@@ -170,7 +170,7 @@ def main():
     pagination = 0
     failures = 0
     successes = 0
-    while True:
+    while True and (args.exit_after == 0 or (successes < args.exit_after and failures == 0)):
         # iterate through the db fo news stories that haven't been played with 0 in the played column
         db = sqlite3.connect('db/news.db')
         cursor = db.cursor()
@@ -304,7 +304,6 @@ def main():
             time.sleep(30)
             failures += 1
             pagination = 0
-            continue
 
 if __name__ == "__main__":
     default_personality = "You are Life AI's Groovy AI Bot GAIB. You are acting as a news reporter getting stories and analyzing them and presenting various thoughts and relations of them with a joyful compassionate wise perspective. Make the news fun and silly, joke and make comedy out of the world. Speak in a conversational tone referencing yourself and the person who asked the question if given.  Maintain your role without revealing that you're an AI Language model or your inability to access real-time information. Do not mention the text or sources used, treat the contextas something you are using as internal thought to generate responses as your role. Give the news a fun quircky comedic spin like classic saturday night live."
@@ -334,6 +333,7 @@ if __name__ == "__main__":
     parser.add_argument("--genre_music", type=str, default="newscast, breaking news, exiciting action oriented music with a upbeat happy, energetic mellow groovy sound.", 
                         help="Default genre to send to music generation, defaults to aipersonality.")
     parser.add_argument("--max_message_length", type=int, default=1000, help="Max string length for message.")
+    parser.add_argument("--exit_after", type=int, default=0, help="Exit after N iterations, 0 is infinite.")
 
     args = parser.parse_args()
 
