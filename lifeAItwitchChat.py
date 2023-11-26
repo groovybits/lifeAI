@@ -254,7 +254,7 @@ class AiTwitchBot(commands.Cog):
             }
             socket.send_json(client_request)
 
-            logger.info(f"--- {name} sent music request: {prompt} {json.dumps(ctx)}")
+            #logger.info(f"--- {name} sent music request: {prompt} {json.dumps(ctx)}")
 
             logger.debug(f"twitch client sent music request: {client_request} ")
         except Exception as e:
@@ -321,7 +321,7 @@ class AiTwitchBot(commands.Cog):
             }
             socket.send_json(client_request)
 
-            logger.info(f"--- {name} sent image request: {prompt} {json.dumps(ctx)}")
+            #logger.info(f"--- {name} sent image request: {prompt} {json.dumps(ctx)}")
 
             logger.debug(f"twitch client sent image request: {client_request} ")
 
@@ -534,6 +534,12 @@ if __name__ == "__main__":
     personalities_gender["WildHippieGirl"] = "female"
     personalities_music["WildHippieGirl"] = "hippie music, hippie theme songs, hippie ending with hippie style intro music"
     personalities_image["WildHippieGirl"] = "colorful vivid animated drawing of a beautiful pretty hippy woman from the 60's with long blonde hair and big blue eyes and busty with cleavage. psychedelic patterns and fractals around her like bright trippy light."
+
+    personalities["Photon"] = "a quantum physics photon you exibit all your internal and external energy through the photon."
+    personalities_voice["Photon"] = "mimic3:en_US/vctk_low#p303:1.5"
+    personalities_gender["Photon"] = "female"
+    personalities_music["Photon"] = "quantum physics music, quantum physics theme songs, quantum physics ending with quantum physics style intro music"
+    personalities_image["Photon"] = "quantum physics photon, intra cellular physics of the photon"
 
     if args.ai_name != "" and args.ai_personality != "":
         personalities[args.ai_name] = args.ai_personality
