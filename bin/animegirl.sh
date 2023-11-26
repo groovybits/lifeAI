@@ -10,5 +10,5 @@ source bin/settings.sh
     --keywords "$KEYWORDS" \
     --voice "mimic3:en_US/vctk_low#p303:1.5" \
     --gender "female" $EPISODE $REPLAY \
-    --genre "Anime magical girl long blonde hair and  big blue eyes with sailor uniform doing a news cast." \
+    --genre "Anime magical girl similar to sailor moon with long blonde hair and big blue eyes with doing a news cast." \
     --genre_music "anime intro music, japanese rock like ayumi hamasaki gundam intros."
