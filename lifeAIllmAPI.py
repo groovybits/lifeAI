@@ -464,7 +464,7 @@ def main(args):
                     for i in range(len(header_message["context"])-1, -1, -1):
                         if media_type == "News":
                             tmp_history.append(
-                                f"<s>[INST]Give me a news story.{header_message['context'][i]}[/INST]</s>")
+                                f"<s>[INST]{header_message['context'][i]}[/INST]</s>")
                         else:
                             tmp_history.append(
                                 f"<s>[INST]{header_message['context'][i]}[/INST]</s>")
