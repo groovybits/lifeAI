@@ -238,20 +238,14 @@ def send_group(text, zmq_sender, header_message, sentence_count, total_tokens):
 
 def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_count, stoptokens, args):
     logger.info(f"LLM generating text for media id {header_message['mediaid']}.")
-    # make human readable timestamp with the day name and then the date and time
-    day_of_week = time.strftime("%A")
-    time_context = f"{day_of_week} %s" % time.strftime("%Y-%m-%d %H:%M:%S")
-
-    if "time_context" in header_message:
-        time_context = header_message["time_context"]
-
+   
     # Prepare the message to send to the LLM
-    header_message["text"] = f"{time_context} {header_message['mediatype']} message from {header_message['username']}: {header_message['message'][:300]}..."
+    header_message["text"] = f"{header_message['mediatype']} message from {header_message['username']}: {header_message['message'][:300]}..."
 
     # Send initial question
     header_message["timestamp"] = int(round(time.time() * 1000))
     send_data(zmq_sender, header_message.copy())
-    logger.info(f"LLM: on {time_context} sent Question #{header_message['segment_number']} {header_message['timestamp']} {header_message['md5sum']}: - {header_message['text'][:30]}")
+    logger.info(f"LLM: Question #{header_message['segment_number']} {header_message['timestamp']} {header_message['md5sum']}: - {header_message['text'][:30]}")
     header_message["segment_number"] += 1
     header_message["text"] = ""
 
