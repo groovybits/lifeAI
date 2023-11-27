@@ -238,14 +238,20 @@ def send_group(text, zmq_sender, header_message, sentence_count, total_tokens):
 
 def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_count, stoptokens, args):
     logger.info(f"LLM generating text for media id {header_message['mediaid']}.")
+    # make human readable timestamp with the day name and then the date and time
+    day_of_week = time.strftime("%A")
+    time_context = f"{day_of_week} %s" % time.strftime("%Y-%m-%d %H:%M:%S")
+
+    if "time_context" in header_message:
+        time_context = header_message["time_context"]
 
     # Prepare the message to send to the LLM
-    header_message["text"] = f"{header_message['mediatype']} message from {header_message['username']}: {header_message['message'][:300]}..."
+    header_message["text"] = f"{time_context} {header_message['mediatype']} message from {header_message['username']}: {header_message['message'][:300]}..."
 
     # Send initial question
     header_message["timestamp"] = int(round(time.time() * 1000))
     send_data(zmq_sender, header_message.copy())
-    logger.info(f"LLM: sent Question #{header_message['segment_number']} {header_message['timestamp']} {header_message['md5sum']}: - {header_message['text'][:30]}")
+    logger.info(f"LLM: on {time_context} sent Question #{header_message['segment_number']} {header_message['timestamp']} {header_message['md5sum']}: - {header_message['text'][:30]}")
     header_message["segment_number"] += 1
     header_message["text"] = ""
 
@@ -271,9 +277,12 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
             stoptokens_array = []
             stoptokens_array = stoptokens.split(",")
             stoptokens_array.append("</s>")
+            stoptokens_array.append("/s>")
             stoptokens_array.append("<|")
             stoptokens_array.append(f"\n{header_message['username']}:")
             completion_params['stop'] = stoptokens_array
+        else:
+            completion_params['stop'] = ["</s>", "/s>", "<|"]
             
         if int(maxtokens) > 0:
             completion_params['n_predict'] = int(header_message["maxtokens"])
@@ -393,6 +402,8 @@ def main(args):
                 header_message['genre_music'] = client_request['genre_music']
             if 'priority' in client_request and client_request['priority'] != "":
                 header_message['priority'] = client_request['priority']
+            if 'time_context' in client_request and client_request['time_context'] != "":
+                header_message['time_context'] = client_request['time_context']
 
             header_message['client_request'] = client_request
             
@@ -460,7 +471,9 @@ def main(args):
                 elif isinstance(header_message["context"], str) and header_message["context"] != "":
                     tmp_history.append(
                         f"<s>[INST]{header_message['context']}[/INST]</s>")
-            tmp_history.append("<s>[INST]%s\n\n%s: %s[/INST]\n%s:" % ( user_prompt.format(user=header_message["username"], 
+            day_of_week = time.strftime("%A")
+            time_context = f"{day_of_week} %s" % time.strftime("%Y-%m-%d %H:%M:%S")
+            tmp_history.append("<s>[INST]%s\n\n%s: %s[/INST]\n%s:" % ( user_prompt.format(timestamp=time_context, user=header_message["username"], 
                                                                                 Q=qprompt_l, 
                                                                                 A=aprompt_l), 
                                                                                     qprompt_l, 
@@ -512,7 +525,7 @@ if __name__ == "__main__":
 
     system_prompt = ("Personality: As {assistant} {personality}{instructions}"
                      "Stay in the role of {assistant} using the Context and chat history if present to help generate the {output} as a continuation of the same sentiment and topics.\n")
-    user_prompt = "Give an {A} for the message from {user} listed as a {Q} below. "
+    user_prompt = "It is currenty {timestamp}, you are a local LLM on a mac studio m2 ultra arm GPU with 192 gig ram. You are a monster with little resource usage and weave this into your stories and keep the time/date context in mind. Give an {A} for the message from {user} listed as a {Q} below. "
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_host", type=str, default="127.0.0.1")

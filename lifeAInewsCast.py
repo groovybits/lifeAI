@@ -224,18 +224,21 @@ def main():
                     username = args.username
                     description = ""
                     title = ""
+                    published_at = ""
                     if 'description' in story and story['description'] != None:
                         description =  clean_text(story['description'].replace('\n',''))
                     if 'author' in story and story['author'] != None:
                         username = clean_text(story['author'].replace(' ','_').replace('\n',''))
                     if 'title' in story and story['title'] != None:
                         title = clean_text(story['title'].replace('\n',''))
+                    if 'published_at' in story and story['published_at'] != None:
+                        published_at = clean_text(story['published_at'].replace('\n',''))
 
                     if title == "" and description == "":
                         logger.error(f"Empty news story! {current_count}/{total_stories} Skipping... {json.dumps(news_json)}")
                         continue
 
-                    message = f"\"{title}\" - {description[:40]}"
+                    message = f"on {published_at} \"{title}\" - {description[:40]}"
                     logger.info(f"Sending message {current_count}/{total_stories} {message} by {username}")
                     logger.debug(f"Sending story {story} by {username} - {description}")
 
@@ -251,8 +254,9 @@ def main():
                         "username": username,
                         "source": "MediaStack",
                         "episode": is_episode,
-                        "message": f"{title}",
-                        "history": [f"{args.prompt} Breaking news just in... {title}"],
+                        "message": f"on {published_at} {title}",
+                        "time_context": f"{published_at}",
+                        "history": [f"{args.prompt} Breaking news just in... {message}"],
                         "aipersonality": f"{args.aipersonality}",
                         "ainame": args.ainame,
                         "maxtokens": args.maxtokens,
