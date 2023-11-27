@@ -2,7 +2,7 @@
 #
 INTERVAL=360
 
-AISTREAMERS="youtube twitch hulu netflix max disney"
+AISTREAMERS="apple amazon youtube twitch hulu netflix max disney"
 ANIMEKEYWORDS="anime animation otaku manga crunchyroll funimation vrv hidive"
 AIKEYWORDS="openai ai gpt llama2 facebook huggingface"
 AIPEOPLE="musk trump biden"
