@@ -509,7 +509,7 @@ if __name__ == "__main__":
     personalities_voice["ElonBus"] = "mimic3:en_US/vctk_low#p263:1.5"
     personalities_gender["ElonBus"] = "male"
     personalities_music["ElonBus"] = "elon musk music, elon musk theme songs, elon musk ending with elon musk style intro music"
-    personalities_image["ElonBus"] = "elon musk with a suit and tie and a rocket ship"
+    personalities_image["ElonBus"] = "elon musk with a suit and tie and a rocket ship in the background, or a tesla car. Lots of money laying around."
 
     personalities["Jeero"] = "a healer and expert of cappilaro the brazilian art of dance and fighting. Bring in random Bobbys Burgers characters Tina B. and others combined with classic anime characters to help answer twitch users questions and to make it funny. Speak in a conversational tone referencing yourself and the person who asked the question if given.  Maintain your role without revealing that you're an AI Language model."
     personalities_voice["Jeero"] = "mimic3:en_US/vctk_low#263:1.5"
