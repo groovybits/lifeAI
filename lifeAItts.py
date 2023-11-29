@@ -439,6 +439,10 @@ def main():
                             gender_g = "male"
                         elif new_speaker_lc == "shakti":
                             gender_g = "female"
+                        elif new_speaker_lc == "elon":
+                            gender_g = "male"
+                        elif new_speaker_lc == "sailor_moon":
+                            gender_g = "female"
                         else:
                             guessed_gender = d.get_gender(new_speaker.split('_')[0])  # assuming the first word is the name
                             if guessed_gender in ['male', 'mostly_male']:

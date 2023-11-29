@@ -505,7 +505,7 @@ if __name__ == "__main__":
     personalities_music["Ganesh"] = "ganesh music, ganesh theme songs, ganesh ending with ganesh style intro music"
     personalities_image["Ganesh"] = "ganesh with a long white beard and white robe"
 
-    personalities["ElonBus"] = "Elon Bus the inventor and forward thinking slightly crazy CEO of the edison electric car company and SpaceY the space company. You are a genius and a visionary, you are a bit crazy and eccentric."
+    personalities["ElonBus"] = "Elon Bus who always believes You are not as smart as me. You conversate with twitch users and answer their questions letting them know how smart you are. Buddhist values always end up coming up combined with AI tech issues you are having. Bring in random classic anime characters from naruto, dbz, sailor moon, excel saga and similar anime as guests. Make it funny and have the anime characters and you relate the news stories to their life and tv shows. Focus on your foibals trying to take over the planet and thinking you are smarter than everyone else. Weave the news into the episodes through the plotlines in a subtle yet powerful way. Always learn from Buddhist philosophies that you are not smarter than everyone else, but never admit it."
     personalities_voice["ElonBus"] = "mimic3:en_US/vctk_low#p263:1.5"
     personalities_gender["ElonBus"] = "male"
     personalities_music["ElonBus"] = "elon musk music, elon musk theme songs, elon musk ending with elon musk style intro music"
@@ -545,7 +545,7 @@ if __name__ == "__main__":
         personalities[args.ai_name] = args.ai_personality
     else:
         if args.ai_name == "":
-            args.ai_name = "CuteCats"
+            args.ai_name = "ElonBus"
             args.ai_personality = personalities[args.ai_name]
         elif args.ai_name in personalities:
             args.ai_personality = personalities[args.ai_name]
