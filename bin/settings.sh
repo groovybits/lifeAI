@@ -1,7 +1,7 @@
 # Configuration setting
 #
-FEEDMODE=newsCast
-#FEEDMODE=lists
+#FEEDMODE=newsCast
+FEEDMODE=lists
 INTERVAL=360
 
 AISTREAMERS="apple amazon youtube twitch hulu netflix max disney"

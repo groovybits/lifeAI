@@ -282,7 +282,7 @@ def read_and_mark_emails_as_played(list_name):
             logger.error(f"Empty email message! {current_count}/{total_stories} Skipping...")
             continue
 
-        message = f"on {published_at} \"{title}\" - {description[:40]}"
+        message = f"from {list_name} on {published_at} \"{title}\" - {description[:40]}"
         logger.info(f"Sending message {current_count}/{total_stories} {message} by {username}")
         logger.debug(f"Sending email message {title} by {username} - {description}")
 
@@ -294,13 +294,13 @@ def read_and_mark_emails_as_played(list_name):
         client_request = {
             "segment_number": 0,
             "mediaid": mediaid,
-            "mediatype": "News",
+            "mediatype": f"{list_name}Mail",
             "username": username,
-            "source": "MediaStack",
+            "source": f"MailingList_{list_name}",
             "episode": is_episode,
             "message": f"on {published_at} {title}",
             "time_context": f"{published_at}",
-            "history": [f"{args.prompt} Breaking news just in... {message}"],
+            "history": [f"{args.prompt} New {list_name} mail received... {message}"],
             "aipersonality": f"{args.aipersonality}",
             "ainame": args.ainame,
             "maxtokens": args.maxtokens,
