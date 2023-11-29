@@ -452,8 +452,8 @@ if __name__ == "__main__":
                         default=1000, help="Max string length for message.")
     parser.add_argument("--exit_after", type=int, default=0,
                         help="Exit after N iterations, 0 is infinite.")
-    parser.add_argument("--retry_backoff", type=int, default=300,
-                        help="Retry backoff in seconds, default 300.")
+    parser.add_argument("--retry_backoff", type=int, default=30,
+                        help="Retry backoff in seconds, default 30.")
     parser.add_argument("--dry_run", action="store_true", default=False,
                         help="Dry run, don't send messages.")
     parser.add_argument("--lists", type=str, default="ffmpeg-devel,github")
@@ -482,7 +482,7 @@ if __name__ == "__main__":
 
     log_id = time.strftime("%Y%m%d-%H%M%S")
     logging.basicConfig(filename=f"logs/mailingLists-{log_id}.log", level=LOGLEVEL)
-    logger = logging.getLogger('newsCast')
+    logger = logging.getLogger('mailingLists')
 
     ch = logging.StreamHandler()
     ch.setLevel(LOGLEVEL)
