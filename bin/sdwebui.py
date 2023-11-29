@@ -15,8 +15,9 @@ print(f"Available models: {models}")
 current_model = api.util_get_current_model()
 print(f"Current model: {current_model}")
 
-#api.util_set_model('protogen')
+api.util_set_model('protogen')
 api.util_set_model('dreamshaper')
+api.util_set_model('sd_xl_turbo')
 
 result = api.txt2img(prompt="cute squirrel",
                     negative_prompt="ugly, out of frame",
