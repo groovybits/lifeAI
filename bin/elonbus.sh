@@ -10,5 +10,5 @@ source bin/settings.sh
     --keywords "$KEYWORDS" $EPISODE $REPLAY \
     --voice "mimic3:en_US/vctk_low#p227:1.5" \
     --gender "male" \
-    --genre "Elon Musk business man and inventor combined with a hippie bus." \
+    --genre "Elon Musk business man and inventor in front of a psychedelic colorful painted hippie bus." \
     --genre_music "tesla star trek music."
