@@ -46,9 +46,10 @@ Diagram:
 - [Cmdline Input](zmqTextClient.py)        Send text into lifeAI for simulation seeding.
 - [News Input](lifeAInewsCast.py)          Send news feeds into lifeAI for simulation seeding.
 - [Twitch Chat Input](lifeAItwitchChat.py) Twitch Chat sent to lifeAI for responses.
-- [Javscript Input](TODO.md)               TODO: Future plan to plug into react frontend video viewer.
-- [Video Input](TODO.md)                   TODO: Read a video stream and alter it via AI through the system.
-- [X Input](TODO.md)                       TODO: Any input via easy connection in a generic way.
+- [Mailing List Input](lifeAIlists.py)     Mailing lists via imap and separate labels for each list box in lists+list-name@ format.
+- [Javscript Web Frontend](TODO.md)        TODO: Future plan to plug into react frontend video viewer.
+- [Video Stream Input](TODO.md)            TODO: Read a video stream and alter it via AI through the system.
+- [X Input](TODO.md)                       TODO: Any input via easy connection in a generic way. (Currently turning it into an email list works well)
 
 - [LLM Broker llama.cpp-API](lifeAIllmAPI.py)       Llama2 llama.cpp server local API service
 - [Prompt Optimizer](lifeAIpromptOptimizerAPI.py)      Optimize prompt or turn text into a prompt.

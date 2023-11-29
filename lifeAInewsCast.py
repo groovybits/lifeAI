@@ -170,11 +170,23 @@ def main():
     pagination = 0
     failures = 0
     successes = 0
+    first_run = True
+    reset_pagination_count = 0
+    last_pagination_reset_date = time.time()
     while True and (args.exit_after == 0 or (successes < args.exit_after and failures == 0)):
-        # iterate through the db fo news stories that haven't been played with 0 in the played column
+        # iterate through the db of news stories that haven't been played with 0 in the played column
         db = sqlite3.connect('db/news.db')
         cursor = db.cursor()
-        cursor.execute('''SELECT * FROM news WHERE played=?''', (0,))
+        if True or args.sort == "published_desc": # TODO fix this, currently sorting by newest first since we store in a db without original order
+            cursor.execute(
+                '''SELECT * FROM news WHERE played=? ORDER BY published_at DESC''', (0,))
+        elif args.sort == "published_asc":
+            cursor.execute(
+                '''SELECT * FROM news WHERE played=? ORDER BY published_at ASC''', (0,))
+        else:
+            cursor.execute(
+                '''SELECT * FROM news WHERE played=?''', (0,))
+            
         results = cursor.fetchall()
         news_json = {}
         if results != None:
@@ -273,26 +285,38 @@ def main():
 
                 time.sleep(args.interval)
         else:
-            logger.error(f"Error {failures} getting news {pagination} from database")
-            time.sleep(3)
-            failures += 1
+            if first_run:
+                first_run = False
+                logger.info(f"Starting up, no news stories found in DB, adding news stories...")
+            else:
+                logger.error(f"Warning: {failures} failures getting news, page #{pagination} from API, retrying API in 3 seconds...")
+                time.sleep(3)
+                failures += 1
 
-        logger.info(f"Getting news from Media Stack...")
+        logger.info(f"Getting news from Media Stack API...")
         try:
             news_json_result = get_news(
                 pagination, args.keywords, args.categories)
             if news_json_result == None:
                 logger.error(
-                    f"Error getting news from Media Stack, retrying in 30 seconds...")
+                    f"Error failed ({failures}) getting news from Media Stack at page #{pagination}, ({reset_pagination_count}) retrying in 1 hour with pagination set to 0...")
                 pagination = 0
-                logger.error(f"Too many failures, resetting pagination to 0.")
-                time.sleep(30)
+                reset_pagination_count += 1
+                current_date = time.time()
+                time_since_last_reset = current_date - last_pagination_reset_date
+                time_to_sleep = args.retry_backoff - time_since_last_reset
+                if time_to_sleep > 0:
+                    logger.info(f"Sleeping for {time_to_sleep} seconds...")
+                    time.sleep(time_to_sleep)
+                else:
+                    time.sleep(60) # wait 60 seconds before retrying
                 failures += 1
+                last_pagination_reset_date = time.time()
                 continue
             elif news_json_result == {}:
                 # no news stories found, continue to next iteration pagination
                 logger.error(
-                    f"No news stories found, incrementing pagination from {pagination} and retrying {failures}...")
+                    f"No news stories found in API, incrementing pagination from #{pagination} to {pagination + 100}.")
                 pagination += 100
                 time.sleep(3)
                 continue
@@ -304,10 +328,8 @@ def main():
         except Exception as e:
             logger.error(f"{traceback.print_exc()}")
             logger.error(
-                f"Error {failures} getting news {pagination} from database: {e}")
-            time.sleep(30)
-            failures += 1
-            pagination = 0
+                f"Error exception: failure #{failures} getting news page #{pagination} from database: {e}")
+            break # exit on error for now
 
 if __name__ == "__main__":
     default_personality = "You are Life AI's Groovy AI Bot GAIB. You are acting as a news reporter getting stories and analyzing them and presenting various thoughts and relations of them with a joyful compassionate wise perspective. Make the news fun and silly, joke and make comedy out of the world. Speak in a conversational tone referencing yourself and the person who asked the question if given.  Maintain your role without revealing that you're an AI Language model or your inability to access real-time information. Do not mention the text or sources used, treat the contextas something you are using as internal thought to generate responses as your role. Give the news a fun quircky comedic spin like classic saturday night live."
@@ -338,6 +360,7 @@ if __name__ == "__main__":
                         help="Default genre to send to music generation, defaults to aipersonality.")
     parser.add_argument("--max_message_length", type=int, default=1000, help="Max string length for message.")
     parser.add_argument("--exit_after", type=int, default=0, help="Exit after N iterations, 0 is infinite.")
+    parser.add_argument("--retry_backoff", type=int, default=3600, help="Retry backoff in seconds, default 3600 (1 hour).")
 
     args = parser.parse_args()
 

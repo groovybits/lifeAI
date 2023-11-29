@@ -1,5 +1,7 @@
 # Configuration setting
 #
+FEEDMODE=newsCast
+FEEDMODE=lists
 INTERVAL=360
 
 AISTREAMERS="apple amazon youtube twitch hulu netflix max disney"
@@ -18,4 +20,4 @@ KEYWORDS="$AIKEYWORDS $ANIMEKEYWORDS $AIPEOPLE $AIISSUES $AISTREAMERS"
 CATEGORIES="technology,science,business,entertainment,health,-sports,general"
 #REPLAY="--replay"
 EPISODE="--episode"
-
+SORT="published_desc"

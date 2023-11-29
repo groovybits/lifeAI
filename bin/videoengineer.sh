@@ -4,7 +4,7 @@ source bin/settings.sh
 
 CATEGORIES="technology,science"
 KEYWORDS="ai engineering gpt openai poe bard artificial intelligence psychology neuralscience llama2 transformers anime crunchyroll viz robots"
-./lifeAInewsCast.py  \
+./lifeAI${FEEDMODE}.py  \
     --interval $INTERVAL \
     --output_port 8000 \
     --ainame BitByteBit \

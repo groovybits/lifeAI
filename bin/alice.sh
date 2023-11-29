@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 source bin/settings.sh
-./lifeAInewsCast.py  \
+./lifeAI${FEEDMODE}.py  \
     --interval $INTERVAL \
     --output_port 8000 \
     --ainame Alice \
