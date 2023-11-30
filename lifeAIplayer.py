@@ -435,6 +435,12 @@ def main():
 
     audio_playback_complete_speech = True
 
+    audio_latency_delta = 0
+    image_latency_delta = 0
+
+    stats_last_sent_ts = 0
+    stats_last_sent_duration = 0.0
+
     while True:
         # check if we will block, if so then don't and check events instead of pygame
         header_message = None
@@ -515,8 +521,9 @@ def main():
                 try:
                     # Convert the bytes back to a PIL Image object
                     image = Image.open(io.BytesIO(image))
-                    payload_hex = image_to_ascii(image)
-                    print(f"\n{payload_hex}\n", flush=True)
+                    if args.show_ascii_art:
+                        payload_hex = image_to_ascii(image)
+                        print(f"\n{payload_hex}\n", flush=True)
 
                     logger.info(f"Image Prompt: {optimized_prompt[:20]}\Original Text: {text[:10]}...\nOriginal Question:{message[:10]}...")
 
@@ -552,6 +559,47 @@ def main():
                 else:
                     logger.error(f"Unknown event on get event: {event}")
             worked = True
+
+        # Send status of last playback time for the audio and image assets
+        status = {}
+        status["timestamp"] = time.time()
+        status["audio_segment_number"] = audio_segment_number
+        status["image_segment_number"] = image_segment_number
+        status["audio_playback_complete_speech"] = audio_playback_complete_speech
+        status["last_sent_segments"] = last_sent_segments
+        status["last_music_change"] = last_music_change
+        status["audio_buffer_size"] = audio_buffer.qsize()
+        status["image_buffer_size"] = image_buffer.qsize()
+        status["music_buffer_size"] = music_buffer.qsize()
+        status["audio_playback_complete_speech"] = audio_playback_complete_speech
+        status["audio_channel_speech_busy"] = audio_channel_speech.get_busy()
+        status["audio_channel_music_busy"] = audio_channel_music.get_busy()
+        status["audio_channel_music_volume"] = audio_channel_music.get_volume()
+        status["audio_channel_speech_volume"] = audio_channel_speech.get_volume()
+        status["audio_channel_music_switching"] = bg_music.switching
+        status["audio_channel_music_complete"] = bg_music.complete
+        status["audio_channel_music_running"] = bg_music.running
+        status["audio_latency_delta"] = audio_latency_delta
+        status["image_latency_delta"] = image_latency_delta
+
+        # calculate the duration field total for all the queued audio packets
+        # don't remove them from the queue, just get the duration field and add it to the total
+        total_duration = 0.0
+        for audio_message, audio_asset in audio_buffer.queue:
+            total_duration += audio_message["duration"]
+        status["audio_buffer_duration"] = total_duration
+
+        # send status to zmq output
+        sent_delta = time.time() - last_sent_segments
+        if sent_delta < 30:
+            status["sent_delta"] = sent_delta
+            if total_duration == 0.0 or status["audio_buffer_size"] != 0:
+                status["audio_buffer_duration"] = 0.1 # don't send empty until we know we are really empty
+        if time.time() - stats_last_sent_ts > 5.0 or stats_last_sent_duration != status["audio_buffer_duration"]:
+            logger.info(f"Sending status: {status}")
+            sender.send_json(status)
+            stats_last_sent_ts = time.time()
+            stats_last_sent_duration = status["audio_buffer_duration"]
 
         ## get an audio sample and header, get the text field from it, then get an image and header and burn in the text from the audio header to the image and render it while playing the audio
         if args.nobuffer and args.norender and not audio_buffer.empty() and audio_playback_complete_speech:
@@ -683,6 +731,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_port", type=int, required=False, default=6003, help="Port for receiving image as PIL numpy arrays")
     parser.add_argument("--input_host", type=str, required=False, default="127.0.0.1", help="Host for receiving image as PIL numpy arrays")
+    parser.add_argument("--output_port", type=int, required=False, default=6004, help="Port for sending status of last image and audio segments")
+    parser.add_argument("--output_host", type=str, required=False, default="127.0.0.1", help="Host for sending status of last image and audio segments")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("-f", "--freq", type=int, default=22050, help="Sampling frequency for audio playback")
     parser.add_argument("--burn_prompt", action="store_true", default=False, help="Burn in the prompt that created the image")
@@ -726,6 +776,10 @@ if __name__ == "__main__":
     logger.info("connected to ZMQ in: %s:%d" % (args.input_host, args.input_port))
     socket.connect(f"tcp://{args.input_host}:{args.input_port}")
     socket.setsockopt_string(zmq.SUBSCRIBE, "")
+
+    sender = context.socket(zmq.PUB)
+    logger.info("connected to ZMQ out: %s:%d" % (args.output_host, args.output_port))
+    sender.bind(f"tcp://{args.output_host}:{args.output_port}")
 
     pygame.init()
     pygame.mixer.init(frequency=args.freq, size=-16, channels=2, buffer=args.buffer_size)

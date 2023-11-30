@@ -10,6 +10,6 @@ source bin/settings.sh
     --keywords "$KEYWORDS" \
     --sort $SORT \
     --voice "mimic3:en_US/vctk_low#p303:1.5" \
-    --gender "female" $EPISODE $REPLAY \
+    --gender "female" $EPISODE $REPLAY $GLOBALARGS \
     --genre "quantum physics photon, intra cellular physics of the photon." \
     --genre_music "quantum physics photon energy."

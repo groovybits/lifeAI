@@ -9,6 +9,6 @@ source bin/settings.sh
     --prompt "As Alice turn this news story into a sexy story." \
     --keywords "$KEYWORDS" \
     --voice "mimic3:en_US/vctk_low#p303:1.5" \
-    --gender "female" $EPISODE $REPLAY \
+    --gender "female" $EPISODE $REPLAY $GLOBALARGS \
     --genre "animated drawing of a beautiful pretty woman with long blonde hair and big blue eyes and busty with cleavage." \
     --genre_music "70's funk and bass."

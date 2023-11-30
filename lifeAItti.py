@@ -61,44 +61,52 @@ def generate_getimgai(mediaid, image_model, prompt):
         "authorization": os.environ['GETIMG_API_KEY']
     }
 
-    response = requests.post(url, json=payload, headers=headers)
+    try:
+        response = requests.post(url, json=payload, headers=headers)
 
-    print(response.image)
-    return response.image
+        print(response.image)
+        return response.image
+    except Exception as e:
+        print(f"Error generating image: {e}")
+        return None
 
 def generate_sd_webui(mediaid, prompt, save_file=False):
-    result = sdui_api.txt2img(prompt=prompt,
-                        negative_prompt=args.negative_prompt,
-                        save_images=False,
-                        width=512,
-                        height=512,
-    #                    seed=1003,
-    #                    styles=["anime"],
-    #                    cfg_scale=7,
-    #                      sampler_index='DDIM',
-    #                      steps=30,
-    #                      enable_hr=True,
-    #                      hr_scale=2,
-    #                      hr_upscaler=webuiapi.HiResUpscaler.Latent,
-    #                      hr_second_pass_steps=20,
-    #                      hr_resize_x=1536,
-    #                      hr_resize_y=1024,
-    #                      denoising_strength=0.4,
+    try:
+        result = sdui_api.txt2img(prompt=prompt,
+                            negative_prompt=args.negative_prompt,
+                            save_images=False,
+                            width=512,
+                            height=512,
+        #                    seed=1003,
+        #                    styles=["anime"],
+        #                    cfg_scale=7,
+        #                      sampler_index='DDIM',
+        #                      steps=30,
+        #                      enable_hr=True,
+        #                      hr_scale=2,
+        #                      hr_upscaler=webuiapi.HiResUpscaler.Latent,
+        #                      hr_second_pass_steps=20,
+        #                      hr_resize_x=1536,
+        #                      hr_resize_y=1024,
+        #                      denoising_strength=0.4,
 
-            )
+                )
 
-    sdui_api.util_wait_for_ready()
+        sdui_api.util_wait_for_ready()
 
-    if result.image is not None:
-        if save_file:
-            result.image.save(f"images/{mediaid}.png")
-            logger.info(f"Saved image to images/{mediaid}.png")
-            print(f"Saved image to images/{mediaid}.png")
-    else:
-        logger.error(f"Error generating image: {result.error}")
+        if result.image is not None:
+            if save_file:
+                result.image.save(f"images/{mediaid}.png")
+                logger.info(f"Saved image to images/{mediaid}.png")
+                print(f"Saved image to images/{mediaid}.png")
+        else:
+            logger.error(f"Error generating image: {result.error}")
+            return None
+        
+        return result.image
+    except Exception as e:
+        logger.error(f"Error generating image: {e}")
         return None
-    
-    return result.image
 
 def generate_openai(mediaid, image_model, prompt, username="lifeai", return_url=False, save_file=False):
     response = openai_client.images.generate(

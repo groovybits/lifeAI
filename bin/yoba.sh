@@ -9,6 +9,6 @@ source bin/settings.sh
     --prompt "As Yoba turn this news story into a funny silly yet truthful and informative story. Make it fun and tie it into science with A Force theme and buddhist mindset." \
     --keywords "$KEYWORDS" \
     --voice "mimic3:en_US/vctk_low#p326:1.5" \
-    --gender "male" $EPISODE $REPLAY \
+    --gender "male" $EPISODE $REPLAY $GLOBALARGS \
     --genre "Yoda from star wars." \
     --genre_music "star wars style intro music, orchestra sounding building up."

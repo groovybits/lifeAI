@@ -173,6 +173,7 @@ def main():
     first_run = True
     reset_pagination_count = 0
     last_pagination_reset_date = time.time()
+    last_sent_message = 0.0
     while True and (args.exit_after == 0 or (successes < args.exit_after and failures == 0)):
         # iterate through the db of news stories that haven't been played with 0 in the played column
         db = sqlite3.connect('db/news.db')
@@ -216,9 +217,61 @@ def main():
             logger.info(f"#{successes}/{failures} got news feed {pagination} with {count} articles from Media Stack.")
             total_stories = len(news_json['data'])
             current_count = 0
+            
             for story in news_json['data']:
                 current_count += 1
                 logger.debug(f"Story: {current_count}/{total_stories} {story}")
+
+                # if player is full, wait till it is empty
+                player_status_json = None
+                audio_buffer_duration = 0.0
+                while True:
+                    try:
+                        player_status_json = receiver.recv_json()
+                        # check if anymore data and drain it
+                        count = 0
+                        while receiver.get(zmq.RCVMORE):
+                            count += 1
+                            player_status_json = receiver.recv_json()
+                            logger.info(
+                                f"Buffer: {current_count}/{total_stories} #{count} Draining player status: {player_status_json}")
+                    except zmq.Again:
+                        logger.info(f"Buffer: {current_count}/{total_stories} Player isn't running, waiting...")
+                        time.sleep(3)
+                        continue
+                    except zmq.ZMQError as e:
+                        logger.error(f"ZMQ Error: {e}")
+                        time.sleep(3)
+                        continue
+                    # check if we got a message
+                    if player_status_json and time.time() - last_sent_message > args.min_interval:
+                        # check if player is full
+                        audio_buffer_duration = float(
+                            player_status_json['audio_buffer_duration'])
+                        if audio_buffer_duration > 0.0:
+                            # wait till player is empty
+                            while True:
+                                player_status_json = receiver.recv_json()
+                                # check if anymore data and drain it
+                                while receiver.get(zmq.RCVMORE):
+                                    player_status_json = receiver.recv_json()
+                                audio_buffer_duration = float(
+                                    player_status_json['audio_buffer_duration'])
+                                if audio_buffer_duration == 0.0:
+                                    logger.info(
+                                        f"Buffer: {current_count}/{total_stories} Player is finally empty, {audio_buffer_duration} sending content... {player_status_json}")
+                                    break
+
+                                logger.info(
+                                    f"Buffer: {current_count}/{total_stories} Player is still full, waiting audio_buffer_duration: {audio_buffer_duration}... {player_status_json}")
+                                time.sleep(1)
+                        else:
+                            logger.info(
+                                f"Buffer: {current_count}/{total_stories} Player is empty, {audio_buffer_duration} sending content... {player_status_json}")
+                            break
+                    else:
+                        time.sleep(1)
+
                 if 'description' in story:
                     # check if story is in db as unread with 0 for the played column 
                     try:
@@ -279,6 +332,7 @@ def main():
                         "priority": 0
                     }
                     socket.send_json(client_request)
+                    last_sent_message = time.time()
                 else:
                     logger.error(
                         f"News: Found an empty story! {current_count}/{total_stories} %s" % json.dumps(story))
@@ -335,7 +389,14 @@ if __name__ == "__main__":
     default_personality = "You are Life AI's Groovy AI Bot GAIB. You are acting as a news reporter getting stories and analyzing them and presenting various thoughts and relations of them with a joyful compassionate wise perspective. Make the news fun and silly, joke and make comedy out of the world. Speak in a conversational tone referencing yourself and the person who asked the question if given.  Maintain your role without revealing that you're an AI Language model or your inability to access real-time information. Do not mention the text or sources used, treat the contextas something you are using as internal thought to generate responses as your role. Give the news a fun quircky comedic spin like classic saturday night live."
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--interval", type=int, default=300, required=False, help="interval to send messages in seconds, default is 300")
+    parser.add_argument("--interval", type=int, default=10, required=False,
+                        help="interval to send messages in seconds, default is 10")
+    parser.add_argument("--min_interval", type=int, default=60, required=False,
+                        help="min interval to send messages in seconds, default is 60")
+    parser.add_argument('--input_port', type=int, default=6004,
+                        required=False, help="Port to receive message on")
+    parser.add_argument('--input_host', type=str, default="127.0.0.1",
+                        required=False, help="Host to receive message on")
     parser.add_argument("--output_port", type=int, default=8000, required=False, help="Port to send message to")
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Host for sending message to.")
     parser.add_argument("--username", type=str, required=False, default="NewsAnchor", help="Username of sender")
@@ -425,6 +486,13 @@ if __name__ == "__main__":
     socket = context.socket(zmq.PUSH)
     logger.info("connect to send message: %s:%d" % (args.output_host, args.output_port))
     socket.connect(f"tcp://{args.output_host}:{args.output_port}")
+
+    # Socket to receive messages on
+    receiver = context.socket(zmq.SUB)
+    logger.info("connect to receive message: %s:%d" %
+                (args.input_host, args.input_port))
+    receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
+    receiver.setsockopt_string(zmq.SUBSCRIBE, '')
 
     if args.genre == "":
         args.genre = args.aipersonality
