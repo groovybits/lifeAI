@@ -10,5 +10,5 @@ source bin/settings.sh
     --keywords "$KEYWORDS" $EPISODE $REPLAY $GLOBALARGS \
     --voice "mimic3:en_US/vctk_low#p227:1.5" \
     --gender "male" \
-    --genre "Elon Musk in front of a psychedelic colorful painted hippie bus from the 60s with flowers and patterns, hippie girls flocking around him." \
+    --genre "Elon Musk in front of a psychedelic colorful painted hippie bus from the 60s with flowers and patterns." \
     --genre_music "tesla star trek music."
