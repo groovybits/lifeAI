@@ -4,7 +4,7 @@ if [ "$FEEDMODE" == "" ]; then
     #FEEDMODE=newsCast
     FEEDMODE=lists
 fi
-INTERVAL=20
+INTERVAL=10
 
 AISTREAMERS="apple amazon youtube twitch hulu netflix max disney"
 ANIMEKEYWORDS="anime animation otaku manga crunchyroll funimation vrv hidive"
@@ -21,9 +21,9 @@ KEYWORDS="$AIKEYWORDS $ANIMEKEYWORDS $AIPEOPLE $AIISSUES $AISTREAMERS"
 # technology - Technology News
 CATEGORIES="technology,science,business,entertainment,health,-sports,general"
 #REPLAY="--replay"
-EPISODE="--episode"
+#EPISODE="--episode"
 SORT="published_desc"
 
-GLOBALARGS="--maxtokens 1000"
+GLOBALARGS="--maxtokens 800"
 ## External player on remote host for feedback on playback status for feed throttling
 #GLOBALARGS="$GLOBALARGS --input_host 192.168.50.58"

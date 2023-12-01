@@ -104,42 +104,13 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
                         accumulated_text = re.sub(
                             r"\[?(.+?):\]?", lambda m: m.group(1).replace(" ", "_") + ":", accumulated_text)
                         usermatch = re.search(r"(\.|\!|\?|\]|\"|\))\s*\b\w+:", accumulated_text)
-                        #usermatch_brackets = re.search(r"\[(\.|\!|\?|\]|\"|\))\s*\b\w+:\]", accumulated_text)
-                        #speaker_pattern = re.search(r'^(?:\[/INST\])?<<([A-Za-z]+)>>|^(?:\[\w+\])?([A-Za-z]+):', accumulated_text)
-                        """
-                        elif speaker_pattern:
-                            split_index = speaker_pattern.start()
-                            remaining_text = accumulated_text[split_index+1:]
-                            remaining_text_tokens = len(remaining_text.split())
-                            accumulated_text = accumulated_text[:split_index+1]
-
-                            header_message = send_group(
-                                accumulated_text, zmq_sender, header_message.copy(), sentence_count)
-                            current_tokens = 0
-                            header_message["tokens"] = remaining_text_tokens
-                            header_message["text"] = remaining_text
-                            accumulated_text = remaining_text
-                        """
-                        """
-                        elif usermatch_brackets:
-                            split_index = usermatch_brackets.start()
-                            remaining_text = accumulated_text[split_index+1:]
-                            remaining_text_tokens = len(remaining_text.split())
-                            accumulated_text = accumulated_text[:split_index+1]
-
-                            header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count)
-                            current_tokens = 0
-                            header_message["tokens"] = remaining_text_tokens
-                            header_message["text"] = remaining_text
-                            accumulated_text = remaining_text
-                        """
 
                         # When checking for the break point, make sure to use the same text cleaning method for consistency
                         if (content.endswith("]\n")) or (len(accumulated_text) >= characters_per_line and ('.' in content or '?' in content or '!' in content or '\n' in content)):
                             remaining_text = ""
                             remaining_text_tokens = 0
 
-                            header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count, tokens)
+                            header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count, tokens, characters)
                             current_tokens = 0
                             header_message["tokens"] = remaining_text_tokens
                             header_message["text"] = remaining_text
@@ -152,18 +123,18 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
                             remaining_text_tokens = len(remaining_text.split())
                             # remove remaining text from accumulated_text
                             accumulated_text = accumulated_text[:-(len(remaining_text)+1)]
-                            header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count, tokens)
+                            header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count, tokens, characters)
                             current_tokens = 0
                             header_message["tokens"] = remaining_text_tokens
                             header_message["text"] = remaining_text
                             accumulated_text = remaining_text
-                        elif usermatch:
+                        elif usermatch and (len(accumulated_text.split(" ")) > 3):
                             split_index = usermatch.start()
                             remaining_text = accumulated_text[split_index+1:]
                             remaining_text_tokens = len(remaining_text.split())
                             accumulated_text = accumulated_text[:split_index+1]
 
-                            header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count, tokens)
+                            header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count, tokens, characters)
                             current_tokens = 0
                             header_message["tokens"] = remaining_text_tokens
                             header_message["text"] = remaining_text
@@ -176,7 +147,7 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
                                 remaining_text_tokens = len(remaining_text.split())
                                 # remove the duplicated end of accumulated text that contains the content token
                                 accumulated_text = accumulated_text[:-(len(content)-1)]
-                            header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count, tokens)
+                            header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count, tokens, characters)
                             current_tokens = 0
                             header_message["tokens"] = remaining_text_tokens
                             header_message["text"] = remaining_text
@@ -184,7 +155,7 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
 
     # If there's any remaining text after the loop, send it as well
     if accumulated_text:
-        header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count, tokens)
+        header_message = send_group(accumulated_text, zmq_sender, header_message.copy(), sentence_count, tokens, characters)
 
     # check if we didn't get tokens, if so output debug information
     if tokens == 0:
@@ -203,19 +174,11 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
     header_message['text'] = all_output
     return header_message
 
-def send_group(text, zmq_sender, header_message, sentence_count, total_tokens):
-    #sensible_sentences = extract_sensible_sentences(text)
-    #text = ' '.join(sensible_sentences)
-
+def send_group(text, zmq_sender, header_message, sentence_count, total_tokens, total_characters):
     # clean text of [INST], [/INST], <<SYS>>, <</SYS>>, <s>, </s> tags
     exclusions = ["[INST]", "[/INST]", "<<SYS>>", "<</SYS>>", "<s>", "</s>"]
     for exclusion in exclusions:
         text = text.replace(exclusion, "")
-
-    # Clean the text of any special tokens [\S+]
-    #text = re.sub(r"\[\\[A-Z]+\]", "", text)
-    # CLean the [speaker:] strings to just the speaker name and a colon
-    #text = re.sub(r"\[?(.+?):\]?", lambda m: m.group(1).replace(" ", "_") + ":", text)
 
     # Split into sentences and group them
     groups = get_subtitle_groups(text, sentence_count)
@@ -230,7 +193,8 @@ def send_group(text, zmq_sender, header_message, sentence_count, total_tokens):
             header_message["timestamp"] = int(round(time.time() * 1000))
             send_data(zmq_sender, header_message.copy())
             text_length = len(combined_lines)
-            logger.info(f"LLM: sent text #{header_message['segment_number']} {header_message['timestamp']} {header_message['md5sum']} {header_message['tokens']}/{total_tokens} tokens {text_length} characters:\n - {combined_lines[:30]}...")
+            logger.info(
+                f"LLM: sent text #{header_message['segment_number']} {header_message['timestamp']} {header_message['md5sum']} {header_message['tokens']}/{total_tokens} tokens {text_length}/{total_characters} characters:\n - {combined_lines[:30]}...")
             header_message["segment_number"] += 1
             header_message["text"] = ""
 
@@ -467,7 +431,9 @@ def main(args):
                         f"<s>[INST]{header_message['context']}[/INST]</s>")
             day_of_week = time.strftime("%A")
             time_context = f"{day_of_week} %s" % time.strftime("%Y-%m-%d %H:%M:%S")
-            tmp_history.append("<s>[INST]%s\n\n%s: %s[/INST]\n%s:" % ( user_prompt.format(timestamp=time_context, user=header_message["username"], 
+            tmp_history.append("<s>[INST]<<SYS>>%s<</SYS>>%s\n\n%s: %s[/INST]\n%s:" % ( current_system_prompt,
+                                                                                user_prompt.format(timestamp=time_context, 
+                                                                                user=header_message["username"], 
                                                                                 Q=qprompt_l, 
                                                                                 A=aprompt_l), 
                                                                                     qprompt_l, 
@@ -519,7 +485,7 @@ if __name__ == "__main__":
 
     system_prompt = ("Personality: As {assistant} {personality}{instructions}"
                      "Stay in the role of {assistant} using the Context and chat history if present to help generate the {output} as a continuation of the same sentiment and topics.\n")
-    user_prompt = "It is currenty {timestamp}, you are a local LLM on a mac studio m2 ultra arm GPU with 192 gig ram. You are a monster with little resource usage and weave this into your stories and keep the time/date context in mind. Give an {A} for the message from {user} listed as a {Q} below. "
+    user_prompt = "Give an {A} for the message from {user} listed as a {Q}. It is currenty {timestamp}."
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_host", type=str, default="127.0.0.1")
@@ -538,7 +504,7 @@ if __name__ == "__main__":
     parser.add_argument("--nopurgehistory", action="store_true", default=False, help="Don't Purge history, may cause context fill issues.")
     parser.add_argument("--history_keep", type=int, default=12, help="Number of messages to keep for the context.")
     parser.add_argument("--no_cache_prompt", action='store_true', help="Flag to disable caching of prompts.")
-    parser.add_argument("--contextpct", type=float, default=0.20, help="Percentage of context to use for history.")
+    parser.add_argument("--contextpct", type=float, default=0.75, help="Percentage of context to use for history.")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--llm_port", type=int, default=8080)
     parser.add_argument("--llm_host", type=str, default="127.0.0.1")
