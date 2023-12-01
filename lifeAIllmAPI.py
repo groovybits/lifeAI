@@ -200,18 +200,11 @@ def send_group(text, zmq_sender, header_message, sentence_count, total_tokens, t
 
     return header_message
 
-def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_count, stoptokens, args):
-    logger.info(f"LLM generating text for media id {header_message['mediaid']}.")
-   
-    # Prepare the message to send to the LLM
-    header_message["text"] = f"{header_message['mediatype']} message from {header_message['username']}: {header_message['message'][:300]}..."
-
-    # Send initial question
-    header_message["timestamp"] = int(round(time.time() * 1000))
-    send_data(zmq_sender, header_message.copy())
+def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_count, stoptokens, args):   
     logger.info(f"LLM: Question #{header_message['segment_number']} {header_message['timestamp']} {header_message['md5sum']}: - {header_message['text'][:30]}")
     header_message["segment_number"] += 1
     header_message["text"] = ""
+    header_message["timestamp"] = int(round(time.time() * 1000))
 
     maxtokens = int(header_message["maxtokens"])
 
