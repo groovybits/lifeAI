@@ -95,7 +95,7 @@ def create_filmstrip_images(center_image, side_images):
     return wide_image
 
 # Main function to process the new image
-def process_new_image(new_image, text, args, unique_image=False):
+def process_new_image(new_image, text, args, unique_image=False, banner=""):
     target_width = args.width  # This should be set to the desired width for 16:9 aspect ratio
     target_height = args.height  # This should be set to the height corresponding to the 16:9 aspect ratio
     
@@ -104,10 +104,10 @@ def process_new_image(new_image, text, args, unique_image=False):
         # Use the 6 most recent images for each side
         side_images = list(past_images_queue)
         final_image = create_16_9_image(new_image, side_images, target_width, target_height)
-        final_image = add_text_to_image(final_image, text)
+        final_image = add_text_to_image(final_image, text, banner)
     else:
         # Not enough images, just add text to the new_image
-        final_image = add_text_to_image(new_image, text)
+        final_image = add_text_to_image(new_image, text, banner)
 
     # Add the new image to the queue for future use
     if unique_image:
@@ -147,7 +147,7 @@ def draw_japanese_text_on_image(image_np, text, position, font_path, font_size):
 
     return image_np
 
-def add_text_to_image(image, text):
+def add_text_to_image(image, text, banner=""):
     if image is not None:
         logger.info(f"Adding text to image: {text[:80]}")
 
@@ -227,6 +227,31 @@ def add_text_to_image(image, text):
 
         # Set the color for the text outline
         outline_color = (0, 0, 0)  # Black color for the outline
+
+        # Configuration for the banner text
+        banner_font_size = 1  # Smaller font size for the banner
+        banner_font_thickness = 1  # Thickness of the banner font
+        banner_outline_color = (0, 0, 0)  # Black outline for better visibility
+        banner_border_thickness = 1  # Thickness of the text outline
+
+        # Draw banner if it's not empty on the top of the image from left to right
+        if banner != "":
+            ((text_width, text_height), baseline) = cv2.getTextSize(banner, cv2.FONT_HERSHEY_DUPLEX, banner_font_size, banner_font_thickness)
+            x_pos_t = 0 #(width - text_width) // 2  # Center the text
+            y_pos_t = text_height + 10  # Adjusted height from top, with some padding
+
+            # Draw a solid black rectangle for the banner background
+            cv2.rectangle(image, (0, 0), (width, y_pos_t), (0, 0, 0), -1)
+
+            # Draw text shadow for the banner
+            shadow_offset = 2  # Smaller offset for the shadow
+            cv2.putText(image, banner, (x_pos_t + shadow_offset, y_pos_t - shadow_offset), cv2.FONT_HERSHEY_DUPLEX, banner_font_size, (0, 0, 0), banner_font_thickness)
+
+            # Draw text outline for the banner
+            cv2.putText(image, banner, (x_pos_t, y_pos_t), cv2.FONT_HERSHEY_DUPLEX, banner_font_size, banner_outline_color, banner_border_thickness)
+
+            # Draw the main banner text
+            cv2.putText(image, banner, (x_pos_t, y_pos_t), cv2.FONT_HERSHEY_DUPLEX, banner_font_size, (255, 255, 0), banner_font_thickness)
 
         for line in reversed(wrapped_text):
             # Get the text size, baseline, and adjust the y_pos
@@ -644,9 +669,10 @@ def main():
                     unique_image = False
             last_image_asset = image_asset.copy()
             if args.burn_prompt:
-                image_np = process_new_image(image_asset, optimized_prompt, args, unique_image)
+                image_np = process_new_image(
+                    image_asset, optimized_prompt, args, unique_image, image_message["message"][:300])
             else:
-                image_np = process_new_image(image_asset, text, args, unique_image)
+                image_np = process_new_image(image_asset, text, args, unique_image, image_message["message"][:300])
 
             # Play audio and display image
             try:
@@ -685,7 +711,8 @@ def main():
                                 optimized_prompt = audio_message["optimized_text"]
                             else:
                                 optimized_prompt = text
-                            image_np = process_new_image(last_image_asset, optimized_prompt, args, new_image)
+                            image_np = process_new_image(
+                                last_image_asset, optimized_prompt, args, new_image, audio_message["message"][:500])
                             audio_playback_complete_speech = False
                             playback(image_np, audio_asset, duration)
                             last_sent_segments = time.time()
