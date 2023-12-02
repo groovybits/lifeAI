@@ -225,27 +225,27 @@ def add_text_to_image(image, text, banner=""):
             font_thickness = 3
             border_thickness = 10
 
-        # Set the color for the text outline
-        outline_color = (0, 0, 0)  # Black color for the outline
-
         # Configuration for the banner text
         banner_font_size = 1  # Smaller font size for the banner
-        banner_font_thickness = 1  # Thickness of the banner font
+        banner_font_thickness = 2  # Thickness of the banner font
         banner_outline_color = (0, 0, 0)  # Black outline for better visibility
         banner_border_thickness = 1  # Thickness of the text outline
 
         # Draw banner if it's not empty on the top of the image from left to right
         if banner != "":
             ((text_width, text_height), baseline) = cv2.getTextSize(banner, cv2.FONT_HERSHEY_DUPLEX, banner_font_size, banner_font_thickness)
-            x_pos_t = 0 #(width - text_width) // 2  # Center the text
+            x_pos_t = 5 #(width - text_width) // 2  # Center the text
             y_pos_t = text_height + 10  # Adjusted height from top, with some padding
 
             # Draw a solid black rectangle for the banner background
-            cv2.rectangle(image, (0, 0), (width, y_pos_t), (0, 0, 0), -1)
+            overlay = image.copy()
+            cv2.rectangle(overlay, (5, 0), (width-10, y_pos_t + 10), (0, 0, 0), -1)
 
             # Draw text shadow for the banner
             shadow_offset = 2  # Smaller offset for the shadow
             cv2.putText(image, banner, (x_pos_t + shadow_offset, y_pos_t - shadow_offset), cv2.FONT_HERSHEY_DUPLEX, banner_font_size, (0, 0, 0), banner_font_thickness)
+            alpha = 0.6  # Transparency factor.
+            image = cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0)
 
             # Draw text outline for the banner
             cv2.putText(image, banner, (x_pos_t, y_pos_t), cv2.FONT_HERSHEY_DUPLEX, banner_font_size, banner_outline_color, banner_border_thickness)
@@ -268,7 +268,7 @@ def add_text_to_image(image, text, banner=""):
             # Draw a semi-transparent rectangle
             overlay = image.copy()
             cv2.rectangle(overlay, (rect_x_left, rect_y_top), (rect_x_right, rect_y_bottom), (0, 0, 0), -1)
-            alpha = 0.1  # Transparency factor.
+            alpha = 0.6  # Transparency factor.
             image = cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0)
 
             # Draw text shadow for a drop shadow effect
