@@ -239,7 +239,7 @@ def add_text_to_image(image, text, banner=""):
 
             # Draw a solid black rectangle for the banner background
             overlay = image.copy()
-            cv2.rectangle(overlay, (5, 0), (width-10, y_pos_t + 10), (0, 0, 0), -1)
+            cv2.rectangle(overlay, (0, 0), (width, y_pos_t + 10), (0, 0, 0), -1)
 
             # Draw text shadow for the banner
             shadow_offset = 2  # Smaller offset for the shadow
