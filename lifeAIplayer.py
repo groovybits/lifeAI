@@ -427,8 +427,9 @@ def playback(image, audio, duration):
     if image and not args.norender:
         render(image, duration)
     
-    play_audio(audio, 22050)
-    print(f"Audio playback initiated.")
+    if audio:
+        play_audio(audio, 22050)
+        print(f"Audio playback initiated.")
 
 def get_audio_duration(audio_samples):
     audio_segment = AudioSegment.from_file(io.BytesIO(audio_samples), format="wav")
@@ -456,6 +457,8 @@ def main():
 
     stats_last_sent_ts = 0
     stats_last_sent_duration = 0.0
+
+    end_of_stream = True
 
     while True:
         # check if we will block, if so then don't and check events instead of pygame
@@ -597,6 +600,7 @@ def main():
         status["audio_channel_music_running"] = bg_music.running
         status["audio_latency_delta"] = audio_latency_delta
         status["image_latency_delta"] = image_latency_delta
+        status["eos"] = end_of_stream
 
         # calculate the duration field total for all the queued audio packets
         # don't remove them from the queue, just get the duration field and add it to the total
@@ -642,6 +646,11 @@ def main():
             last_sent_segments = time.time()
 
             duration = audio_message["duration"]
+
+            if "eos" in audio_message and audio_message["eos"] == True:
+                end_of_stream = True
+            else:
+                end_of_stream = False
 
             text = audio_message["text"]
             optimized_prompt = text
@@ -695,7 +704,7 @@ def main():
                     logger.debug(f"Image segment number {image_segment_number} does not match audio segment number {audio_segment_number}.")
                     if image_buffer.empty():
                         if not audio_buffer.empty():
-                            print(f"Audio buffer is not empty, using last image and audio.")
+                            logger.info(f"Warning: A/V Alignment offset, audio buffer is not empty, using last image and audio.")
                             audio_message, audio_asset = audio_buffer.get()
                             text = audio_message["text"]
                             optimized_prompt = text
@@ -722,8 +731,17 @@ def main():
                                 latency_delta = int(round(time.time()*1000)) - int(timestamp)
                             logger.info(
                                 f"Sent audio segment #{audio_message['segment_number']} at timestamp {audio_message['timestamp']} with latency delta {latency_delta} ms.")
+                else:
+                    # check if we are in eos condition, if so send the last image seen with a special text burnin
+                    if end_of_stream:
+                        logger.info(f"End of stream, sending last image with special text.")
+                        # burn in special text
+                        image_np = process_new_image(last_image_asset, "The Groovy Life AI - groovylife.ai", args, False, "Groovy Life AI: Ask me anything, use !help for instructions...")
+                        playback(image_np, None, 0.0)
+                        last_sent_segments = time.time()
+                        worked = True
+                        logger.info(f"Sent last image segment #{image_segment_number} at timestamp {timestamp}")
 
-        
         if not music_buffer.empty():
             if args.nomusic:
                 music_message, music = music_buffer.get()
