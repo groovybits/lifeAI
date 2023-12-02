@@ -738,7 +738,7 @@ def main():
                         # burn in special text
                         image_np = process_new_image(last_image_asset, "The Groovy Life AI - groovylife.ai", args, False, "Groovy Life AI: Ask me anything, use !help for instructions...")
                         playback(image_np, None, 0.0)
-                        last_sent_segments = time.time()
+                        #last_sent_segments = time.time()
                         worked = True
                         logger.info(f"Sent last image segment #{image_segment_number} at timestamp {timestamp}")
 
