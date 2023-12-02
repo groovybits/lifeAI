@@ -659,12 +659,14 @@ def main():
                 if image_message["throttle"] == "true":
                     unique_image = False
             last_image_asset = image_asset.copy()
+            banner_msg = f"{audio_message['username']} asked {audio_message['message'][:300]}"
+            if 'eos' in audio_message and audio_message['eos'] == True:
+                banner_msg = f"{audio_message['message']}"
             if args.burn_prompt:
                 image_np = process_new_image(
-                    image_asset, optimized_prompt, args, unique_image, f"{audio_message['username']} asked {audio_message['message'][:300]}")
+                    image_asset, optimized_prompt, args, unique_image, banner_msg)
             else:
-                image_np = process_new_image(image_asset, text, args, unique_image,
-                                             f"{audio_message['username']} asked {audio_message['message'][:300]}")
+                image_np = process_new_image(image_asset, text, args, unique_image, banner_msg)
 
             # Play audio and display image
             try:
@@ -703,9 +705,11 @@ def main():
                                 optimized_prompt = audio_message["optimized_text"]
                             else:
                                 optimized_prompt = text
+                            banner_msg = f"{audio_message['username']} asked {audio_message['message'][:300]}"
+                            if 'eos' in audio_message and audio_message['eos'] == True:
+                                banner_msg = f"{audio_message['message']}"
                             image_np = process_new_image(
-                                last_image_asset, optimized_prompt, args, new_image, 
-                                f"{audio_message['username']} asked {audio_message['message'][:300]}")
+                                last_image_asset, optimized_prompt, args, new_image, banner_msg)
                             audio_playback_complete_speech = False
                             playback(image_np, audio_asset, duration)
                             last_sent_segments = time.time()

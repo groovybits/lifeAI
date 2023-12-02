@@ -154,6 +154,9 @@ def main():
         text = header_message["text"]
         episode_msg = header_message["episode"]
         mediaid = header_message["mediaid"]
+        eos = False
+        if "eos" in header_message:
+            eos = header_message["eos"]
 
         is_episode = False
         if episode_msg == "true":
@@ -161,7 +164,7 @@ def main():
         else:
             is_episode = False
 
-        if last_mediaid != mediaid:
+        if last_mediaid != mediaid or eos == True:
             last_mediaid = mediaid
             voice_model = args.voice
             last_voice_model = voice_model

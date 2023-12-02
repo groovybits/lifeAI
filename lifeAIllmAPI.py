@@ -205,6 +205,7 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
     header_message["segment_number"] += 1
     header_message["text"] = ""
     header_message["timestamp"] = int(round(time.time() * 1000))
+    header_message["eos"] = False # end of stream marker
 
     maxtokens = int(header_message["maxtokens"])
 
@@ -265,8 +266,11 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
         # Send end frame
         # Prepare the message to send to the LLM
         end_header = header_message.copy()
+        end_header["message"] = "Groovy Life AI: Ask me another question, use !help for instructions..."
+        end_header["username"] = "GAIB"
         end_header["text"] = f"{args.end_message}"
         end_header["timestamp"] = int(round(time.time() * 1000))
+        end_header["eos"] = True # end of stream marker
         send_data(zmq_sender, end_header.copy())
 
         # Add a delay to prevent a tight loop and rest the LLM
