@@ -10,5 +10,5 @@ source bin/settings.sh
     --keywords "$KEYWORDS" \
     --voice "mimic3:en_US/vctk_low#p303:1.5" \
     --gender "female" $EPISODE $REPLAY $GLOBALARGS \
-    --genre "a beautiful pretty woman with long blonde hair and big blue eyes and busty with cleavage with " \
+    --genre "a beautiful pretty woman with long hair and big pretty eyes and busty with cleavage " \
     --genre_music "70's funk and bass."

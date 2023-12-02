@@ -205,25 +205,14 @@ def add_text_to_image(image, text, banner=""):
             return False
 
         wrap_width = 30
-        is_wide = False
-        if current_ratio > 512/512:
+        if current_ratio > 1.0:
             wrap_width = 50
-            is_wide = True
         wrapped_text = textwrap.wrap(text, width=wrap_width, fix_sentence_endings=False, break_long_words=False, break_on_hyphens=False)
         y_pos = height  # Adjusted height from bottom
 
-        font_size = 1
-        font_thickness = 3  # Adjusted for bolder font
-        border_thickness = 8  # Adjusted for bolder border
-
-        if is_wide:
-            font_size = 2
-            font_thickness = 6
-            border_thickness = 15
-        elif width < 600:
-            font_size = 1
-            font_thickness = 3
-            border_thickness = 10
+        font_size = 2
+        font_thickness = 6
+        border_thickness = 15
 
         # Configuration for the banner text
         banner_font_size = 1  # Smaller font size for the banner

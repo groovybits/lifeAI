@@ -106,7 +106,7 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
                         usermatch = re.search(r"(\.|\!|\?|\]|\"|\))\s*\b\w+:", accumulated_text)
 
                         # When checking for the break point, make sure to use the same text cleaning method for consistency
-                        if (content.endswith("]\n")) or (len(accumulated_text) >= characters_per_line and ('.' in content or '?' in content or '!' in content or '\n' in content)):
+                        if (len(accumulated_text) >= characters_per_line and ('.' in content or '?' in content or '!' in content or '\n' in content)):
                             remaining_text = ""
                             remaining_text_tokens = 0
 
@@ -116,7 +116,7 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
                             header_message["text"] = remaining_text
                             accumulated_text = remaining_text
                         # check for a stop token like .,!?] and a following name without spaces and then a colon like . username:
-                        elif (len(accumulated_text.split(" ")) > 3) and accumulated_text.endswith(":") and (accumulated_text.split(" ")[-2].endswith(".") or accumulated_text.split(" ")[-2].endswith("!") or accumulated_text.split(" ")[-2].endswith("?") or accumulated_text.split(" ")[-2].endswith("]") or accumulated_text.split(" ")[-2].endswith('"') or accumulated_text.split(" ")[-2].endswith(')')) and len(accumulated_text.split(" ")[-1]) > 1:
+                        elif (len(accumulated_text.split(" ")) > 6) and accumulated_text.endswith(":") and (accumulated_text.split(" ")[-2].endswith(".") or accumulated_text.split(" ")[-2].endswith("!") or accumulated_text.split(" ")[-2].endswith("?") or accumulated_text.split(" ")[-2].endswith("]") or accumulated_text.split(" ")[-2].endswith('"') or accumulated_text.split(" ")[-2].endswith(')')) and len(accumulated_text.split(" ")[-1]) > 1:
                             remaining_text = ""
                             remaining_text_tokens = 0
                             remaining_text = accumulated_text.split(" ")[-1]
@@ -128,7 +128,7 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
                             header_message["tokens"] = remaining_text_tokens
                             header_message["text"] = remaining_text
                             accumulated_text = remaining_text
-                        elif usermatch and (len(accumulated_text.split(" ")) > 3):
+                        elif usermatch and (len(accumulated_text.split(" ")) > 6):
                             split_index = usermatch.start()
                             remaining_text = accumulated_text[split_index+1:]
                             remaining_text_tokens = len(remaining_text.split())

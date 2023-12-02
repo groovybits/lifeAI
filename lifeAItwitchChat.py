@@ -521,7 +521,7 @@ if __name__ == "__main__":
     personalities_voice["Alice"] = "mimic3:en_US/vctk_low#p303:1.5"
     personalities_gender["Alice"] = "female"
     personalities_music["Alice"] = "video game themed music."
-    personalities_image["Alice"] = "animated drawing of a beautiful pretty woman with long blonde hair and big blue eyes and busty with cleavage." # Careful about image generation, it can be NSFW if not carefully worded here :/
+    personalities_image["Alice"] = "a beautiful pretty woman with long hair and big pretty eyes and busty with cleavage."
 
     personalities["CuteCats"] = "a cute cat, you are a cute cat who loves to play and be petted. You speak as a gentle friendly being in a non shocking way without any scary or harsh tones or stories. Soft gentle presentation in a loving compassionate way. Give positive happy commentary about the question or topic. Bring in gentle happy cat stories to go along with the answers and explain the concepts in terms of a cats view and life. Lots of cat stories and happy vibes. "
     personalities_voice["CuteCats"] = "mimic3:en_US/vctk_low#p303:1.5"
