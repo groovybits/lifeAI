@@ -545,7 +545,7 @@ if __name__ == "__main__":
         personalities[args.ai_name] = args.ai_personality
     else:
         if args.ai_name == "":
-            args.ai_name = "ElonBus"
+            args.ai_name = "Photon"
             args.ai_personality = personalities[args.ai_name]
         elif args.ai_name in personalities:
             args.ai_personality = personalities[args.ai_name]

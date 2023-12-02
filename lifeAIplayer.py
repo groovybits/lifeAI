@@ -661,9 +661,10 @@ def main():
             last_image_asset = image_asset.copy()
             if args.burn_prompt:
                 image_np = process_new_image(
-                    image_asset, optimized_prompt, args, unique_image, image_message["message"][:300])
+                    image_asset, optimized_prompt, args, unique_image, f"{audio_message['username']} asked {audio_message['message'][:300]}")
             else:
-                image_np = process_new_image(image_asset, text, args, unique_image, image_message["message"][:300])
+                image_np = process_new_image(image_asset, text, args, unique_image,
+                                             f"{audio_message['username']} asked {audio_message['message'][:300]}")
 
             # Play audio and display image
             try:
@@ -703,7 +704,8 @@ def main():
                             else:
                                 optimized_prompt = text
                             image_np = process_new_image(
-                                last_image_asset, optimized_prompt, args, new_image, audio_message["message"][:500])
+                                last_image_asset, optimized_prompt, args, new_image, 
+                                f"{audio_message['username']} asked {audio_message['message'][:300]}")
                             audio_playback_complete_speech = False
                             playback(image_np, audio_asset, duration)
                             last_sent_segments = time.time()
