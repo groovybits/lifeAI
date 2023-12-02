@@ -21,9 +21,9 @@ KEYWORDS="$AIKEYWORDS $ANIMEKEYWORDS $AIPEOPLE $AIISSUES $AISTREAMERS"
 # technology - Technology News
 CATEGORIES="technology,science,business,entertainment,health,-sports,general"
 #REPLAY="--replay"
-#EPISODE="--episode"
+EPISODE="--episode"
 SORT="published_desc"
 
-GLOBALARGS="--maxtokens 800"
+GLOBALARGS="--maxtokens 1200"
 ## External player on remote host for feedback on playback status for feed throttling
 #GLOBALARGS="$GLOBALARGS --input_host 192.168.50.58"

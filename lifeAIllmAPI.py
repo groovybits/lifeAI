@@ -497,7 +497,7 @@ if __name__ == "__main__":
     parser.add_argument("--nopurgehistory", action="store_true", default=False, help="Don't Purge history, may cause context fill issues.")
     parser.add_argument("--history_keep", type=int, default=12, help="Number of messages to keep for the context.")
     parser.add_argument("--no_cache_prompt", action='store_true', help="Flag to disable caching of prompts.")
-    parser.add_argument("--contextpct", type=float, default=0.75, help="Percentage of context to use for history.")
+    parser.add_argument("--contextpct", type=float, default=0.50, help="Percentage of context to use for history.")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--llm_port", type=int, default=8080)
     parser.add_argument("--llm_host", type=str, default="127.0.0.1")
