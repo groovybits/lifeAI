@@ -222,6 +222,7 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
             'prompt': header_message["llm_prompt"],
             'temperature': args.temperature,
             'stream': True,
+            'cache_prompt': not args.cache_prompt,
         }
 
         if stoptokens != "" and header_message["episode"] == "false":
@@ -496,7 +497,7 @@ if __name__ == "__main__":
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
     parser.add_argument("--nopurgehistory", action="store_true", default=False, help="Don't Purge history, may cause context fill issues.")
     parser.add_argument("--history_keep", type=int, default=12, help="Number of messages to keep for the context.")
-    parser.add_argument("--no_cache_prompt", action='store_true', help="Flag to disable caching of prompts.")
+    parser.add_argument("--cache_prompt", action='store_true', help="Flag to enable caching of prompts.")
     parser.add_argument("--contextpct", type=float, default=0.50, help="Percentage of context to use for history.")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--llm_port", type=int, default=8080)

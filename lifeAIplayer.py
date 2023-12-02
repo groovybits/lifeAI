@@ -210,7 +210,7 @@ def add_text_to_image(image, text, banner=""):
             wrap_width = 50
             is_wide = True
         wrapped_text = textwrap.wrap(text, width=wrap_width, fix_sentence_endings=False, break_long_words=False, break_on_hyphens=False)
-        y_pos = height - 40  # Adjusted height from bottom
+        y_pos = height  # Adjusted height from bottom
 
         font_size = 1
         font_thickness = 3  # Adjusted for bolder font
@@ -233,8 +233,9 @@ def add_text_to_image(image, text, banner=""):
 
         # Draw banner if it's not empty on the top of the image from left to right
         if banner != "":
-            ((text_width, text_height), baseline) = cv2.getTextSize(banner, cv2.FONT_HERSHEY_DUPLEX, banner_font_size, banner_font_thickness)
-            x_pos_t = 5 #(width - text_width) // 2  # Center the text
+            ((text_width, text_height), baseline) = cv2.getTextSize(
+                banner[:width-10], cv2.FONT_HERSHEY_DUPLEX, banner_font_size, banner_font_thickness)
+            x_pos_t = 5  # Adjusted width from left
             y_pos_t = text_height + 10  # Adjusted height from top, with some padding
 
             # Draw a solid black rectangle for the banner background
@@ -243,19 +244,20 @@ def add_text_to_image(image, text, banner=""):
 
             # Draw text shadow for the banner
             shadow_offset = 2  # Smaller offset for the shadow
-            cv2.putText(image, banner, (x_pos_t + shadow_offset, y_pos_t - shadow_offset), cv2.FONT_HERSHEY_DUPLEX, banner_font_size, (0, 0, 0), banner_font_thickness)
-            alpha = 0.6  # Transparency factor.
+            cv2.putText(image, banner[:width-10], (x_pos_t + shadow_offset, y_pos_t - shadow_offset),
+                        cv2.FONT_HERSHEY_DUPLEX, banner_font_size, (0, 0, 0), banner_font_thickness)
+            alpha = 0.5  # Transparency factor.
             image = cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0)
 
             # Draw text outline for the banner
-            cv2.putText(image, banner, (x_pos_t, y_pos_t), cv2.FONT_HERSHEY_DUPLEX, banner_font_size, banner_outline_color, banner_border_thickness)
+            cv2.putText(image, banner[:width-10], (x_pos_t, y_pos_t), cv2.FONT_HERSHEY_DUPLEX, banner_font_size, banner_outline_color, banner_border_thickness)
 
             # Draw the main banner text
-            cv2.putText(image, banner, (x_pos_t, y_pos_t), cv2.FONT_HERSHEY_DUPLEX, banner_font_size, (255, 255, 0), banner_font_thickness)
+            cv2.putText(image, banner[:width-10], (x_pos_t, y_pos_t), cv2.FONT_HERSHEY_DUPLEX, banner_font_size, (255, 255, 0), banner_font_thickness)
 
         for line in reversed(wrapped_text):
             # Get the text size, baseline, and adjust the y_pos
-            ((text_width, text_height), baseline) = cv2.getTextSize(line, cv2.FONT_HERSHEY_DUPLEX, font_size, font_thickness)
+            ((text_width, text_height), baseline) = cv2.getTextSize(line[:width], cv2.FONT_HERSHEY_DUPLEX, font_size, font_thickness)
             x_pos = (width - text_width) // 2  # Center the text
             y_pos -= (baseline + text_height + 10)  # Adjust y_pos for each line, reduce padding
 
@@ -263,23 +265,23 @@ def add_text_to_image(image, text, banner=""):
             rect_x_left = x_pos - 10
             rect_y_top = y_pos - text_height - 10  # Reduced padding for height
             rect_x_right = x_pos + text_width + 10
-            rect_y_bottom = y_pos + 13  # Reduced padding for height
+            rect_y_bottom = y_pos + 18  # Reduced padding for height
 
             # Draw a semi-transparent rectangle
             overlay = image.copy()
             cv2.rectangle(overlay, (rect_x_left, rect_y_top), (rect_x_right, rect_y_bottom), (0, 0, 0), -1)
-            alpha = 0.6  # Transparency factor.
+            alpha = 0.5  # Transparency factor.
             image = cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0)
 
             # Draw text shadow for a drop shadow effect
             shadow_offset = 4  # Offset for the shadow, adjust as needed
-            cv2.putText(image, line, (x_pos + shadow_offset, y_pos + shadow_offset), cv2.FONT_HERSHEY_DUPLEX, font_size, (0, 0, 0), font_thickness)
+            cv2.putText(image, line[:width], (x_pos + shadow_offset, y_pos + shadow_offset), cv2.FONT_HERSHEY_DUPLEX, font_size, (0, 0, 0), font_thickness)
 
             # Draw text outline
-            cv2.putText(image, line, (x_pos, y_pos), cv2.FONT_HERSHEY_DUPLEX, font_size, (0, 0, 0), border_thickness)
+            cv2.putText(image, line[:width], (x_pos, y_pos), cv2.FONT_HERSHEY_DUPLEX, font_size, (0, 0, 0), border_thickness)
 
             # Draw the main text
-            cv2.putText(image, line, (x_pos, y_pos), cv2.FONT_HERSHEY_DUPLEX, font_size, (255, 255, 255), font_thickness)
+            cv2.putText(image, line[:width], (x_pos, y_pos), cv2.FONT_HERSHEY_DUPLEX, font_size, (255, 255, 255), font_thickness)
 
         # Convert back from numpy array
         image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))

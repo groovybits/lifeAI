@@ -193,7 +193,7 @@ def main():
                 sender.send_json(header_message, zmq.SNDMORE)
                 sender.send(last_image)
 
-            logger.info(f"TTM: Throttling for {combine_time} seconds.")
+            logger.info(f"TTI: Throttling for {combine_time} seconds.")
 
         # Receive a message
         if retry:
@@ -293,7 +293,7 @@ def main():
         if args.service != "openai":
             latency = round(time.time() * 1000) - header_message['timestamp']
             if latency > (max_latency * 1000):
-                logger.error(f"TTM: Message is too old {latency/1000}, throttling for the next{latency/1000} seconds.")
+                logger.error(f"TTI: Message is too old {latency/1000}, throttling for the next{latency/1000} seconds.")
                 throttle = True
 
 if __name__ == "__main__":
