@@ -4,7 +4,7 @@ if [ "$FEEDMODE" == "" ]; then
     #FEEDMODE=newsCast
     FEEDMODE=lists
 fi
-INTERVAL=10
+INTERVAL=60
 
 AISTREAMERS="apple amazon youtube twitch hulu netflix max disney"
 ANIMEKEYWORDS="anime animation otaku manga crunchyroll funimation vrv hidive"
