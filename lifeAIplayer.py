@@ -459,6 +459,7 @@ def main():
     stats_last_sent_duration = 0.0
 
     end_of_stream = True
+    last_sent_break = 0
 
     while True:
         # check if we will block, if so then don't and check events instead of pygame
@@ -733,12 +734,12 @@ def main():
                                 f"Sent audio segment #{audio_message['segment_number']} at timestamp {audio_message['timestamp']} with latency delta {latency_delta} ms.")
                 else:
                     # check if we are in eos condition, if so send the last image seen with a special text burnin
-                    if end_of_stream:
+                    if end_of_stream and time.time() - last_sent_break > 10: # send a break every 10 seconds
                         logger.info(f"End of stream, sending last image with special text.")
                         # burn in special text
                         image_np = process_new_image(last_image_asset, "The Groovy Life AI - groovylife.ai", args, False, "Groovy Life AI: Ask me anything, use !help for instructions...")
                         playback(image_np, None, 0.0)
-                        #last_sent_segments = time.time()
+                        last_sent_break = time.time()
                         worked = True
                         logger.info(f"Sent last image segment #{image_segment_number} at timestamp {timestamp}")
 
