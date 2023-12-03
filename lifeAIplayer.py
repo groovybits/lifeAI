@@ -746,6 +746,13 @@ def main():
                 else:
                     # check if we are in eos condition, if so send the last image seen with a special text burnin
                     if end_of_stream and time.time() - last_sent_break > 10: # send a break every 10 seconds
+                        # check if any images are in the queue still
+                        if not image_buffer.empty():
+                            # get one image from the image buffer
+                            image_message, image_asset = image_buffer.get()
+                            image_segment_number = image_message["segment_number"]
+                            last_image_asset = image_asset.copy()
+
                         logger.info(f"End of stream, sending last image with special text.")
                         # burn in special text
                         image_np = process_new_image(last_image_asset, "The Groovy Life AI - groovylife.ai", args, False, "Groovy Life AI: Ask me anything, use !help for instructions...")
