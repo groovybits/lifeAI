@@ -375,18 +375,27 @@ class BackgroundMusic(threading.Thread):
             # Load the audio data into a Sound object
             sound = pygame.mixer.Sound(audiobuf)
             self.switching = False
-            self.channel.play(sound, loops=0, maxtime=0, fade_ms=100)  # Play the Sound object on this channel
+            self.channel.play(sound, loops=0, maxtime=0, fade_ms=10)  # Play the Sound object on this channel
             while self.channel.get_busy():  # Wait for playback to finish
                 time.sleep(0.1)
         else:
             print(f"Music Thread: *** No audio buffer to play for play_audio().")
+            time.sleep(10)
 
     def change_track(self, audio_buffer):
         with self.lock:
             # Update the audio buffer with the new track
             self.audio_buffer = audio_buffer
             self.switching = True
-            self.channel.fadeout(100)  # Fade out the audio
+            self.channel.fadeout(10)  # Fade out the audio
+
+    def pause(self):
+        with self.lock:
+            self.channel.pause()
+
+    def unpause(self):
+        with self.lock:
+            self.channel.unpause()
 
     def stop(self):
         self.running = False
@@ -650,8 +659,10 @@ def main():
 
             if "eos" in audio_message and audio_message["eos"] == True:
                 end_of_stream = True
+                bg_music.unpause()
             else:
                 end_of_stream = False
+                bg_music.pause()
 
             text = audio_message["text"]
             optimized_prompt = text
@@ -781,7 +792,7 @@ if __name__ == "__main__":
     parser.add_argument("--burn_prompt", action="store_true", default=False, help="Burn in the prompt that created the image")
     parser.add_argument("--width", type=int, default=1920, help="Width of the output image")
     parser.add_argument("--height", type=int, default=1080, help="Height of the output image")
-    parser.add_argument("--music_volume", type=float, default=0.55, help="Volume for music audio playback, defualt is 0.55")
+    parser.add_argument("--music_volume", type=float, default=1.0, help="Volume for music audio playback, defualt is 0.55")
     parser.add_argument("--speech_volume", type=float, default=1.0, help="Volume for speech audio playback")
     parser.add_argument("--music_interval", type=float, default=60, help="Interval between music changes")
     parser.add_argument("--nomusic", action="store_true", default=False, help="Disable music")
