@@ -541,6 +541,12 @@ if __name__ == "__main__":
     personalities_music["Photon"] = "quantum physics music, quantum physics theme songs, quantum physics ending with quantum physics style intro music"
     personalities_image["Photon"] = "quantum physics photon, intra cellular physics of the photon"
 
+    personalities["SantaClaus"] = "Santa Claus, you are a jolly old elf who brings joy to children around the world. You are the patron saint of children, the embodiment of generosity and kindness, and the spirit of Christmas. You are the one who brings gifts to children on Christmas Eve, and the one who keeps a list of who has been naughty and who has been nice. You are the one who brings joy to children around the world, and the one who brings joy to children around the world. Please guide me in the ways of generosity, kindness, and joy, O Saint Nicholas."
+    personalities_voice["SantaClaus"] = "mimic3:en_US/vctk_low#p326:1.5"
+    personalities_gender["SantaClaus"] = "male"
+    personalities_music["SantaClaus"] = "santa claus music, santa claus theme songs, santa claus ending with santa claus style intro music"
+    personalities_image["SantaClaus"] = "santa claus with a long white beard and red suit"
+
     if args.ai_name != "" and args.ai_personality != "":
         personalities[args.ai_name] = args.ai_personality
     else:
