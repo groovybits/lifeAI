@@ -171,8 +171,9 @@ def main():
     max_latency = args.max_latency
     throttle = False
     header_message = None
+    skipped_messages = 0
     while True:
-        if throttle:
+        if throttle and args.max_latency > 0:
             start = time.time()
             combine_time = 0
             if max_latency > 0:
@@ -207,40 +208,58 @@ def main():
         segment_number = header_message["segment_number"]
         header_message["throttle"] = "false"
         optimized_prompt = ""
-        if "optimized_text" in header_message:
+        if "optimized_text" in header_message and header_message["optimized_text"] != "":
             optimized_prompt = header_message["optimized_text"]
         else:
             optimized_prompt = header_message["text"]
-            logger.error(f"TTI: No optimized text, using original text.")
+            logger.warning(f"TTI: No optimized text, using original text.")
 
         # genre
         genre = args.genre
         if "genre" in header_message and header_message["genre"] != "":
             genre = header_message["genre"]
 
+        image = None
+        speaker_pattern = r'(?:(?:\[/INST\])?<<([A-Za-z0-9_\)\(\-]+)>>|^(?:\[\w+\])?([A-Za-z0-9_\)\(\-)]+):)'
+        speaker_line = False
+        speaker_name = ""
+        # Find speaker names in the text and derive gender from name, setup speaker map
+        for line in optimized_prompt.split('\n'):
+            speaker_match = re.search(speaker_pattern, line)
+            if speaker_match:
+                # Extracting speaker name from either of the capturing groups
+                new_speaker = speaker_match.group(1) or speaker_match.group(2)
+                new_speaker = new_speaker.strip()
+                new_speaker = new_speaker.lower()
+                speaker_line = True
+                speaker_name = new_speaker
+                break
+
         # Clean text
-        optimized_prompt = clean_text(optimized_prompt)
+        optimized_prompt_clean = clean_text(optimized_prompt)
 
         # create prompt
-        optimized_prompt = f"{genre} {header_message['message'][:30]} {optimized_prompt[:80]}"
+        optimized_prompt_final = f"{speaker_name} {genre[:80]} {header_message['message'][:30]} {optimized_prompt_clean[:200]}"
 
-        logger.debug(f"Text to Image recieved optimized prompt:\n{header_message}.")
-        logger.info(f"Text to Image using text as prompt #{segment_number}:\n - {optimized_prompt}")
+        logger.debug(
+            f"Text to Image recieved optimized prompt:\n{header_message}.")
+        logger.info(
+            f"Text to Image using text as prompt #{segment_number}:\n - {optimized_prompt_final[:80]}...")
 
-        image = None
-        if args.wait_time == 0 or last_image == None or time.time() - last_image_time >= args.wait_time:
+        if (skipped_messages >= 2 or speaker_line or last_image == None) and (args.wait_time == 0 or last_image == None or time.time() - last_image_time >= args.wait_time):
+            skipped_messages = 0
             if args.service == "openai":
-                image = generate_openai(mediaid, args.oai_image_model, optimized_prompt, header_message["username"], args.save_images)
+                image = generate_openai(mediaid, args.oai_image_model, optimized_prompt_final, header_message["username"], args.save_images)
             elif args.service == "sdwebui":
-                image = generate_sd_webui(mediaid, optimized_prompt, args.save_images)
+                image = generate_sd_webui(mediaid, optimized_prompt_final, args.save_images)
             elif args.service == "getimgai":
-                image = generate_getimgai(mediaid, args.sdwebui_image_model, optimized_prompt)
+                image = generate_getimgai(mediaid, args.sdwebui_image_model, optimized_prompt_final)
             else:
                 if args.extend_prompt:
                     max_length = pipe.tokenizer.model_max_length
 
                     # 3. Forward
-                    input_ids = pipe.tokenizer(optimized_prompt, return_tensors="pt").input_ids
+                    input_ids = pipe.tokenizer(optimized_prompt_final, return_tensors="pt").input_ids
                     input_ids = input_ids.to("mps")
 
                     negative_ids = pipe.tokenizer("", truncation=False, padding="max_length", max_length=input_ids.shape[-1], return_tensors="pt").input_ids                                                                                                     
@@ -258,7 +277,7 @@ def main():
                     # 2. Forward embeddings and negative embeddings through text encoder
                     image = pipe(prompt_embeds=prompt_embeds, negative_prompt_embeds=negative_prompt_embeds).images[0]
                 else:
-                    image = pipe(optimized_prompt).images[0]
+                    image = pipe(optimized_prompt_final).images[0]
 
             if image != None:
                 if args.service != "openai": # and args.service != "sdwebui":
@@ -281,6 +300,9 @@ def main():
                 logger.error(f"Error generating image, retrying...")
                 retry = True
                 continue
+        else:
+            header_message["throttle"] = "true"
+            skipped_messages += 1
 
         header_message["stream"] = "image"
 
@@ -292,7 +314,7 @@ def main():
         # measure latency and see if we need to throttle output
         if args.service != "openai":
             latency = round(time.time() * 1000) - header_message['timestamp']
-            if latency > (max_latency * 1000):
+            if latency > (max_latency * 1000) and max_latency > 0:
                 logger.error(f"TTI: Message is too old {latency/1000}, throttling for the next{latency/1000} seconds.")
                 throttle = True
 

@@ -621,11 +621,13 @@ def main():
 
         # send status to zmq output
         sent_delta = time.time() - last_sent_segments
-        if sent_delta < 30:
-            status["sent_delta"] = sent_delta
-            if total_duration == 0.0 or status["audio_buffer_size"] != 0:
-                status["audio_buffer_duration"] = 0.1 # don't send empty until we know we are really empty
-        if time.time() - stats_last_sent_ts > 5.0 or stats_last_sent_duration != status["audio_buffer_duration"]:
+        status["sent_delta"] = sent_delta
+        if sent_delta < args.startup_delay:
+            # check if we have 0 seconds of buffer, if so then fake it as 60 seconds and send it
+            if status["audio_buffer_duration"] == 0.0:
+                status["audio_buffer_duration"] = 60.0
+        
+        if time.time() - stats_last_sent_ts > args.stats_interval or stats_last_sent_duration != status["audio_buffer_duration"]:
             logger.info(f"Sending status: {status}")
             sender.send_json(status)
             stats_last_sent_ts = time.time()
@@ -809,6 +811,8 @@ if __name__ == "__main__":
     parser.add_argument("--title", type=str, default="Groovy Life AI", help="Title for the window")
     parser.add_argument("--buffer_size", type=int, default=32768, help="Size of the buffer for images and audio")
     parser.add_argument("--show_ascii_art", action="store_true", default=False, help="Show images as ascii art")
+    parser.add_argument("--startup_delay", type=float, default=30.0, help="Delay before sending status messages")
+    parser.add_argument("--stats_interval", type=float, default=10.0, help="Interval between sending status messages")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO

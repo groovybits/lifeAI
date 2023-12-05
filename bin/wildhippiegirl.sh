@@ -10,6 +10,6 @@ source bin/settings.sh
     --keywords "$KEYWORDS" --sort $SORT \
     --voice "mimic3:en_US/vctk_low#p303:1.5" \
     --gender "female" $EPISODE $REPLAY $GLOBALARGS \
+    --genre "colorful bright vibrant animated drawing of a beautiful pretty hippy woman from the 60's with long blonde hair and big blue eyes and busty with cleavage in front of a psychedelic colorful painted hippie bus from the 60s with flowers and patterns. psychedelic patterns and fractals around her like bright trippy light." \
     --genre_music "60's hippie music. mamas and the papas style jefferson airplane."
 
-    #--genre "colorful bright vibrant animated drawing of a beautiful pretty hippy woman from the 60's with long blonde hair and big blue eyes and busty with cleavage in front of a psychedelic colorful painted hippie bus from the 60s with flowers and patterns. psychedelic patterns and fractals around her like bright trippy light." \

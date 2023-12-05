@@ -272,7 +272,7 @@ def read_and_mark_emails_as_played(list_name):
             if player_status_json and time.time() - last_sent_message > args.min_interval:
                 # check if player is full
                 audio_buffer_duration = float(player_status_json['audio_buffer_duration'])
-                if audio_buffer_duration > 0.0:
+                if audio_buffer_duration > args.low_watermark:
                     # wait till player is empty
                     while True:
                         player_status_json = receiver.recv_json()
@@ -280,7 +280,7 @@ def read_and_mark_emails_as_played(list_name):
                         while receiver.get(zmq.RCVMORE):
                             player_status_json = receiver.recv_json()
                         audio_buffer_duration = float(player_status_json['audio_buffer_duration'])
-                        if audio_buffer_duration == 0.0:
+                        if audio_buffer_duration <= args.low_watermark:
                             logger.info(
                                 f"Buffer: {current_count}/{total_stories} Player is finally empty, {audio_buffer_duration} sending content... {player_status_json}")
                             break
@@ -511,6 +511,7 @@ if __name__ == "__main__":
                         default="", help="Keywords for mailing lists messages WIP DOES NOT WORK YET.")
     parser.add_argument("--categories", type=str, required=False,
                         default="", help="Mailing list categories WIP DOES NOT WORK YET.")
+    parser.add_argument("--low_watermark", type=float, default=10.0, help="Low watermark for audio buffer duration.")
 
     args = parser.parse_args()
 
