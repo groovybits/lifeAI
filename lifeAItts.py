@@ -448,6 +448,8 @@ def main():
                             gender_g = "female"
                         elif new_speaker_lc == "santa_claus":
                             gender_g = "male"
+                        elif new_speaker_lc == "santa":
+                            gender_g = "male"
                         elif new_speaker_lc == "mrs_claus":
                             gender_g = "female"
                         else:
