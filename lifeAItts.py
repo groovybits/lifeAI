@@ -456,6 +456,12 @@ def main():
                             gender_g = "male"
                         elif new_speaker_lc == "excel":
                             gender_g = "female"
+                        elif new_speaker_lc == "amuro_ray":
+                            gender_g = "male"
+                        elif new_speaker_lc == "amuro":
+                            gender_g = "male"
+                        elif new_speaker_lc == "gundam_0079":
+                            gender_g = "male"
                         else:
                             guessed_gender = d.get_gender(new_speaker.split('_')[0])  # assuming the first word is the name
                             if guessed_gender in ['male', 'mostly_male']:
