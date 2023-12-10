@@ -10,5 +10,6 @@ source bin/settings.sh
     --keywords "$KEYWORDS" $EPISODE $REPLAY $GLOBALARGS \
     --voice "mimic3:en_US/vctk_low#p259:1.5" \
     --gender "male" \
-    --genre "Ganesh hindu deity colorful bright vibrant animated drawing of a beautiful ganesh. psychedelic patterns and fractals around ganesh like bright trippy light."
     --genre_music "Indian classical music for hinduism diety kirtan"
+
+    #--genre "Ganesh hindu deity colorful bright vibrant animated drawing of a beautiful ganesh. psychedelic patterns and fractals around ganesh like bright trippy light."
