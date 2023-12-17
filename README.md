@@ -1,6 +1,6 @@
 # Life AI - Bring your words to life using AI
 
-Try it <https://twitch.tv/groovyaibot> allows full interactive usage of Groovy Life AI.
+Try it <https://twitch.tv/ai_buddha> allows full interactive usage of Groovy Life AI.
 
 Presentation from Nov 2023 at the [Multimodal Weekly](https://twelvelabs-20253029.hs-sites.com/multimodal-weekly-1117): <https://groovylife.ai/mw1123presentation/>
 
