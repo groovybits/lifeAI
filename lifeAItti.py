@@ -239,7 +239,7 @@ def main():
         optimized_prompt_clean = clean_text(optimized_prompt)
 
         # create prompt
-        optimized_prompt_final = f"{speaker_name} {genre[:80]} {header_message['message'][:30]} {optimized_prompt_clean[:200]}"
+        optimized_prompt_final = f"{speaker_name} {genre[:30]} {header_message['message'][:80]} {optimized_prompt_clean[:200]}"
 
         logger.debug(
             f"Text to Image recieved optimized prompt:\n{header_message}.")
@@ -341,7 +341,7 @@ if __name__ == "__main__":
     parser.add_argument("--style", type=str, default="vivid", help="Image style for dalle-3, standard or vivid")
     parser.add_argument("--quality", type=str, default="standard", help="Image quality for dalle-3, standard or hd")
     parser.add_argument("--webui_url", type=str, default="127.0.0.1:7860", help="URL for webui, default 127.0.0.1:7860")
-    parser.add_argument("--genre", type=str, default="beautiful pretty anime magical girl, anime episode about ", help="Genre for the model")
+    parser.add_argument("--genre", type=str, default="", help="Genre for the model")
     parser.add_argument("--negative_prompt", type=str, default="Disfigured, cartoon, blurry, nsfw, naked, porn, violence, gore, racism, black face", help="Negative prompt for the model")
 
     args = parser.parse_args()

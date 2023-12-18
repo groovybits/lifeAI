@@ -564,8 +564,8 @@ if __name__ == "__main__":
     # Load the spaCy model
     nlp = spacy.load("en_core_web_sm")
 
-    if args.genre == "":
-        args.genre = args.aipersonality
+    #if args.genre == "":
+    #    args.genre = args.aipersonality
 
     failures = 0
     successes = 0

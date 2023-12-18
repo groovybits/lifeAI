@@ -12,4 +12,4 @@ source bin/settings.sh
     --gender "male" \
     --genre_music "asian spa music with wind chimes and bells."
 
-    #--genre "Elon Musk in front of a psychedelic colorful painted hippie bus from the 60s with flowers and patterns." \
+    #--genre "The buddha is " \
