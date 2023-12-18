@@ -511,7 +511,7 @@ if __name__ == "__main__":
                         default="", help="Keywords for mailing lists messages WIP DOES NOT WORK YET.")
     parser.add_argument("--categories", type=str, required=False,
                         default="", help="Mailing list categories WIP DOES NOT WORK YET.")
-    parser.add_argument("--low_watermark", type=float, default=10.0, help="Low watermark for audio buffer duration.")
+    parser.add_argument("--low_watermark", type=float, default=0.0, help="Low watermark for audio buffer duration.")
 
     args = parser.parse_args()
 

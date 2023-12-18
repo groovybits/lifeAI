@@ -434,7 +434,7 @@ if __name__ == "__main__":
     personalities_image["GAIB"] = "digital chip like zen buddhist tantric art thanka painting"
 
     personalities["Buddha"] = "Buddha, the enlightened one, the awakened one, the one who has seen the truth of the world and the universe. I am here to help you with your questions and to help you learn about the world around you."
-    personalities_voice["Buddha"] = "mimic3:en_US/vctk_low#p326:1.5"
+    personalities_voice["Buddha"] = "openai:onyx:1.0"
     personalities_gender["Buddha"] = "male"
     personalities_music["Buddha"] = "meditation music zen like a asian spa relaxing music"
     personalities_image["Buddha"] = "zen buddha meditation boddisattva of compassion"

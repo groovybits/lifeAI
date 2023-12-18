@@ -95,11 +95,11 @@ def get_tts_audio(service, text, voice=None, noise_scale=None, noise_w=None, len
         response.raise_for_status()
         return response.content
     elif service == "openai":
+        print(f"OpenAI: '{voice}': {text}")
         response = openai_client.audio.speech.create(
             model='tts-1',
-            voice= voice or 'nova',
+            voice=f"{voice}",
             input=text,
-            speed=length_scale or '1.0',
             response_format='aac'
         )
 
@@ -194,7 +194,7 @@ def main():
             speaker_map[speaker] = {"gender": gender, "voice": voice_model}
             # OpenAI API
             if tts_api == "openai":
-                male_voices = ['alloy', 'echo', 'fabel', 'oynx']
+                male_voices = ['alloy', 'echo', 'fabel', 'onyx']
                 female_voices = ['nova', 'shimmer']
                 default_voice = 'nova'
                 voice_model = default_voice
