@@ -410,8 +410,43 @@ def main(args):
                 output = oprompt_l)
             
             media_type = header_message["mediatype"]
+
+            """
+            <|im_start|>system
+            You are Dolphin, a helpful AI assistant.<|im_end|>
+            <|im_start|>user
+            Question: {prompt}<|im_end|>
+            <|im_start|>assistant
+            Answer: {answer}<|im_end|>
+            <|im_start|>user
+            Question: {prompt}<|im_end|>
+            <|im_start|>assistant
+            Answer:
+            """
+            """
+            <s>[INST]<<SYS>>You are Dolphin, a helpful AI assistant.<</SYS>>[/INST]</s>
+            <s>[INST]Question: {prompt}[/INST]Answer: {answer}</s>
+            <>[INST]Question: {prompt}[/INST]Answer:
+            """
+
+            system_prompt_start = "<s>[INST]<<SYS>>"
+            system_prompt_end = "<</SYS>>[/INST]</s>"
+            user_prompt_start = "<s>[INST]"
+            user_prompt_end = "[/INST]"
+            assistant_prompt_start = ""
+            assistant_prompt_end = ""
+            eos_stop_token = "</s>"
+
+            if args.chat_format == "chatML":
+                system_prompt_start = "<|im_start|>system"
+                system_prompt_end = "<|im_end|>"
+                user_prompt_start = "<|im_start|>user"
+                user_prompt_end = "<|im_end|>"
+                assistant_prompt_start = "<|im_start|>assistant"
+                assistant_prompt_end = "<|im_end|>"
+                eos_stop_token = ""
             
-            tmp_history.append("<s>[INST]<<SYS>>%s<</SYS>>[/INST]</s>" % current_system_prompt)
+            tmp_history.append(f"{system_prompt_start}\n{current_system_prompt}{system_prompt_end}")
             tmp_history.extend(history) # add the history of the conversation
             if "context" in header_message and header_message["context"]:
                 # check if context is an array or string
@@ -420,23 +455,22 @@ def main(args):
                     for i in range(len(header_message["context"])-1, -1, -1):
                         if media_type == "News":
                             tmp_history.append(
-                                f"<s>[INST]{header_message['context'][i]}[/INST]</s>")
+                                f"{user_prompt_start}\n{user_prompt_end}\n{assistant_prompt_start}\n{header_message['context'][i]}{assistant_prompt_end}{eos_stop_token}")
                         else:
                             tmp_history.append(
-                                f"<s>[INST]{header_message['context'][i]}[/INST]</s>")
+                                f"{user_prompt_start}\n{user_prompt_end}\n{assistant_prompt_start}\n{header_message['context'][i]}{assistant_prompt_end}{eos_stop_token}")
                 elif isinstance(header_message["context"], str) and header_message["context"] != "":
                     tmp_history.append(
-                        f"<s>[INST]{header_message['context']}[/INST]</s>")
+                        f"{user_prompt_start}\n{user_prompt_end}\n{assistant_prompt_start}\n{header_message['context']}{assistant_prompt_end}{eos_stop_token}")
             day_of_week = time.strftime("%A")
             time_context = f"{day_of_week} %s" % time.strftime("%Y-%m-%d %H:%M:%S")
-            tmp_history.append("<s>[INST]<<SYS>>%s<</SYS>>%s\n\n%s: %s[/INST]\n%s:" % ( current_system_prompt,
-                                                                                user_prompt.format(timestamp=time_context, 
-                                                                                user=header_message["username"], 
-                                                                                Q=qprompt_l, 
-                                                                                A=aprompt_l), 
-                                                                                    qprompt_l, 
-                                                                                     header_message["message"],
-                                                                                     aprompt_l)) # add the question
+            tmp_history.append(f"{user_prompt_start}\n%s\n\n%s: %s{user_prompt_end}\n{assistant_prompt_start}\n%s:" % (user_prompt.format(timestamp=time_context, 
+                                                                user=header_message["username"], 
+                                                                Q=qprompt_l, 
+                                                                A=aprompt_l), 
+                                                                    qprompt_l, 
+                                                                        header_message["message"],
+                                                                        aprompt_l)) # add the question
             
             header_message["llm_prompt"] = "\n".join(tmp_history) # create the prompt
             logger.info(f"LLM: generated prompt: - {header_message['llm_prompt']}")
@@ -452,7 +486,7 @@ def main(args):
             for exclusion in exclusions:
                 text = text.replace(exclusion, "")
             # remove any of the system prompt from the history
-            history.append(f"<s>[INST]{qprompt_l}: {header_message['message']}[/INST]\n{aprompt_l}: {text}</s>")
+            history.append(f"{user_prompt_start}\n{qprompt_l}: {header_message['message']}{user_prompt_end}{assistant_prompt_start}\n{aprompt_l}: {text}{assistant_prompt_end}{eos_stop_token}")
 
             segment_number = header_message["segment_number"]
             timestamp = header_message["timestamp"]
@@ -507,6 +541,7 @@ if __name__ == "__main__":
     parser.add_argument("--llm_port", type=int, default=8080)
     parser.add_argument("--llm_host", type=str, default="127.0.0.1")
     parser.add_argument("--end_message", type=str, default="The Groovy Life AI - groovylife.ai", help="End message to send to the client.")
+    parser.add_argument("--chat_format", type=str, default="llama2", help="Chat format to use, llama2 or chatML.")
 
     args = parser.parse_args()
 
