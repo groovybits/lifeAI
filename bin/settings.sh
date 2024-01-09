@@ -21,7 +21,7 @@ KEYWORDS="$AIKEYWORDS $ANIMEKEYWORDS $AIPEOPLE $AIISSUES $AISTREAMERS"
 # technology - Technology News
 CATEGORIES="technology,science,business,entertainment,health,-sports,general"
 #REPLAY="--replay"
-EPISODE="--episode"
+#EPISODE="--episode"
 # published_desc (default), published_asc, popularity
 SORT="published_desc"
 
