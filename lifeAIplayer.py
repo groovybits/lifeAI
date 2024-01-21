@@ -380,7 +380,7 @@ class BackgroundMusic(threading.Thread):
                 time.sleep(0.1)
         else:
             print(f"Music Thread: *** No audio buffer to play for play_audio().")
-            time.sleep(10)
+            time.sleep(1)
 
     def change_track(self, audio_buffer):
         with self.lock:

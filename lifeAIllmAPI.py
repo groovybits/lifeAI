@@ -261,7 +261,7 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
                                                     characters_per_line,
                                                     sentence_count)
             if header_message is None:
-                time.sleep(1)
+                time.sleep(0.1)
         
         # Send end frame
         # Prepare the message to send to the LLM
@@ -274,7 +274,7 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
         send_data(zmq_sender, end_header.copy())
 
         # Add a delay to prevent a tight loop and rest the LLM
-        time.sleep(3)
+        time.sleep(0.1)
 
     except Exception as e:
         logger.error(f"LLM exception: {e}")
@@ -499,7 +499,7 @@ def main(args):
             logger.error(f"Exception occurred: {e}")
             logger.error(f"{traceback.print_exc()}")
             # Add some sleep time to prevent a tight loop in case of a recurring error
-            time.sleep(1)
+            time.sleep(0.1)
 
 if __name__ == "__main__":
 

@@ -151,7 +151,7 @@ if __name__ == "__main__":
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--max_size", type=int, default=2048, required=False, help="Maximum size of text to process")
     parser.add_argument("--max_tokens", type=int, default=32768, required=False, help="Maximum tokens to process")
-    parser.add_argument("--doc_count", type=int, default=2, required=False, help="Number of documents to return")
+    parser.add_argument("--doc_count", type=int, default=4, required=False, help="Number of documents to return")
     parser.add_argument("--model", type=str, default="models/ggml-all-MiniLM-L6-v2-f16.bin", required=False, help="GPT model to use")
     parser.add_argument("--embeddings", type=str, default="all-MiniLM-L6-v2", required=False, help="HuggingFace embedding model to use")
 

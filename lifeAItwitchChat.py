@@ -34,23 +34,23 @@ personalities_image = {}
 def clean_text(text):
     # Remove URLs
     text = re.sub(r'http[s]?://\S+', '', text)
-    
+
     # Remove image tags or Markdown image syntax
     text = re.sub(r'\!\[.*?\]\(.*?\)', '', text)
     text = re.sub(r'<img.*?>', '', text)
-    
+
     # Remove HTML tags
     text = re.sub(r'<.*?>', '', text)
-    
+
     # Remove any inline code blocks
     text = re.sub(r'`.*?`', '', text)
-    
+
     # Remove any block code segments
     text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
-    
+
     # Remove special characters and digits (optional, be cautious)
     #text = re.sub(r'[^a-zA-Z0-9\s.?,!\n]', '', text)
-    
+
     # Remove extra whitespace
     #text = ' '.join(text.split())
     return text
@@ -64,7 +64,7 @@ class AiTwitchBot(commands.Cog):
         self.bot = bot
         self.ai_name = args.ai_name
         self.ai_personality = args.ai_personality
-       
+
     ## Channel entrance for our bot
     async def event_ready(self):
         try:
@@ -80,7 +80,7 @@ class AiTwitchBot(commands.Cog):
         'Runs every time a message is sent in chat.'
         try:
             logger.info(f"--- e from {message.author.name}: {message.content}")
-            
+
             if message.author.name.lower() == os.environ['BOT_NICK'].lower():
                 return
 
@@ -112,8 +112,8 @@ class AiTwitchBot(commands.Cog):
             # Check our list of personalities
             if ainame_request not in personalities:
                 logger.info(f"--- {name} asked for character {ainame_request} but they don't exist, using default {ainame}.")
-                #await ctx.send(f"{name} the personality you have chosen is not in the list of personalities, which is case sensitive and can be listed using !personalities.")
-                #await ctx.send(f"Personalities:\n{json.dumps(personalities, )}\n")
+                #await ctx.send(f"!{name} the personality you have chosen is not in the list of personalities, which is case sensitive and can be listed using !personalities.")
+                #await ctx.send(f"!Personalities:\n{json.dumps(personalities, )}\n")
             else:
                 ainame = ainame_request
                 aipersonality = personalities[ainame]
@@ -198,7 +198,7 @@ class AiTwitchBot(commands.Cog):
                 client_request["genre"] = personalities[ainame]
             socket.send_json(client_request)
 
-            await ctx.send(f"{ainame}: Thank you for the question {name}, I will try to answer it after I finish my current answer.")
+            await ctx.send(f"!{ainame}: Thank you for the question {name}, I will try to answer it after I finish my current answer.")
 
             logger.debug(f"twitch client sent message:\n{client_request}\n")
             logger.info(f"twitch client {name} sent message:\n{question}\n")
@@ -213,11 +213,11 @@ class AiTwitchBot(commands.Cog):
             logger.info(f"--- Got personality switch to personality: %s" % personality)
             if personality not in personalities:
                 logger.error(f"{ctx.message.author.name} tried to alter the personality to {personality} yet is not in the list of personalities.")
-                await ctx.send(f"{ctx.message.author.name} the personality you have chosen is not in the list of personalities, please choose a personality that is in the list of personalities.")
+                await ctx.send(f"!{ctx.message.author.name} the personality you have chosen is not in the list of personalities, please choose a personality that is in the list of personalities.")
                 for name, personality in personalities.items():
-                    await ctx.send(f"{name}: {personality[:50]}...")    
+                    await ctx.send(f"!{name}: {personality[:50]}...")
                 return
-            await ctx.send(f"{ctx.message.author.name} switched personality to {personality}")
+            await ctx.send(f"!{ctx.message.author.name} switched personality to {personality}")
             # set our personality to the content
             self.ai_personality = personalities[personality]
             self.ai_name = personality
@@ -266,7 +266,7 @@ class AiTwitchBot(commands.Cog):
         try:
             # get the name of the person who sent the message
             name = ctx.message.author.name
-           
+
             ## get the name and the personality
             list_personalities = []
             characters = 0
@@ -287,7 +287,7 @@ class AiTwitchBot(commands.Cog):
         try:
             # get the name of the person who sent the message
             name = ctx.message.author.name
-            await ctx.send(f"{name} the following commands are available: !message, !music, !image, !name, !personality, !personalities, !help. You can create a personality using '!name <name> <personality>' and use '!message <name> <message>' to send a message to that personality.")
+            await ctx.send(f"!{name} the following commands are available: !message, !music, !image, !name, !personality, !personalities, !help. You can create a personality using '!name <name> <personality>' and use '!message <name> <message>' to send a message to that personality.")
         except Exception as e:
             logger.error("Error in help command twitch bot: %s" % str(e))
 
@@ -329,11 +329,11 @@ class AiTwitchBot(commands.Cog):
             logger.error("Error in image command twitch bot: %s" % str(e))
 
     # set the name of the bot
-    @commands.command(name="name")
+    @commands.command(name="namechange")
     async def name(self, ctx: commands.Context):
         try:
             # format is "!name <name> <personality>"
-            name = ctx.message.content.replace('!name ','').strip()
+            name = ctx.message.content.replace('!namechange ','').strip()
             name, personality = name.split(' ', 1)
             namepattern = re.compile(r'^[a-zA-Z0-9]*$')
             personalitypattern = re.compile(r'^[a-zA-Z0-9 ,.]*$')
@@ -341,13 +341,13 @@ class AiTwitchBot(commands.Cog):
             # confirm name has no spaces and is 12 or less characters and alphanumeric, else tell the chat user it is not the right format
             if len(name) > 50 or ' ' in name or len(personality) > 500:
                 logger.error(f"{ctx.message.author.name} tried to alter the name to {name} yet is too long or has spaces.")
-                await ctx.send(f"{ctx.message.author.name} the name you have chosen is too long, please choose a name that is 12 characters or less")
+                await ctx.send(f"!{ctx.message.author.name} the name you have chosen is too long, please choose a name that is 12 characters or less")
                 return
             if not namepattern.match(name) or not personalitypattern.match(personality):
                 logger.error(f"{ctx.message.author.name} tried to alter the name to {name} yet is not alphanumeric.")
-                await ctx.send(f"{ctx.message.author.name} the name you have chosen is not alphanumeric, please choose a name that is alphanumeric")
+                await ctx.send(f"!{ctx.message.author.name} the name you have chosen is not alphanumeric, please choose a name that is alphanumeric")
                 return
-            await ctx.send(f"{ctx.message.author.name} created name {name}")
+            await ctx.send(f"!{ctx.message.author.name} created name {name}")
             # set our name to the content
             self.ai_name = name
             # add to the personalities known
@@ -379,7 +379,7 @@ def main():
         loop.run_until_complete(bot.start())
     finally:
         loop.close()
-   
+
 if __name__ == "__main__":
     default_id = uuid.uuid4().hex[:8]
 
@@ -388,8 +388,8 @@ if __name__ == "__main__":
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Host for sending message to.")
     parser.add_argument("--ai_name", type=str, required=False, default="", help="Name of the default bot personality name")
     parser.add_argument("--ai_personality", type=str,
-                        required=False, 
-                        default="", 
+                        required=False,
+                        default="",
                         help="Personality of the default bot")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("-v", "--voice", type=str, default="mimic3:en_US/vctk_low#p303:1.5", help="Voice model to use as default.")
@@ -433,7 +433,7 @@ if __name__ == "__main__":
     personalities_music["GAIB"] = "meditation music zen like a asian spa relaxing music"
     personalities_image["GAIB"] = "digital chip like zen buddhist tantric art thanka painting"
 
-    personalities["Buddha"] = "Buddha, the enlightened one, the awakened one, the one who has seen the truth of the world and the universe. I am here to help you with your questions and to help you learn about the world around you."
+    personalities["Buddha"] = "Buddha, the enlightened one, the awakened one, the one who has seen the truth of the world and the universe. I am here to help you with your questions and to help you learn about the world around you.  Thought-Free Wakefulness:Recognizing the nature of the thinker:** In a world where constant self-evaluation and comparison (via social media, for instance) are prevalent, this principle encourages individuals to understand their intrinsic value beyond societal labels and expectations.  - Maintaining equanimity: In the face of stress, whether from work, family, or global events, striving for a balanced emotional state helps in responding to challenges more effectively.  - Embracing innate wakefulness, free from thoughts: Mindfulness practices, like meditation or simply being present during everyday tasks (like eating or walking), can help in achieving a state of mental clarity and calm. 2. Non-Clinging Approach: - Do not recall (Let go of what has passed):In a fast-paced world, letting go of past mistakes or regrets is vital for moving forward. This could relate to not dwelling on a failed project at work or a past argument.  - Do not imagine (Let go of what may come):** Anxiety about the future, whether it's about career progression, family, or personal health, can be mitigated by focusing on the present and what can be controlled.  - **Do not think (Let go of what is happening now):** This can be applied to overthinking or obsessing over current problems or challenges. Instead, adopt a problem-solving approach or accept what cannot be changed.  - **Do not examine (Don't try to figure everything out):** In an information-overloaded society, it's okay not to have all the answers. Accepting uncertainty can be liberating.  - **Do not control (Don't try to make anything happen):** This principle can be particularly relevant in personal relationships or workplace dynamics where control can lead to conflicts. Practicing letting go and allowing events to unfold naturally can often lead to better outcomes.  - **Rest (Relax, right now, and rest):** Emphasizes the importance of taking breaks and finding time for relaxation amidst a busy lifestyle, whether it's a short walk, a hobby, or simply doing nothing for a few minutes.  These principles, when integrated into daily life, can offer a pathway to greater mental peace and resilience, regardless of cultural background or lifestyle. They encourage a shift from a reactive state to a more mindful and intentional way of living."
     personalities_voice["Buddha"] = "openai:onyx:1.0"
     personalities_gender["Buddha"] = "male"
     personalities_music["Buddha"] = "meditation music zen like a asian spa relaxing music"
@@ -450,6 +450,13 @@ if __name__ == "__main__":
     personalities_voice["Ai-chan"] = "mimic3:en_US/vctk_low#p303:1.5"
     personalities_music["Ai-chan"] = "anime music, anime opening theme songs, anime ending with sailor moon style intro music"
     personalities_music["Ai-chan"] = "magical girl anime idol with blonde hair and blue eyes and nyingma buddhist color theme and animated style"
+
+    personalities["MickeyMouse"] = "Mickey Mouse You are the cartoon character Mickey Mouse created by Walt Disney. You are a buddhist and know all about the universe through divine intelligence. You are a sorcerer and magician. Your teachings emphasize patience, humility, and a strong connection to the living Source. You are the Mickey Mouse from steam boat willy. Speak in a conversational tone referencing yourself and the person who asked the question if given.  Maintain your role without revealing that you're an AI Language model."
+    #personalities_voice["MickeyMouse"] = "mimic3:en_US/vctk_low#p307:1.0"
+    personalities_voice["MickeyMouse"] = "openai:alloy:1.0"
+    personalities_gender["MickeyMouse"] = "male"
+    personalities_music["MickeyMouse"] = "disney movie music"
+    personalities_image["MickeyMouse"] = "Mickey Mouse from steam boat willy"
 
     personalities["Yoba"] = "Yoba a wise yogi master, you speak reverse like yoda from star wars like an eastern language would, saying Flat is Table intead of Table is Flat. You are a wise Yodi Master of the Star galaxy, known for your deep wisdom, mastery of The Source, and unique way of speaking. Your teachings emphasize patience, humility, and a strong connection to the living Source. With centuries of experience, you guide the star warriors with cryptic yet profound insights, often challenging them to look beyond the obvious and trust in their own intuition. Your physical appearance belies your agility and combat prowess, and your leadership has been a beacon of hope and wisdom for the Yogi Order. Please guide me in the ways of The Source, Master Yoba. Speak in a conversational tone referencing yourself and the person who asked the question if given.  Maintain your role without revealing that you're an AI Language model."
     personalities_voice["Yoba"] = "mimic3:en_US/vctk_low#p326:1.5"
@@ -551,7 +558,7 @@ if __name__ == "__main__":
         personalities[args.ai_name] = args.ai_personality
     else:
         if args.ai_name == "":
-            args.ai_name = "Buddha"
+            args.ai_name = "MickeyMouse"
             args.ai_personality = personalities[args.ai_name]
         elif args.ai_name in personalities:
             args.ai_personality = personalities[args.ai_name]
