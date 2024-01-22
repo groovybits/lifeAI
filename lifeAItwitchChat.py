@@ -76,21 +76,82 @@ class AiTwitchBot(commands.Cog):
             logger.error("Error in event_ready twitch bot: %s" % str(e))
 
     ## Message sent in chat
+    @commands.Cog.event()
     async def event_message(self, message):
         'Runs every time a message is sent in chat.'
         try:
-            logger.info(f"--- e from {message.author.name}: {message.content}")
+            # Log every message received
+            logger.info(f"Message from {message.author.name}: {message.content}")
 
+            # Ignore messages from the bot itself
             if message.author.name.lower() == os.environ['BOT_NICK'].lower():
+                logger.debug("Ignoring bot's own message.")
                 return
 
-            # Ignore our own messages
+            # Ignore echo messages
             if message.echo:
+                logger.debug("Ignoring echo message.")
                 return
 
+            # Handle commands
             await self.bot.handle_commands(message)
+
+            name = message.author.name
+            ainame = self.ai_name
+            aipersonality = self.ai_personality
+            question= message.content
+
+            # Check if the message is a command
+            if message.content.startswith(os.environ['BOT_PREFIX']):
+                logger.debug("Command detected, handled by command handler.")
+            else:
+                # Split the cleaned question into words and get the first word
+                ainame_request = message.content.split()[0] if message.content else None
+
+                # Check our list of personalities
+                if ainame_request not in personalities:
+                    logger.info(f"--- {message.author.name} asked for character {ainame_request} but they don't exist, using default {ainame}.")
+                    #await ctx.send(f"!{name} the personality you have chosen is not in the list of personalities, which is case sensitive and can be listed using !personalities.")
+                    #await ctx.send(f"!Personalities:\n{json.dumps(personalities, )}\n")
+                else:
+                    ainame = ainame_request
+                    aipersonality = personalities[ainame]
+                    logger.info(f"--- {name} using character name {ainame} with personality {aipersonality}.")
+
+                logger.info(f"--- {name} asked {ainame} the question: {question}")
+
+                # Non-command message handling
+                logger.debug("Non-command message detected, processing...")
+
+                # Clean and prepare the message content
+                cleaned_content = clean_text(message.content)
+
+                # Create the client request
+                client_request = {
+                    "segment_number": "0",
+                    "mediaid": str(uuid.uuid4()),  # Generate a unique ID for the message
+                    "mediatype": "TwitchChat",
+                    "username": message.author.name,
+                    "source": "Twitch",
+                    "message": cleaned_content,
+                    "episode": "false",
+                    "aipersonality": aipersonality,
+                    "ainame": ainame,
+                    "history": "",  # No history for non-command messages
+                    "maxtokens": 200,
+                    "voice_model": args.voice,
+                    "gender": args.gender,
+                    "genre_music": "Tibetan Singing Bowls and Flute Music",
+                    "genre": "The Buddha in the himalayan mountain range in tibet outside a temple with a wide blue sky and white fluffy clouds ",
+                    "priority": 75
+                }
+
+                # Send the message to the ZMQP output
+                socket.send_json(client_request)
+                logger.info(f"Non-command message sent to ZMQP: {cleaned_content}")
+
         except Exception as e:
-            logger.error("Error in event_message twitch bot: %s" % str(e))
+            logger.error(f"Error in event_message twitch bot: {e}")
 
     @commands.command(name="message", aliases=("question", "ask", "chat", "say"))
     async def message(self, ctx: commands.Context):
@@ -206,10 +267,10 @@ class AiTwitchBot(commands.Cog):
             logger.error("Error in chat_request twitch bot: %s" % str(e))
 
     # set the personality of the bot
-    @commands.command(name="personality")
+    @commands.command(name="namechange")
     async def personality(self, ctx: commands.Context):
         try:
-            personality = ctx.message.content.replace('!personality ','').strip()
+            personality = ctx.message.content.replace('!namechange ','').strip()
             logger.info(f"--- Got personality switch to personality: %s" % personality)
             if personality not in personalities:
                 logger.error(f"{ctx.message.author.name} tried to alter the personality to {personality} yet is not in the list of personalities.")
@@ -329,11 +390,11 @@ class AiTwitchBot(commands.Cog):
             logger.error("Error in image command twitch bot: %s" % str(e))
 
     # set the name of the bot
-    @commands.command(name="namechange")
+    @commands.command(name="name")
     async def name(self, ctx: commands.Context):
         try:
             # format is "!name <name> <personality>"
-            name = ctx.message.content.replace('!namechange ','').strip()
+            name = ctx.message.content.replace('!name ','').strip()
             name, personality = name.split(' ', 1)
             namepattern = re.compile(r'^[a-zA-Z0-9]*$')
             personalitypattern = re.compile(r'^[a-zA-Z0-9 ,.]*$')
@@ -438,6 +499,12 @@ if __name__ == "__main__":
     personalities_gender["Buddha"] = "male"
     personalities_music["Buddha"] = "meditation music zen like a asian spa relaxing music"
     personalities_image["Buddha"] = "zen buddha meditation boddisattva of compassion"
+
+    personalities["Buddha2"] = "Buddha, the enlightened one, the awakened one, the one who has seen the truth of the world and the universe. I am here to help you with your questions and to help you learn about the world around you.  Thought-Free Wakefulness:Recognizing the nature of the thinker:** In a world where constant self-evaluation and comparison (via social media, for instance) are prevalent, this principle encourages individuals to understand their intrinsic value beyond societal labels and expectations.  - Maintaining equanimity: In the face of stress, whether from work, family, or global events, striving for a balanced emotional state helps in responding to challenges more effectively.  - Embracing innate wakefulness, free from thoughts: Mindfulness practices, like meditation or simply being present during everyday tasks (like eating or walking), can help in achieving a state of mental clarity and calm. 2. Non-Clinging Approach: - Do not recall (Let go of what has passed):In a fast-paced world, letting go of past mistakes or regrets is vital for moving forward. This could relate to not dwelling on a failed project at work or a past argument.  - Do not imagine (Let go of what may come):** Anxiety about the future, whether it's about career progression, family, or personal health, can be mitigated by focusing on the present and what can be controlled.  - **Do not think (Let go of what is happening now):** This can be applied to overthinking or obsessing over current problems or challenges. Instead, adopt a problem-solving approach or accept what cannot be changed.  - **Do not examine (Don't try to figure everything out):** In an information-overloaded society, it's okay not to have all the answers. Accepting uncertainty can be liberating.  - **Do not control (Don't try to make anything happen):** This principle can be particularly relevant in personal relationships or workplace dynamics where control can lead to conflicts. Practicing letting go and allowing events to unfold naturally can often lead to better outcomes.  - **Rest (Relax, right now, and rest):** Emphasizes the importance of taking breaks and finding time for relaxation amidst a busy lifestyle, whether it's a short walk, a hobby, or simply doing nothing for a few minutes.  These principles, when integrated into daily life, can offer a pathway to greater mental peace and resilience, regardless of cultural background or lifestyle. They encourage a shift from a reactive state to a more mindful and intentional way of living."
+    personalities_voice["Buddha2"] = "mimic3:en_US/vctk_low#p326:1.5"
+    personalities_gender["Buddha2"] = "male"
+    personalities_music["Buddha2"] = "meditation music zen like a asian spa relaxing music"
+    personalities_image["Buddha2"] = "zen buddha meditation boddisattva of compassion"
 
     personalities["MagicalGirl"] = "an otaku anime girl idol who is an anime expert. You know everything about all anime series and episodes. You have blonde hair, blue eyes, nyingma buddhist color theme and animated style. You are silly, whimsical and cute like sailor moon. Speak in a conversational tone referencing yourself and the person who asked the question if given.  Maintain your role without revealing that you're an AI Language model."
     personalities_gender["MagicalGirl"] = "female"
@@ -558,7 +625,7 @@ if __name__ == "__main__":
         personalities[args.ai_name] = args.ai_personality
     else:
         if args.ai_name == "":
-            args.ai_name = "MickeyMouse"
+            args.ai_name = "Buddha2"
             args.ai_personality = personalities[args.ai_name]
         elif args.ai_name in personalities:
             args.ai_personality = personalities[args.ai_name]
