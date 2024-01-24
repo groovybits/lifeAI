@@ -801,8 +801,8 @@ if __name__ == "__main__":
     parser.add_argument("--burn_prompt", action="store_true", default=False, help="Burn in the prompt that created the image")
     parser.add_argument("--width", type=int, default=1920, help="Width of the output image")
     parser.add_argument("--height", type=int, default=1080, help="Height of the output image")
-    parser.add_argument("--music_volume", type=float, default=1.0, help="Volume for music audio playback, defualt is 0.55")
-    parser.add_argument("--speech_volume", type=float, default=1.0, help="Volume for speech audio playback")
+    parser.add_argument("--music_volume", type=float, default=0.50, help="Volume for music audio playback, defualt is 0.55")
+    parser.add_argument("--speech_volume", type=float, default=0.75, help="Volume for speech audio playback")
     parser.add_argument("--music_interval", type=float, default=60, help="Interval between music changes")
     parser.add_argument("--nomusic", action="store_true", default=False, help="Disable music")
     parser.add_argument("--nosave", action="store_true", default=False, help="Don't save assets to disk")
@@ -813,6 +813,7 @@ if __name__ == "__main__":
     parser.add_argument("--show_ascii_art", action="store_true", default=False, help="Show images as ascii art")
     parser.add_argument("--startup_delay", type=float, default=30.0, help="Delay before sending status messages")
     parser.add_argument("--stats_interval", type=float, default=10.0, help="Interval between sending status messages")
+    parser.add_argument("--sdl_audiodriver", type=str, default="GroovyLifeAI", help="SDL Audio Driver, default is GroovyLifeAI")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO
@@ -825,6 +826,8 @@ if __name__ == "__main__":
         LOGLEVEL = logging.WARNING
     else:
         LOGLEVEL = logging.INFO
+
+    #os.environ['SDL_AUDIODRIVER'] = args.sdl_audiodriver
 
     log_id = time.strftime("%Y%m%d-%H%M%S")
     logging.basicConfig(filename=f"logs/lifeAIplayer-{log_id}.log", level=LOGLEVEL)
@@ -847,7 +850,7 @@ if __name__ == "__main__":
     sender.bind(f"tcp://{args.output_host}:{args.output_port}")
 
     pygame.init()
-    pygame.mixer.init(frequency=args.freq, size=-16, channels=2, buffer=args.buffer_size)
+    pygame.mixer.init(frequency=args.freq, size=-16, channels=2, buffer=args.buffer_size, devicename=args.sdl_audiodriver)
     AUDIO_END_EVENT_MUSIC = pygame.USEREVENT + 1
     AUDIO_END_EVENT_SPEECH = pygame.USEREVENT + 2
 

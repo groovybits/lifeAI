@@ -33,27 +33,27 @@ personalities_image = {}
 
 def clean_text(text):
     # Remove URLs
-    text = re.sub(r'http[s]?://\S+', '', text)
+    #text = re.sub(r'http[s]?://\S+', '', text)
 
     # Remove image tags or Markdown image syntax
-    text = re.sub(r'\!\[.*?\]\(.*?\)', '', text)
-    text = re.sub(r'<img.*?>', '', text)
+    #text = re.sub(r'\!\[.*?\]\(.*?\)', '', text)
+    #text = re.sub(r'<img.*?>', '', text)
 
     # Remove HTML tags
-    text = re.sub(r'<.*?>', '', text)
+    #text = re.sub(r'<.*?>', '', text)
 
     # Remove any inline code blocks
-    text = re.sub(r'`.*?`', '', text)
+    #text = re.sub(r'`.*?`', '', text)
 
     # Remove any block code segments
-    text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
+    #text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
 
     # Remove special characters and digits (optional, be cautious)
     #text = re.sub(r'[^a-zA-Z0-9\s.?,!\n]', '', text)
 
     # Remove extra whitespace
     #text = ' '.join(text.split())
-    return text
+    return text[:490]
 
 ## Twitch chat responses
 class AiTwitchBot(commands.Cog):
@@ -133,12 +133,12 @@ class AiTwitchBot(commands.Cog):
                     "mediatype": "TwitchChat",
                     "username": message.author.name,
                     "source": "Twitch",
-                    "message": cleaned_content,
+                    "message": f"{cleaned_content}",
                     "episode": "false",
                     "aipersonality": aipersonality,
                     "ainame": ainame,
                     "history": "",  # No history for non-command messages
-                    "maxtokens": 200,
+                    "maxtokens": 300,
                     "voice_model": args.voice,
                     "gender": args.gender,
                     "genre_music": "Tibetan Singing Bowls and Flute Music",
@@ -244,7 +244,7 @@ class AiTwitchBot(commands.Cog):
                 "aipersonality": aipersonality,
                 "ainame": ainame,
                 "history": history,
-                "maxtokens": 0,
+                "maxtokens": 300,
                 "voice_model": args.voice,
                 "gender": args.gender,
                 "genre_music": genre_music,
@@ -304,7 +304,7 @@ class AiTwitchBot(commands.Cog):
                 "username": name,
                 "source": "Twitch",
                 "message": clean_text(prompt),
-                "maxtokens": 0,
+                "maxtokens": 100,
                 "episode": "false",
                 "aipersonality": "a musician and will compose an amazing piece of music for us.",
                 "ainame": "GAIB",
@@ -372,7 +372,7 @@ class AiTwitchBot(commands.Cog):
                 "source": "Twitch",
                 "episode": "false",
                 "message": clean_text(prompt),
-                "maxtokens": 0,
+                "maxtokens": 100,
                 "aipersonality": "a digital artist and photographer, you will compose an amazing piece of art or take an amazing photo image for us.",
                 "ainame": "GAIB",
                 "gender": args.gender,
