@@ -77,7 +77,7 @@ def create_filmstrip_images(center_image, side_images):
     # Assuming side_images is a list of 6 images, 3 for left and 3 for right
     left_images = side_images[:3]
     right_images = side_images[3:]
-    
+
     # Combine the left images, the center image, and the right images horizontally
     images_to_combine = left_images + [center_image] + right_images
     combined_width = sum(img.size[0] for img in images_to_combine)
@@ -91,14 +91,14 @@ def create_filmstrip_images(center_image, side_images):
     for img in images_to_combine:
         wide_image.paste(img, (x_offset, 0))
         x_offset += img.size[0]
-    
+
     return wide_image
 
 # Main function to process the new image
 def process_new_image(new_image, text, args, unique_image=False, banner=""):
     target_width = args.width  # This should be set to the desired width for 16:9 aspect ratio
     target_height = args.height  # This should be set to the height corresponding to the 16:9 aspect ratio
-    
+
     # Check if we have enough images to fill the sides
     if len(past_images_queue) >= 6:
         # Use the 6 most recent images for each side
@@ -300,7 +300,7 @@ def update_image(duration_ms):
         cv2.setWindowProperty(args.title, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
     elif k == ord('q') or k == 27:
         print(f"Render: Quitting.")
-        cv2.destroyAllWindows() 
+        cv2.destroyAllWindows()
 
 def render(image, duration):
     # Convert PIL Image to NumPy array
@@ -435,7 +435,7 @@ def playback(image, audio, duration):
     # play both audio and display image with audio blocking till finished
     if image and not args.norender:
         render(image, duration)
-    
+
     if audio:
         play_audio(audio, 22050)
         print(f"Audio playback initiated.")
@@ -491,10 +491,10 @@ def main():
             segment_number = header_message["segment_number"]
             timestamp = header_message["timestamp"]
             mediaid = header_message["mediaid"]
-            
+
             message = header_message["message"]
             text = header_message["text"]
-            
+
             optimized_prompt = text
             if 'optimized_text' in header_message:
                 optimized_prompt = header_message["optimized_text"]
@@ -506,7 +506,7 @@ def main():
 
                 # Print the header
                 logger.info(f"Received {type} segment #{segment_number} {timestamp}: {mediaid} {len(text)} characters: {text[:20]}")
-                
+
                 try:
                     if args.nosave == False:
                         # Save audio asset
@@ -514,7 +514,7 @@ def main():
                         save_asset(music, mediaid, segment_number, type)
                 except Exception as e:
                     logger.error(f"Error saving music asset: {e}")
-            
+
                 # queue in music_buffer header and music
                 music_buffer.put((header_message, music))
 
@@ -567,7 +567,7 @@ def main():
                         save_asset(image, mediaid, segment_number, type)
                 except Exception as e:
                     logger.error(f"Error saving image asset: {e}")
-        
+
                 print(f"I", end="", flush=True)
         else:
             ## No ZMQ message available, check for events
@@ -626,7 +626,7 @@ def main():
             # check if we have 0 seconds of buffer, if so then fake it as 60 seconds and send it
             if status["audio_buffer_duration"] == 0.0:
                 status["audio_buffer_duration"] = 60.0
-        
+
         if time.time() - stats_last_sent_ts > args.stats_interval or stats_last_sent_duration != status["audio_buffer_duration"]:
             logger.info(f"Sending status: {status}")
             sender.send_json(status)
@@ -757,7 +757,7 @@ def main():
 
                         logger.info(f"End of stream, sending last image with special text.")
                         # burn in special text
-                        image_np = process_new_image(last_image_asset, "The Groovy Life AI - groovylife.ai", args, False, "Groovy Life AI: Ask me anything, use !help for instructions...")
+                        image_np = process_new_image(last_image_asset, "What would you like to talk about?", args, False, "Welcome, ask me a question or how to use the chat commands.")
                         playback(image_np, None, 0.0)
                         last_sent_break = time.time()
                         worked = True
@@ -789,7 +789,7 @@ def main():
         ## avoid busy loop
         if not worked:
             time.sleep(0.1)
-            
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_port", type=int, required=False, default=6003, help="Port for receiving image as PIL numpy arrays")
@@ -862,8 +862,7 @@ if __name__ == "__main__":
     audio_channel_music.set_volume(args.music_volume)
 
     audio_buffer = queue.Queue()
-    music_buffer = queue.Queue()    
+    music_buffer = queue.Queue()
     image_buffer = queue.Queue()
 
     main()
-

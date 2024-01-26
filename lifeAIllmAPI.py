@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-## Life AI LLM 
+## Life AI LLM
 #
 # Chris Kennedy 2023 (C) GPL
 #
@@ -200,7 +200,7 @@ def send_group(text, zmq_sender, header_message, sentence_count, total_tokens, t
 
     return header_message
 
-def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_count, stoptokens, args):   
+def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_count, stoptokens, args):
     logger.info(f"LLM: Question #{header_message['segment_number']} {header_message['timestamp']} {header_message['md5sum']}: - {header_message['text'][:30]}")
     header_message["segment_number"] += 1
     header_message["text"] = ""
@@ -236,20 +236,20 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
             completion_params['stop'] = stoptokens_array
         else:
             completion_params['stop'] = ["</s>", "/s>", "<|"]
-            
+
         if int(maxtokens) > 0:
             completion_params['n_predict'] = int(header_message["maxtokens"])
-        
+
         retries = 0
         # Start a new thread to stream the API response and send it back to the client
         message = header_message.copy()
-        header_message = stream_api_response(message.copy(), 
-                                             api_url, 
-                                             completion_params, 
-                                             zmq_sender, 
-                                             characters_per_line, 
+        header_message = stream_api_response(message.copy(),
+                                             api_url,
+                                             completion_params,
+                                             zmq_sender,
+                                             characters_per_line,
                                              sentence_count)
-        
+
         while header_message is None:
             retries += 1
             logger.error(f"LLM: failed to get a response from the LLM API, retrying... {retries}")
@@ -262,7 +262,7 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
                                                     sentence_count)
             if header_message is None:
                 time.sleep(0.1)
-        
+
         # Send end frame
         # Prepare the message to send to the LLM
         end_header = header_message.copy()
@@ -362,7 +362,7 @@ def main(args):
                 header_message['time_context'] = client_request['time_context']
 
             header_message['client_request'] = client_request
-            
+
             logger.debug(f"LLM: received message: - {json.dumps(header_message)}\n")
             logger.info(f"LLM: received message: - {header_message['message'][:30]}...")
 
@@ -371,7 +371,7 @@ def main(args):
             if args.history_keep > 0:
                 while len(history) > args.history_keep:
                     history = history[1:]
-            
+
             if not args.nopurgehistory:
                 history_bytes = 0
                 for i in range(len(history)-1, -1, -1):
@@ -404,11 +404,11 @@ def main(args):
 
             # create a history of the conversation with system prompt at the start
             current_system_prompt = system_prompt.format( # add the system prompt
-                assistant = header_message["ainame"], 
-                personality = header_message["aipersonality"], 
-                instructions = iprompt_l, 
+                assistant = header_message["ainame"],
+                personality = header_message["aipersonality"],
+                instructions = iprompt_l,
                 output = oprompt_l)
-            
+
             media_type = header_message["mediatype"]
 
             """
@@ -445,7 +445,7 @@ def main(args):
                 assistant_prompt_start = "<|im_start|>assistant"
                 assistant_prompt_end = "<|im_end|>"
                 eos_stop_token = ""
-            
+
             tmp_history.append(f"{system_prompt_start}\n{current_system_prompt}{system_prompt_end}")
             tmp_history.extend(history) # add the history of the conversation
             if "context" in header_message and header_message["context"]:
@@ -464,14 +464,14 @@ def main(args):
                         f"{user_prompt_start}\n{user_prompt_end}\n{assistant_prompt_start}\n{header_message['context']}{assistant_prompt_end}{eos_stop_token}")
             day_of_week = time.strftime("%A")
             time_context = f"{day_of_week} %s" % time.strftime("%Y-%m-%d %H:%M:%S")
-            tmp_history.append(f"{user_prompt_start}\n%s\n\n%s: %s{user_prompt_end}\n{assistant_prompt_start}\n%s:" % (user_prompt.format(timestamp=time_context, 
-                                                                user=header_message["username"], 
-                                                                Q=qprompt_l, 
-                                                                A=aprompt_l), 
-                                                                    qprompt_l, 
+            tmp_history.append(f"{user_prompt_start}\n%s\n\n%s: %s{user_prompt_end}\n{assistant_prompt_start}\n%s:" % (user_prompt.format(timestamp=time_context,
+                                                                user=header_message["username"],
+                                                                Q=qprompt_l,
+                                                                A=aprompt_l),
+                                                                    qprompt_l,
                                                                         header_message["message"],
                                                                         aprompt_l)) # add the question
-            
+
             header_message["llm_prompt"] = "\n".join(tmp_history) # create the prompt
             logger.info(f"LLM: generated prompt: - {header_message['llm_prompt']}")
 
@@ -540,7 +540,7 @@ if __name__ == "__main__":
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--llm_port", type=int, default=8080)
     parser.add_argument("--llm_host", type=str, default="127.0.0.1")
-    parser.add_argument("--end_message", type=str, default="The Groovy Life AI - groovylife.ai", help="End message to send to the client.")
+    parser.add_argument("--end_message", type=str, default="End of Line", help="End message to send to the client.")
     parser.add_argument("--chat_format", type=str, default="llama2", help="Chat format to use, llama2 or chatML.")
 
     args = parser.parse_args()

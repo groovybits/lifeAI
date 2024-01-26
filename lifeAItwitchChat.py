@@ -126,6 +126,18 @@ class AiTwitchBot(commands.Cog):
                 # Clean and prepare the message content
                 cleaned_content = clean_text(message.content)
 
+                is_episode = "false"
+                if 'Episode' in question:
+                    is_episode = "true"
+
+                # personality image and music
+                genre_music = ""
+                genre = ""
+                if ainame in personalities_music:
+                    genre_music = personalities_music[ainame]
+                if ainame in personalities_image:
+                    genre = personalities_image[ainame]
+
                 # Create the client request
                 client_request = {
                     "segment_number": "0",
@@ -134,15 +146,15 @@ class AiTwitchBot(commands.Cog):
                     "username": message.author.name,
                     "source": "Twitch",
                     "message": f"{cleaned_content}",
-                    "episode": "false",
+                    "episode": is_episode,
                     "aipersonality": aipersonality,
                     "ainame": ainame,
                     "history": "",  # No history for non-command messages
                     "maxtokens": 300,
                     "voice_model": args.voice,
                     "gender": args.gender,
-                    "genre_music": "Tibetan Singing Bowls and Flute Music",
-                    "genre": "The Buddha in the himalayan mountain range in tibet outside a temple with a wide blue sky and white fluffy clouds ",
+                    "genre_music": genre_music,
+                    "genre": genre,
                     "priority": 75
                 }
 

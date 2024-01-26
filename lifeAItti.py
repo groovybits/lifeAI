@@ -33,7 +33,7 @@ def save_image(data, file_path, save_file=False):
         header, data = data.split(',', 1)
 
     image = base64.b64decode(data)
-    
+
     if save_file:
         with open(file_path, "wb") as fh:
             fh.write(image)
@@ -102,7 +102,7 @@ def generate_sd_webui(mediaid, prompt, save_file=False):
         else:
             logger.error(f"Error generating image: {result.error}")
             return None
-        
+
         return result.image
     except Exception as e:
         logger.error(f"Error generating image: {e}")
@@ -131,7 +131,7 @@ def generate_openai(mediaid, image_model, prompt, username="lifeai", return_url=
     image = save_image(b64_json, f"images/{mediaid}.png", save_file)
     if return_url:
         print(f"got url: {image_url}")
-    
+
     return image
 
 trlogging.set_verbosity_error()
@@ -139,26 +139,26 @@ trlogging.set_verbosity_error()
 def clean_text(text):
     # Remove URLs
     text = re.sub(r'http[s]?://\S+', '', text)
-    
+
     # Remove image tags or Markdown image syntax
     text = re.sub(r'\!\[.*?\]\(.*?\)', '', text)
     text = re.sub(r'<img.*?>', '', text)
-    
+
     # Remove HTML tags
     text = re.sub(r'<.*?>', '', text)
-    
+
     # Remove any inline code blocks
     text = re.sub(r'`.*?`', '', text)
-    
+
     # Remove any block code segments
     text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
-    
+
     # Remove special characters and digits (optional, be cautious)
     text = re.sub(r'[^a-zA-Z0-9\s.?,!\n]', '', text)
 
     # This seems to provoke some questionable images :/
     text = text.replace("black friday", "good friday").replace("Black Friday", "good friday").replace("black Friday", "good friday").replace("Black friday", "good friday")
-    
+
     # Remove extra whitespace
     text = ' '.join(text.split())
     return text
@@ -239,7 +239,7 @@ def main():
         optimized_prompt_clean = clean_text(optimized_prompt)
 
         # create prompt
-        optimized_prompt_final = f"{speaker_name} {genre[:30]} {header_message['message'][:80]} {optimized_prompt_clean[:200]}"
+        optimized_prompt_final = f"{speaker_name} {genre[:10]} {header_message['message'][:10]} {optimized_prompt_clean[:200]}"
 
         logger.debug(
             f"Text to Image recieved optimized prompt:\n{header_message}.")
@@ -262,7 +262,7 @@ def main():
                     input_ids = pipe.tokenizer(optimized_prompt_final, return_tensors="pt").input_ids
                     input_ids = input_ids.to("mps")
 
-                    negative_ids = pipe.tokenizer("", truncation=False, padding="max_length", max_length=input_ids.shape[-1], return_tensors="pt").input_ids                                                                                                     
+                    negative_ids = pipe.tokenizer("", truncation=False, padding="max_length", max_length=input_ids.shape[-1], return_tensors="pt").input_ids
                     negative_ids = negative_ids.to("mps")
 
                     concat_embeds = []
@@ -273,7 +273,7 @@ def main():
 
                     prompt_embeds = torch.cat(concat_embeds, dim=1)
                     negative_prompt_embeds = torch.cat(neg_embeds, dim=1)
-                    
+
                     # 2. Forward embeddings and negative embeddings through text encoder
                     image = pipe(prompt_embeds=prompt_embeds, negative_prompt_embeds=negative_prompt_embeds).images[0]
                 else:
@@ -393,7 +393,7 @@ if __name__ == "__main__":
         # create API client with custom host, port
         host, port = args.webui_url.split(":")
         sdui_api = webuiapi.WebUIApi(
-            host='127.0.0.1', 
+            host='127.0.0.1',
             port=7860,
             use_https=False)
 
@@ -423,4 +423,3 @@ if __name__ == "__main__":
     logger.info("binded to ZMQ out: %s:%d" % (args.output_host, args.output_port))
     sender.connect(f"tcp://{args.output_host}:{args.output_port}")
     main()
-
