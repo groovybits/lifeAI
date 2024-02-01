@@ -309,42 +309,43 @@ def update_image(duration_ms):
         print(f"Render: Quitting.")
         cv2.destroyAllWindows()
 
-def convert_yuv_to_uyvy(yuv_img):
-    height, width, _ = yuv_img.shape
+def convert_rgbx_to_yuv420(rgbx_img):
+    # Remove the alpha channel
+    rgb_img = rgbx_img[:, :, :3]
 
-    # Initialize the UYVY image
-    uyvy_img = np.zeros((height, width * 2), dtype=np.uint8)
+    # Convert RGB to YUV
+    yuv_img = cv2.cvtColor(rgb_img, cv2.COLOR_RGB2YUV)
 
-    # Separate Y, U, and V channels
+    # Subsample the U and V channels
     Y, U, V = cv2.split(yuv_img)
+    U = cv2.resize(U, (U.shape[1] // 2, U.shape[0] // 2), interpolation=cv2.INTER_AREA)
+    V = cv2.resize(V, (V.shape[1] // 2, V.shape[0] // 2), interpolation=cv2.INTER_AREA)
 
-    # Interleave U and V with Y
-    uyvy_img[:, 0::4] = U[:, 0::2]  # U at even places
-    uyvy_img[:, 1::4] = Y[:, 0::2]  # Y0 at odd places starting from 1
-    uyvy_img[:, 2::4] = V[:, 0::2]  # V at even places starting from 2
-    uyvy_img[:, 3::4] = Y[:, 1::2]  # Y1 at odd places starting from 3
+    # Correctly layout YUV420
+    yuv420_img = np.concatenate([Y.flatten(), U.flatten(), V.flatten()])
 
-    return uyvy_img
+    return yuv420_img
 
 def render(image, duration):
-    # Convert RGB to BGR (OpenCV uses BGR format)
     image = np.copy(image)
-    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
     if cv_display:
+        # Convert RGB to BGR (OpenCV uses BGR format)
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         cv2.imshow(f"{args.title} (local)", image)
         duration_ms = 1
         update_image(duration_ms)
 
     if ndi_display:
-        video_frame.FourCC = ndi.FOURCC_VIDEO_TYPE_BGRX
-        video_frame.data = image
-        #video_frame.data = np.copy(video_frame.data)
+        video_frame.FourCC = ndi.FOURCC_VIDEO_TYPE_I420
+        yuv420_image = convert_rgbx_to_yuv420(image)
+        video_frame.data = yuv420_image
 
-        video_frame.xres = video_frame.data.shape[1]
-        video_frame.yres = video_frame.data.shape[0]
-        video_frame.line_stride_in_bytes = video_frame.xres * video_frame.data.shape[2];
-        video_frame.picture_aspect_ratio = float(video_frame.xres) / float(video_frame.yres)
+        original_height, original_width = image.shape[:2]
+        video_frame.xres = original_width
+        video_frame.yres = original_height
+        video_frame.line_stride_in_bytes = original_width  # Stride for Y plane
+        video_frame.picture_aspect_ratio = float(original_width) / float(original_height)
 
         ndi.send_send_video_v2(ndi_send, video_frame)
 
