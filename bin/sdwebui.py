@@ -19,7 +19,7 @@ api.util_set_model('protogen')
 api.util_set_model('dreamshaper')
 api.util_set_model('sd_xl_turbo')
 
-result = api.txt2img(prompt="cute squirrel",
+result = api.txt2img(prompt="trippy clouds",
                     negative_prompt="ugly, out of frame",
                     save_images=True,
                     width=512,

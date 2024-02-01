@@ -540,7 +540,7 @@ if __name__ == "__main__":
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--llm_port", type=int, default=8080)
     parser.add_argument("--llm_host", type=str, default="127.0.0.1")
-    parser.add_argument("--end_message", type=str, default="End of Line", help="End message to send to the client.")
+    parser.add_argument("--end_message", type=str, default="Ask me a question!", help="End message to send to the client.")
     parser.add_argument("--chat_format", type=str, default="llama2", help="Chat format to use, llama2 or chatML.")
 
     args = parser.parse_args()

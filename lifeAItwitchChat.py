@@ -88,6 +88,11 @@ class AiTwitchBot(commands.Cog):
                 logger.debug("Ignoring bot's own message.")
                 return
 
+            # check if the message is from the user uralove or ai_buddha, ignore if so and return
+            #if message.author.name.lower() == "uralove" or message.author.name.lower() == "ai_buddha":
+            #    logger.debug("Ignoring uralove or ai_buddha's message.")
+            #    return
+
             # Ignore echo messages
             if message.echo:
                 logger.debug("Ignoring echo message.")
@@ -256,7 +261,7 @@ class AiTwitchBot(commands.Cog):
                 "aipersonality": aipersonality,
                 "ainame": ainame,
                 "history": history,
-                "maxtokens": 300,
+                "maxtokens": 1000,
                 "voice_model": args.voice,
                 "gender": args.gender,
                 "genre_music": genre_music,
