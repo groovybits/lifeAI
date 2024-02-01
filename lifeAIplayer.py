@@ -32,6 +32,7 @@ from collections import deque
 from pydub import AudioSegment
 import magic
 from dotenv import load_dotenv
+import NDIlib as ndi
 
 load_dotenv()
 
@@ -85,6 +86,8 @@ def create_filmstrip_images(center_image, side_images):
 
     # Create a new image with the combined dimensions
     wide_image = Image.new('RGB', (combined_width, combined_height))
+
+    print(f"Combined Width {combined_width} x Combined Height {combined_height}")
 
     # Paste the images into the wide_image
     x_offset = 0
@@ -288,31 +291,62 @@ def image_to_ascii(image):
     return ascii_image
 
 def update_image(duration_ms):
+    if not cv_display:
+        time.sleep(duration_ms/1000)
+        return
+
     k = cv2.waitKey(duration_ms) & 0xFF
     if k == ord('f'):
         print(f"Render: Toggling fullscreen.")
-        cv2.moveWindow(args.title, 0, 0)
+        cv2.moveWindow(f"{args.title} (local)", 0, 0)
         # maximize_window()
-        cv2.setWindowProperty(args.title, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+        cv2.setWindowProperty(f"{args.title} (local)", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     elif k == ord('m'):
         print(f"Render: Toggling maximized.")
-        cv2.setWindowProperty(args.title, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
+        cv2.setWindowProperty(f"{args.title} (local)", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
     elif k == ord('q') or k == 27:
         print(f"Render: Quitting.")
         cv2.destroyAllWindows()
 
+def convert_yuv_to_uyvy(yuv_img):
+    height, width, _ = yuv_img.shape
+
+    # Initialize the UYVY image
+    uyvy_img = np.zeros((height, width * 2), dtype=np.uint8)
+
+    # Separate Y, U, and V channels
+    Y, U, V = cv2.split(yuv_img)
+
+    # Interleave U and V with Y
+    uyvy_img[:, 0::4] = U[:, 0::2]  # U at even places
+    uyvy_img[:, 1::4] = Y[:, 0::2]  # Y0 at odd places starting from 1
+    uyvy_img[:, 2::4] = V[:, 0::2]  # V at even places starting from 2
+    uyvy_img[:, 3::4] = Y[:, 1::2]  # Y1 at odd places starting from 3
+
+    return uyvy_img
+
 def render(image, duration):
-    # Convert PIL Image to NumPy array
-    image_np = np.array(image)
-
     # Convert RGB to BGR (OpenCV uses BGR format)
-    image_bgr = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+    image = np.copy(image)
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-    cv2.imshow(args.title, image_bgr)
+    if cv_display:
+        cv2.imshow(f"{args.title} (local)", image)
+        duration_ms = 1
+        update_image(duration_ms)
 
-    duration_ms = 1 #int(duration * 1000 - 200)
-    update_image(duration_ms)
+    if ndi_display:
+        video_frame.FourCC = ndi.FOURCC_VIDEO_TYPE_BGRX
+        video_frame.data = image
+        #video_frame.data = np.copy(video_frame.data)
+
+        video_frame.xres = video_frame.data.shape[1]
+        video_frame.yres = video_frame.data.shape[0]
+        video_frame.line_stride_in_bytes = video_frame.xres * video_frame.data.shape[2];
+        video_frame.picture_aspect_ratio = float(video_frame.xres) / float(video_frame.yres)
+
+        ndi.send_send_video_v2(ndi_send, video_frame)
 
 def save_json(header, mediaid, type, segment_number):
     assets_dir = f"assets/{mediaid}/{type}"
@@ -790,6 +824,10 @@ def main():
         if not worked:
             time.sleep(0.1)
 
+    ndi.send_destroy(ndi_send)
+    ndi.destroy()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_port", type=int, required=False, default=6003, help="Port for receiving image as PIL numpy arrays")
@@ -814,6 +852,7 @@ if __name__ == "__main__":
     parser.add_argument("--startup_delay", type=float, default=30.0, help="Delay before sending status messages")
     parser.add_argument("--stats_interval", type=float, default=10.0, help="Interval between sending status messages")
     parser.add_argument("--sdl_audiodriver", type=str, default="GroovyLifeAI", help="SDL Audio Driver, default is GroovyLifeAI")
+    parser.add_argument("--ndi_display", action="store_true", default=False, help="Send to NDI output")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO
@@ -826,6 +865,11 @@ if __name__ == "__main__":
         LOGLEVEL = logging.WARNING
     else:
         LOGLEVEL = logging.INFO
+
+    cv_display = True
+    ndi_display = args.ndi_display
+    if ndi_display:
+        cv_display = False
 
     #os.environ['SDL_AUDIODRIVER'] = args.sdl_audiodriver
 
@@ -864,5 +908,28 @@ if __name__ == "__main__":
     audio_buffer = queue.Queue()
     music_buffer = queue.Queue()
     image_buffer = queue.Queue()
+
+	## NDI
+    if ndi_display:
+        send_settings = ndi.SendCreate()
+        send_settings.ndi_name = args.title
+
+        ndi_send = ndi.send_create(send_settings)
+
+        video_frame = ndi.VideoFrameV2()
+
+        video_frame.data = np.zeros((args.width, args.height, 4), dtype=np.uint8)
+        video_frame.data[:, :, 1] = 255
+        video_frame.data = np.array(video_frame.data)
+        video_frame.FourCC = ndi.FOURCC_VIDEO_TYPE_BGRX
+        video_frame.xres = video_frame.data.shape[0]
+        video_frame.yres = video_frame.data.shape[1]
+
+        aspect_ratio = float(video_frame.xres) / float(video_frame.yres)
+        video_frame.picture_aspect_ratio = aspect_ratio
+
+        video_frame.line_stride_in_bytes = video_frame.xres * video_frame.data.shape[2];
+        ndi.send_send_video_v2(ndi_send, video_frame)
+
 
     main()
