@@ -336,6 +336,7 @@ def render(image, duration):
         duration_ms = 1
         update_image(duration_ms)
 
+    # NDI Video from Images
     if ndi_display:
         video_frame.FourCC = ndi.FOURCC_VIDEO_TYPE_I420
         yuv420_image = convert_rgbx_to_yuv420(image)
@@ -435,9 +436,30 @@ class BackgroundMusic(threading.Thread):
     def stop(self):
         self.running = False
 
-def play_audio(audio_data, target_sample_rate=22050):
+def prepare_audio_frame(audio_data, sample_rate=48000, no_channels=2):
+    audio_frame = ndi.AudioFrameV2()
+
+    # Set the audio frame properties
+    audio_frame.sample_rate = sample_rate
+    audio_frame.no_channels = no_channels
+    audio_frame.no_samples = len(audio_data) // no_channels
+    audio_frame.timecode = ndi.send_timecode_synthesize  # Synchronize with video
+    audio_frame.data = audio_data
+
+    return audio_frame
+
+def play_audio(audio_data, target_sample_rate=22050, no_channels=2, duration=1):
     # Detect the mime type of the audio data
     mime_type = magic.from_buffer(audio_data, mime=True)
+
+    # NDI Audio
+    if args.ndi_audio:
+        target_sample_rate = 48000;
+        audio_segment = AudioSegment.from_file(io.BytesIO(audio_data), format='pcm')
+        audio_frame = prepare_audio_frame(audio_segment, sample_rate=target_sample_rate, no_channels=no_channels)
+        ndi.send_send_audio_v2(ndi_send, audio_frame)
+        time.sleep(duration)
+        return
 
     # Load the audio data into an AudioSegment
     if mime_type in ['audio/x-wav', 'audio/wav']:
@@ -472,7 +494,7 @@ def playback(image, audio, duration):
         render(image, duration)
 
     if audio:
-        play_audio(audio, 22050)
+        play_audio(audio, 22050, 2, duration)
         print(f"Audio playback initiated.")
 
 def get_audio_duration(audio_samples):
@@ -854,6 +876,7 @@ if __name__ == "__main__":
     parser.add_argument("--stats_interval", type=float, default=10.0, help="Interval between sending status messages")
     parser.add_argument("--sdl_audiodriver", type=str, default="GroovyLifeAI", help="SDL Audio Driver, default is GroovyLifeAI")
     parser.add_argument("--ndi_display", action="store_true", default=False, help="Send to NDI output")
+    parser.add_argument("--ndi_audio", action="store_true", default=False, help="Send audio to NDI output")
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO

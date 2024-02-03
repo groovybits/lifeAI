@@ -89,9 +89,9 @@ class AiTwitchBot(commands.Cog):
                 return
 
             # check if the message is from the user uralove or ai_buddha, ignore if so and return
-            #if message.author.name.lower() == "uralove" or message.author.name.lower() == "ai_buddha":
-            #    logger.debug("Ignoring uralove or ai_buddha's message.")
-            #    return
+            if message.author.name.lower() == "uralove":
+                logger.debug("Ignoring ai_buddha's message.")
+                return
 
             # Ignore echo messages
             if message.echo:
@@ -131,10 +131,6 @@ class AiTwitchBot(commands.Cog):
                 # Clean and prepare the message content
                 cleaned_content = clean_text(message.content)
 
-                is_episode = "false"
-                if 'Episode' in question:
-                    is_episode = "true"
-
                 # personality image and music
                 genre_music = ""
                 genre = ""
@@ -151,11 +147,11 @@ class AiTwitchBot(commands.Cog):
                     "username": message.author.name,
                     "source": "Twitch",
                     "message": f"{cleaned_content}",
-                    "episode": is_episode,
+                    "episode": "false",
                     "aipersonality": aipersonality,
                     "ainame": ainame,
                     "history": "",  # No history for non-command messages
-                    "maxtokens": 300,
+                    "maxtokens": 100,
                     "voice_model": args.voice,
                     "gender": args.gender,
                     "genre_music": genre_music,
