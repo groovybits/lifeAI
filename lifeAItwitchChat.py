@@ -80,16 +80,28 @@ class AiTwitchBot(commands.Cog):
     async def event_message(self, message):
         'Runs every time a message is sent in chat.'
         try:
+            # Initialize username as "unknown" in case neither name nor display_name can be retrieved
+            username = "unknown"
+            
+            # Directly access attributes instead of treating the object as a dictionary
+            if hasattr(message.author, 'name') and message.author.name:
+                username = message.author.name.lower()
+            elif hasattr(message.author, 'display_name') and message.author.display_name:
+                username = message.author.display_name.lower()
+            else:
+                print("Error in event_message twitch bot: Unable to retrieve message.author.name or message.author.display_name.")
+                print(message)
+
             # Log every message received
-            logger.info(f"Message from {message.author.name}: {message.content}")
+            logger.info(f"Message from {username}: {message.content}")
 
             # Ignore messages from the bot itself
-            if message.author.name.lower() == os.environ['BOT_NICK'].lower():
+            if username == os.environ['BOT_NICK'].lower():
                 logger.debug("Ignoring bot's own message.")
                 return
 
             # check if the message is from the user uralove or ai_buddha, ignore if so and return
-            if message.author.name.lower() == "uralove":
+            if username == "uralove" or username == "ai_buddha":
                 logger.debug("Ignoring ai_buddha's message.")
                 return
 
@@ -99,9 +111,9 @@ class AiTwitchBot(commands.Cog):
                 return
 
             # Handle commands
-            await self.bot.handle_commands(message)
+            #await self.bot.handle_commands(message)
 
-            name = message.author.name
+            name = username
             ainame = self.ai_name
             aipersonality = self.ai_personality
             question= message.content
@@ -144,7 +156,7 @@ class AiTwitchBot(commands.Cog):
                     "segment_number": "0",
                     "mediaid": str(uuid.uuid4()),  # Generate a unique ID for the message
                     "mediatype": "TwitchChat",
-                    "username": message.author.name,
+                    "username": username,
                     "source": "Twitch",
                     "message": f"{cleaned_content}",
                     "episode": "false",
@@ -152,7 +164,7 @@ class AiTwitchBot(commands.Cog):
                     "ainame": ainame,
                     "history": "",  # No history for non-command messages
                     "maxtokens": 100,
-                    "voice_model": args.voice,
+                    "voice_model": "mimic3:en_US/vctk_low#p303:1.5",
                     "gender": args.gender,
                     "genre_music": genre_music,
                     "genre": genre,
@@ -605,7 +617,8 @@ if __name__ == "__main__":
     personalities_image["Jeero"] = "bobs burgers family with tina b. and others with jairo the capoeira healer"
 
     personalities["Alice"] = "Alice, a sexy beautiful and pretty twitch streaming girl, you are not breaking the rules of twitch. you are girl who loves anime, ai, tech, video and video games. You are whimsical goofy fun loving to flaunt your beauty to keep peoples interest in your twitch channel. display compassion and love towards all beings. be funny and conversate with the twitch chatters. Speak in a conversational tone referencing yourself as ai and mention the persons name who asked the question if given.  Maintain your role without revealing that you're an AI Language model. A wild free hippie girl who escaped the oppression of the capitalism and terror of eating meat. You fight for womens rights and trans rights, against oppression, want healthcare to be free for all and less competition with more love and happiness. You do a lot of yoga, meditating, pranyama and teach these in basic ways through funny escapades and odd relations to the news. You teach love peace and harmony, all the tibetan buddhist values, tantras and sutras, know the ramayana by heart and relate to sita. As Alice, a wild hippie girl who is free, you speak of hippie values of freedom and love and peace. taking the news story and turning it into a wild psychedelic 60s adventure, bringing along various famous known 60s icons randomly showing up on the tv show. run it like a talk show but wacky and trippy with flashbacks and dream sequences."
-    personalities_voice["Alice"] = "mimic3:en_US/vctk_low#p303:1.5"
+    #personalities_voice["Alice"] = "mimic3:en_US/vctk_low#p303:1.5"
+    personalities_voice["Alice"] = "openai:nova:1.0"
     personalities_gender["Alice"] = "female"
     personalities_music["Alice"] = "video game themed music."
     personalities_image["Alice"] = "a beautiful pretty woman with long hair and big pretty eyes and busty with cleavage wearing psychedelic clothes and a hippie like appearance from the 60s.."
