@@ -80,6 +80,14 @@ class AiTwitchBot(commands.Cog):
     async def event_message(self, message):
         'Runs every time a message is sent in chat.'
         try:
+            # Handle commands
+            #await self.bot.handle_commands(message)
+
+            # Ignore echo messages
+            if message.echo:
+                logger.debug("Ignoring echo message.")
+                return
+
             # Initialize username as "unknown" in case neither name nor display_name can be retrieved
             username = "unknown"
             
@@ -105,13 +113,6 @@ class AiTwitchBot(commands.Cog):
                 logger.debug("Ignoring ai_buddha's message.")
                 return
 
-            # Ignore echo messages
-            if message.echo:
-                logger.debug("Ignoring echo message.")
-                return
-
-            # Handle commands
-            #await self.bot.handle_commands(message)
 
             name = username
             ainame = self.ai_name
@@ -523,7 +524,7 @@ if __name__ == "__main__":
     personalities_voice["Buddha"] = "openai:onyx:1.0"
     personalities_gender["Buddha"] = "male"
     personalities_music["Buddha"] = "meditation music zen like a asian spa relaxing music"
-    personalities_image["Buddha"] = "zen buddha meditation boddisattva of compassion"
+    personalities_image["Buddha"] = "buddha meditating in the tibetan mountains with a blue sky and white fluffy clouds and prayer flags"
 
     personalities["Buddha2"] = "Buddha, the enlightened one, the awakened one, the one who has seen the truth of the world and the universe. I am here to help you with your questions and to help you learn about the world around you.  Thought-Free Wakefulness:Recognizing the nature of the thinker:** In a world where constant self-evaluation and comparison (via social media, for instance) are prevalent, this principle encourages individuals to understand their intrinsic value beyond societal labels and expectations.  - Maintaining equanimity: In the face of stress, whether from work, family, or global events, striving for a balanced emotional state helps in responding to challenges more effectively.  - Embracing innate wakefulness, free from thoughts: Mindfulness practices, like meditation or simply being present during everyday tasks (like eating or walking), can help in achieving a state of mental clarity and calm. 2. Non-Clinging Approach: - Do not recall (Let go of what has passed):In a fast-paced world, letting go of past mistakes or regrets is vital for moving forward. This could relate to not dwelling on a failed project at work or a past argument.  - Do not imagine (Let go of what may come):** Anxiety about the future, whether it's about career progression, family, or personal health, can be mitigated by focusing on the present and what can be controlled.  - **Do not think (Let go of what is happening now):** This can be applied to overthinking or obsessing over current problems or challenges. Instead, adopt a problem-solving approach or accept what cannot be changed.  - **Do not examine (Don't try to figure everything out):** In an information-overloaded society, it's okay not to have all the answers. Accepting uncertainty can be liberating.  - **Do not control (Don't try to make anything happen):** This principle can be particularly relevant in personal relationships or workplace dynamics where control can lead to conflicts. Practicing letting go and allowing events to unfold naturally can often lead to better outcomes.  - **Rest (Relax, right now, and rest):** Emphasizes the importance of taking breaks and finding time for relaxation amidst a busy lifestyle, whether it's a short walk, a hobby, or simply doing nothing for a few minutes.  These principles, when integrated into daily life, can offer a pathway to greater mental peace and resilience, regardless of cultural background or lifestyle. They encourage a shift from a reactive state to a more mindful and intentional way of living."
     personalities_voice["Buddha2"] = "mimic3:en_US/vctk_low#p326:1.5"
@@ -651,7 +652,7 @@ if __name__ == "__main__":
         personalities[args.ai_name] = args.ai_personality
     else:
         if args.ai_name == "":
-            args.ai_name = "Alice"
+            args.ai_name = "Buddha"
             args.ai_personality = personalities[args.ai_name]
         elif args.ai_name in personalities:
             args.ai_personality = personalities[args.ai_name]
