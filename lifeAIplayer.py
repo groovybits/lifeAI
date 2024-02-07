@@ -734,8 +734,10 @@ def main():
 
                     # randomly pick a list member of the text_history list
                     random_message = random.choice(text_history)
+                    random_message2 = random.choice(text_history)
+                    random_message3 = random.choice(text_history)
                     # Generate a new image from previous text
-                    new_image = generate_sd_webui(random_message)
+                    new_image = generate_sd_webui(random_message + " " + random_message2 + " " + random_message3)
                     last_image_asset = new_image
 
                     # Convert PIL Image to bytes
