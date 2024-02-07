@@ -16,8 +16,10 @@ def main(tokens, music_values, output_file, model_name):
     )
 
     audio_values = model.generate(**inputs, max_new_tokens=tokens)
+    print(f"Generated audio_values from {tokens} tokens")
 
     sampling_rate = model.config.audio_encoder.sampling_rate
+    print(f"Sampling rate is {sampling_rate}")
     scipy.io.wavfile.write(output_file, rate=sampling_rate, data=audio_values[0, 0].numpy())
     print(f"Generated music saved as {output_file}")
 

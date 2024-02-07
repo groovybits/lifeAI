@@ -50,21 +50,22 @@ def concatenate_files(playlist_path, output_path):
 def play_audio(file_path):
     subprocess.run(['mpv', file_path], check=True)
 
-files = get_files_sorted_by_mtime(music_dir)
-if not files:
-    print("No .wav files found in the directory.")
-else:
-    current_checksum = calculate_checksum(files)
-    previous_checksum = read_previous_checksum(checksum_file)
-
-    if current_checksum != previous_checksum or not os.path.exists(output_file):
-        print("Changes detected or output file missing, regenerating...")
-        generate_playlist(files, playlist_file)
-        concatenate_files(playlist_file, output_file)
-        write_new_checksum(current_checksum, checksum_file)
+while True:
+    files = get_files_sorted_by_mtime(music_dir)
+    if not files:
+        print("No .wav files found in the directory.")
     else:
-        print("No changes detected. Using existing combined audio file.")
+        current_checksum = calculate_checksum(files)
+        previous_checksum = read_previous_checksum(checksum_file)
 
-    print("Playing combined playlist...")
-    play_audio(output_file)
+        if current_checksum != previous_checksum or not os.path.exists(output_file):
+            print("Changes detected or output file missing, regenerating...")
+            generate_playlist(files, playlist_file)
+            concatenate_files(playlist_file, output_file)
+            write_new_checksum(current_checksum, checksum_file)
+        else:
+            print("No changes detected. Using existing combined audio file.")
+
+        print("Playing combined playlist...")
+        play_audio(output_file)
 

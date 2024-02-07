@@ -33,11 +33,37 @@ from pydub import AudioSegment
 import magic
 from dotenv import load_dotenv
 import NDIlib as ndi
+import webuiapi
+from diffusers import StableDiffusionPipeline
+import torch
+from transformers import logging as trlogging
+import random
 
 load_dotenv()
 
+def generate_sd_webui(prompt):
+    try:
+        result = sdui_api.txt2img(prompt=prompt,
+                            negative_prompt=args.negative_prompt,
+                            save_images=False,
+                            width=512,
+                            height=512,
+        )
+
+        sdui_api.util_wait_for_ready()
+
+        if result.image is None:
+            logger.error(f"Error generating image: {result.error}")
+            return None
+
+        return result.image
+    except Exception as e:
+        logger.error(f"Error generating image: {e}")
+        return None
+
 # Queue to store the last images
 past_images_queue = deque(maxlen=6)  # Assuming 6 images for each side
+#past_images_all_time_queue = deque(maxlen=1000)  # Assuming 100 images for each side
 
 def create_16_9_image(center_image, side_images, target_width, target_height):
     # Scale the main image to fit the height of the 16:9 image
@@ -115,6 +141,7 @@ def process_new_image(new_image, text, args, unique_image=False, banner=""):
     # Add the new image to the queue for future use
     if unique_image:
         past_images_queue.appendleft(new_image)
+        #past_images_all_time_queue.appendleft(new_image)
 
     return final_image
 
@@ -515,6 +542,7 @@ def main():
     last_music_change = 0
 
     last_image_asset = None
+    last_text_asset = "Ask me a Question - Groovy Life AI: tibetan mountains"
 
     image_segment_number = 0
     audio_segment_number = 0
@@ -530,6 +558,8 @@ def main():
 
     end_of_stream = True
     last_sent_break = 0
+
+    last_generated_image_time = 0
 
     while True:
         # check if we will block, if so then don't and check events instead of pygame
@@ -694,6 +724,30 @@ def main():
             stats_last_sent_ts = time.time()
             stats_last_sent_duration = status["audio_buffer_duration"]
 
+        # check audio_buffer_duration, if 0 and image_buffer is empty, then resend the image with the last text
+        if status["audio_buffer_duration"] == 0.0 and image_buffer.empty() and audio_buffer.empty():
+            if time.time() - last_generated_image_time > 5:
+                # get the last text and image
+                if last_text_asset:
+                    ## get an image randomly from past_images_all_time_queue and use it as the base image
+                    #past_image = random.choice(past_images_all_time_queue)
+
+                    # randomly pick a list member of the text_history list
+                    random_message = random.choice(text_history)
+                    # Generate a new image from previous text
+                    new_image = generate_sd_webui(random_message)
+                    last_image_asset = new_image
+
+                    # Convert PIL Image to bytes
+                    #img_byte_arr = io.BytesIO()
+                    #new_image.save(img_byte_arr, format='PNG')  # Save it as PNG or JPEG depending on your preference
+                    #new_image = img_byte_arr.getvalue()
+
+                    image_np = process_new_image(new_image, last_text_asset, args, True, "Groovy Life AI")
+                    # send image directly to NDI
+                    render(image_np, 1)
+                    last_generated_image_time = time.time()
+
         ## get an audio sample and header, get the text field from it, then get an image and header and burn in the text from the audio header to the image and render it while playing the audio
         if args.nobuffer and args.norender and not audio_buffer.empty() and audio_playback_complete_speech:
             audio_message, audio_asset = audio_buffer.get()
@@ -743,6 +797,9 @@ def main():
                 if image_message["throttle"] == "true":
                     unique_image = False
             last_image_asset = image_asset.copy()
+            last_text_asset = text
+            # store text in our history
+            text_history.append(text)
             banner_msg = f"{audio_message['username']} asked {audio_message['message'][:300]}"
             if 'eos' in audio_message and audio_message['eos'] == True:
                 banner_msg = f"{audio_message['message']}"
@@ -881,6 +938,9 @@ if __name__ == "__main__":
     parser.add_argument("--sdl_audiodriver", type=str, default="GroovyLifeAI", help="SDL Audio Driver, default is GroovyLifeAI")
     parser.add_argument("--ndi_display", action="store_true", default=False, help="Send to NDI output")
     parser.add_argument("--ndi_audio", action="store_true", default=False, help="Send audio to NDI output")
+    parser.add_argument("--sdwebui_image_model", type=str, default="sd_xl_turbo", help="Local SD WebUI API Image model to use, default protogenV2")
+    parser.add_argument("--negative_prompt", type=str, default="Disfigured, cartoon, blurry, nsfw, naked, porn, violence, gore, racism, black face", help="Negative prompt for the model")
+
     args = parser.parse_args()
 
     LOGLEVEL = logging.INFO
@@ -937,6 +997,13 @@ if __name__ == "__main__":
     music_buffer = queue.Queue()
     image_buffer = queue.Queue()
 
+    sdui_api = webuiapi.WebUIApi(
+        host='127.0.0.1',
+        port=7860,
+        use_https=False)
+
+    sdui_api.util_set_model(args.sdwebui_image_model)
+
 	## NDI
     if ndi_display:
         send_settings = ndi.SendCreate()
@@ -959,5 +1026,6 @@ if __name__ == "__main__":
         video_frame.line_stride_in_bytes = video_frame.xres * video_frame.data.shape[2];
         ndi.send_send_video_v2(ndi_send, video_frame)
 
+    text_history = ["Groovy Life AI is ready to serve you!"]
 
     main()
