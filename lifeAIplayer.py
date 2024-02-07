@@ -262,7 +262,7 @@ def add_text_to_image(image, text, banner=""):
             # Draw a semi-transparent rectangle
             overlay = image.copy()
             cv2.rectangle(overlay, (rect_x_left, rect_y_top), (rect_x_right, rect_y_bottom), (0, 0, 0), -1)
-            alpha = 0.5  # Transparency factor.
+            alpha = 0.0  # Transparency factor.
             image = cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0)
 
             # Draw text shadow for a drop shadow effect
@@ -436,15 +436,18 @@ class BackgroundMusic(threading.Thread):
     def stop(self):
         self.running = False
 
-def prepare_audio_frame(audio_data, sample_rate=48000, no_channels=2):
+def prepare_audio_frame(audio_segment, sample_rate=48000, no_channels=2):
+    # Convert audio_segment to samples
+    samples = np.array(audio_segment.get_array_of_samples(), dtype=np.float32)
     audio_frame = ndi.AudioFrameV2()
 
     # Set the audio frame properties
     audio_frame.sample_rate = sample_rate
     audio_frame.no_channels = no_channels
-    audio_frame.no_samples = len(audio_data) // no_channels
-    audio_frame.timecode = ndi.send_timecode_synthesize  # Synchronize with video
-    audio_frame.data = audio_data
+    audio_frame.no_samples = len(samples) // no_channels
+    audio_frame.timecode = ndi.send_timecode_synthesize
+    # NDI SDK expects interleaved float32 audio data
+    audio_frame.p_data = samples
 
     return audio_frame
 
@@ -455,8 +458,9 @@ def play_audio(audio_data, target_sample_rate=22050, no_channels=2, duration=1):
     # NDI Audio
     if args.ndi_audio:
         target_sample_rate = 48000;
-        audio_segment = AudioSegment.from_file(io.BytesIO(audio_data), format='pcm')
+        audio_segment = AudioSegment.from_file(io.BytesIO(audio_data), format="wav")
         audio_frame = prepare_audio_frame(audio_segment, sample_rate=target_sample_rate, no_channels=no_channels)
+
         ndi.send_send_audio_v2(ndi_send, audio_frame)
         time.sleep(duration)
         return

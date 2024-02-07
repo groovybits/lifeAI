@@ -19,6 +19,9 @@ import logging
 import time
 import numpy as np
 
+from IPython.display import Audio
+
+
 trlogging.set_verbosity_error()
 
 def generate_audio(prompt, negative_prompt, guidance_scale=3, audio_length_in_s=30, seed=0, audio=None, sampling_rate=32000):
@@ -30,22 +33,18 @@ def generate_audio(prompt, negative_prompt, guidance_scale=3, audio_length_in_s=
             padding=False,
             return_tensors="pt",
             ).to("cpu")
-        # limit to 10 seconds for audio continuation
-        audio_length_in_s = 10
-    else:
+        else:
         inputs = processor(
             text=[prompt, negative_prompt],
             padding=True,
             return_tensors="pt",
             ).to("cpu")
 
-    with torch.no_grad():
-        encoder_outputs = text_encoder(**inputs)
+    set_seed(seed)
 
     max_new_tokens = int(frame_rate * audio_length_in_s)
+    audio_values = model.generate(**inputs, max_new_tokens)
 
-    set_seed(seed)
-    audio_values = model.generate(inputs.input_ids[0][None, :], attention_mask=inputs.attention_mask, encoder_outputs=encoder_outputs, do_sample=True, guidance_scale=guidance_scale, max_new_tokens=max_new_tokens)
     return audio_values
 
 def main():
@@ -79,7 +78,7 @@ def main():
         # read the message
         if header_message is None:
             header_message = receiver.recv_json()
-       
+
         # fill in the variables form the header_message
         optimized_prompt = ""
         if "optimized_text" in header_message:
@@ -100,13 +99,13 @@ def main():
         # this is to give the model a little more context yet optimized prompts for music are often not great
         prompt = f"{genre}"
 
-        audio_values = generate_audio(prompt, 
+        audio_values = generate_audio(prompt,
                                                      args.negative_prompt,
                                                      args.guidance_scale,
                                                      args.seconds,
                                                      args.seed,
                                                      last_audio)
-        
+
         if args.continuation:
             last_audio = audio_values
         audio_values = (audio_values.cpu().numpy() * 32767).astype(np.int16)
@@ -129,10 +128,10 @@ def main():
         if latency > (max_latency * 1000):
             logger.error(f"TTM: Message is too old {latency/1000}, throttling for the next {latency/1000} seconds.")
             throttle = True
-        
+
         logger.debug(f"Text to Music Sent:\n{header_message}")
         logger.info(f"{header_message['mediaid']} {header_message['segment_number']} {header_message['timestamp']} Text to Music of {duration} duration Sent.")
-    
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -217,4 +216,3 @@ if __name__ == "__main__":
         model = model.to("cpu")
 
     main()
-

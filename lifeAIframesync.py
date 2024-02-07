@@ -110,7 +110,7 @@ def main():
             latency_delta = int(round(time.time()*1000)) - int(timestamp)
         logger.info(f"Framesync: {stream} [{latency_delta}] ms delay #{segment_number}/{segment_index} - {timestamp}: {mediaid} {duration} seconds {len(text)} characters {tokens} tokens {md5sig}/{md5text}: {clean_text}")
 
-        if args.passthrough:
+        if not args.nopassthrough:
             sender.send_json(header_message, zmq.SNDMORE)
             sender.send(asset)
             text = text.replace('\n', ' ').replace('  ','').strip()
@@ -165,7 +165,7 @@ if __name__ == "__main__":
     parser.add_argument("--output_host", type=str, default="127.0.0.1", required=False, help="Port for sending image output")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--max_delay", type=int, default=60, help="Maximum allowed delay in seconds for image frames before they are dropped")
-    parser.add_argument("--passthrough", action="store_true", help="Pass through all messages without synchronization")
+    parser.add_argument("--nopassthrough", action="store_true", help="Pass through all messages without synchronization")
     parser.add_argument("--max_segment_diff", type=int, default=2, help="Maximum allowed segment number difference before older segments are skipped")
     parser.add_argument("--buffer_delay", type=int, default=0, help="Delay in seconds to buffer messages before sending them out")
     args = parser.parse_args()
@@ -200,7 +200,7 @@ if __name__ == "__main__":
     logger.info("binded to ZMQ out: %s:%d" % (args.output_host, args.output_port))
     sender.bind(f"tcp://{args.output_host}:{args.output_port}")
 
-    if not args.passthrough:
+    if not args.nopassthrough:
         # Define the buffer queues for each media type
         audio_buffer = queue.Queue()
         music_buffer = queue.Queue()
