@@ -16,6 +16,11 @@ def get_files_sorted_by_mtime(directory, extension=".wav"):
             if filename.endswith(extension):
                 full_path = os.path.join(root, filename)
                 files.append(full_path)
+                files.append(full_path)
+                files.append(full_path)
+                files.append(full_path)
+                files.append(full_path)
+                files.append(full_path)
     return sorted(files, key=os.path.getmtime)
 
 def generate_playlist(files, playlist_path):

@@ -90,7 +90,7 @@ class AiTwitchBot(commands.Cog):
 
             # Initialize username as "unknown" in case neither name nor display_name can be retrieved
             username = "unknown"
-            
+
             # Directly access attributes instead of treating the object as a dictionary
             if hasattr(message.author, 'name') and message.author.name:
                 username = message.author.name.lower()
@@ -270,7 +270,7 @@ class AiTwitchBot(commands.Cog):
                 "aipersonality": aipersonality,
                 "ainame": ainame,
                 "history": history,
-                "maxtokens": 1000,
+                "maxtokens": 500,
                 "voice_model": args.voice,
                 "gender": args.gender,
                 "genre_music": genre_music,

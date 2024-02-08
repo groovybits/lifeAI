@@ -726,7 +726,7 @@ def main():
 
         # check audio_buffer_duration, if 0 and image_buffer is empty, then resend the image with the last text
         if status["audio_buffer_duration"] == 0.0 and image_buffer.empty() and audio_buffer.empty():
-            if time.time() - last_generated_image_time > 5:
+            if time.time() - last_generated_image_time > 45:
                 # get the last text and image
                 if last_text_asset:
                     ## get an image randomly from past_images_all_time_queue and use it as the base image
