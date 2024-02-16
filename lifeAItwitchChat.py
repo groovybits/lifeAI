@@ -179,7 +179,7 @@ class AiTwitchBot(commands.Cog):
         except Exception as e:
             logger.error(f"Error in event_message twitch bot: {e}")
 
-    @commands.command(name="message", aliases=("question", "ask", "chat", "say"))
+    @commands.command(name="message", aliases=("ask", "chat", "say"))
     async def message(self, ctx: commands.Context):
         try:
             command_name = ctx.message.content.split()[0].replace('!', '')
