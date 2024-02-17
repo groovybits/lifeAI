@@ -296,7 +296,7 @@ def main(args):
     # Set up the ZMQ receiver
     receiver = zmq_context.socket(zmq.PULL)
     logger.info(f"Connected to ZMQ at {args.input_host}:{args.input_port}")
-    receiver.connect(f"tcp://{args.input_host}:{args.input_port}")
+    receiver.bind(f"tcp://{args.input_host}:{args.input_port}")
 
     # Set up the ZMQ sender
     sender = zmq_context.socket(zmq.PUB)
