@@ -241,27 +241,33 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
             completion_params['n_predict'] = int(header_message["maxtokens"])
 
         retries = 0
-        # Start a new thread to stream the API response and send it back to the client
-        message = header_message.copy()
-        header_message = stream_api_response(message.copy(),
-                                             api_url,
-                                             completion_params,
-                                             zmq_sender,
-                                             characters_per_line,
-                                             sentence_count)
 
-        while header_message is None:
-            retries += 1
-            logger.error(f"LLM: failed to get a response from the LLM API, retrying... {retries}")
-            # retry the request
+        # If the AI personality is passthrough, just return the message as is
+        if header_message["aipersonality"] == "passthrough":
+            header_message["text"] = header_message["message"]
+            send_data(zmq_sender, header_message.copy())
+        else:
+            # Start a new thread to stream the API response and send it back to the client
+            message = header_message.copy()
             header_message = stream_api_response(message.copy(),
-                                                    api_url,
-                                                    completion_params,
-                                                    zmq_sender,
-                                                    characters_per_line,
-                                                    sentence_count)
-            if header_message is None:
-                time.sleep(0.1)
+                                                api_url,
+                                                completion_params,
+                                                zmq_sender,
+                                                characters_per_line,
+                                                sentence_count)
+
+            while header_message is None:
+                retries += 1
+                logger.error(f"LLM: failed to get a response from the LLM API, retrying... {retries}")
+                # retry the request
+                header_message = stream_api_response(message.copy(),
+                                                        api_url,
+                                                        completion_params,
+                                                        zmq_sender,
+                                                        characters_per_line,
+                                                        sentence_count)
+                if header_message is None:
+                    time.sleep(0.1)
 
         # Send end frame
         # Prepare the message to send to the LLM

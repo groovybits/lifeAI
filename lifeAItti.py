@@ -248,7 +248,10 @@ def main():
         logger.info(
             f"Text to Image using text as prompt #{segment_number}:\n - {optimized_prompt_final[:80]}...")
 
-        if (skipped_messages >= args.skipped_messages or speaker_line or last_image == None) and (args.wait_time == 0 or last_image == None or time.time() - last_image_time >= args.wait_time):
+        priority = 0
+        if priority in header_message:
+            priority = header_message["priority"]
+        if (priority == 100 or skipped_messages >= args.skipped_messages or speaker_line or last_image == None) and (args.wait_time == 0 or last_image == None or time.time() - last_image_time >= args.wait_time):
             skipped_messages = 0
             if args.service == "openai":
                 image = generate_openai(mediaid, args.oai_image_model, optimized_prompt_final, header_message["username"], args.save_images)
