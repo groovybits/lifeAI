@@ -738,12 +738,13 @@ def main():
                     random_message3 = random.choice(text_history)
                     # Generate a new image from previous text
                     new_image = generate_sd_webui(random_message + " " + random_message2 + " " + random_message3)
-                    last_image_asset = new_image
 
-                    # Convert PIL Image to bytes
-                    #img_byte_arr = io.BytesIO()
-                    #new_image.save(img_byte_arr, format='PNG')  # Save it as PNG or JPEG depending on your preference
-                    #new_image = img_byte_arr.getvalue()
+                    if new_image != None:
+                        last_image_asset = new_image
+                    else:
+                        #print(f"Error generating image from text: {random_message} {random_message2} {random_message3}")
+                        #past_image = random.choice(past_images_all_time_queue)
+                        new_image = last_image_asset            
 
                     image_np = process_new_image(new_image, last_text_asset, args, True, "Groovy Life AI")
                     # send image directly to NDI

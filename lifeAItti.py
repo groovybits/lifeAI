@@ -77,6 +77,8 @@ def generate_sd_webui(mediaid, prompt, save_file=False):
                             save_images=False,
                             width=512,
                             height=512,
+                            steps=15,
+                            cfg_scale=7.5,
         #                    seed=1003,
         #                    styles=["anime"],
         #                    cfg_scale=7,
@@ -246,7 +248,7 @@ def main():
         logger.info(
             f"Text to Image using text as prompt #{segment_number}:\n - {optimized_prompt_final[:80]}...")
 
-        if (skipped_messages >= 2 or speaker_line or last_image == None) and (args.wait_time == 0 or last_image == None or time.time() - last_image_time >= args.wait_time):
+        if (skipped_messages >= args.skipped_messages or speaker_line or last_image == None) and (args.wait_time == 0 or last_image == None or time.time() - last_image_time >= args.wait_time):
             skipped_messages = 0
             if args.service == "openai":
                 image = generate_openai(mediaid, args.oai_image_model, optimized_prompt_final, header_message["username"], args.save_images)
@@ -343,6 +345,7 @@ if __name__ == "__main__":
     parser.add_argument("--webui_url", type=str, default="127.0.0.1:7860", help="URL for webui, default 127.0.0.1:7860")
     parser.add_argument("--genre", type=str, default="", help="Genre for the model")
     parser.add_argument("--negative_prompt", type=str, default="Disfigured, cartoon, blurry, nsfw, naked, porn, violence, gore, racism, black face", help="Negative prompt for the model")
+    parser.add_argument("--skipped_messages", type=int, default=8, help="Number of messages to skip before processing")
 
     args = parser.parse_args()
 
