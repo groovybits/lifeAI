@@ -726,7 +726,7 @@ def main():
 
         # check audio_buffer_duration, if 0 and image_buffer is empty, then resend the image with the last text
         if status["audio_buffer_duration"] == 0.0 and image_buffer.empty() and audio_buffer.empty():
-            if time.time() - last_generated_image_time > 45:
+            if time.time() - last_generated_image_time > args.slideshow_interval:
                 # get the last text and image
                 if last_text_asset:
                     ## get an image randomly from past_images_all_time_queue and use it as the base image
@@ -744,7 +744,7 @@ def main():
                     else:
                         #print(f"Error generating image from text: {random_message} {random_message2} {random_message3}")
                         #past_image = random.choice(past_images_all_time_queue)
-                        new_image = last_image_asset            
+                        new_image = last_image_asset
 
                     image_np = process_new_image(new_image, last_text_asset, args, True, "Groovy Life AI")
                     # send image directly to NDI
@@ -878,7 +878,7 @@ def main():
 
                         logger.info(f"End of stream, sending last image with special text.")
                         # burn in special text
-                        image_np = process_new_image(last_image_asset, "What would you like to talk about?", args, False, "Welcome, ask me a question or how to use the chat commands.")
+                        image_np = process_new_image(last_image_asset, "GroovyLife.AI", args, False, "Type !personalities or !message <personality> <question>")
                         playback(image_np, None, 0.0)
                         last_sent_break = time.time()
                         worked = True
@@ -943,6 +943,7 @@ if __name__ == "__main__":
     parser.add_argument("--ndi_audio", action="store_true", default=False, help="Send audio to NDI output")
     parser.add_argument("--sdwebui_image_model", type=str, default="sd_xl_turbo", help="Local SD WebUI API Image model to use, default protogenV2")
     parser.add_argument("--negative_prompt", type=str, default="Disfigured, cartoon, blurry, nsfw, naked, porn, violence, gore, racism, black face", help="Negative prompt for the model")
+    parser.add_argument("--slideshow_interval", type=float, default=10.0, help="Interval between images in the slideshow");
 
     args = parser.parse_args()
 

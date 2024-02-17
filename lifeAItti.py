@@ -351,7 +351,7 @@ if __name__ == "__main__":
     parser.add_argument("--webui_url", type=str, default="127.0.0.1:7860", help="URL for webui, default 127.0.0.1:7860")
     parser.add_argument("--genre", type=str, default="", help="Genre for the model")
     parser.add_argument("--negative_prompt", type=str, default="Disfigured, cartoon, blurry, nsfw, naked, porn, violence, gore, racism, black face", help="Negative prompt for the model")
-    parser.add_argument("--skipped_messages", type=int, default=8, help="Number of messages to skip before processing")
+    parser.add_argument("--skipped_messages", type=int, default=0, help="Number of messages to skip before processing")
 
     args = parser.parse_args()
 
