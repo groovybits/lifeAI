@@ -77,8 +77,8 @@ def generate_sd_webui(mediaid, prompt, save_file=False):
                             save_images=False,
                             width=512,
                             height=512,
-                            steps=15,
-                            cfg_scale=7.5,
+                            #steps=25,
+                            #cfg_scale=7.5,
         #                    seed=1003,
         #                    styles=["anime"],
         #                    cfg_scale=7,
@@ -253,7 +253,10 @@ def main():
             if args.service == "openai":
                 image = generate_openai(mediaid, args.oai_image_model, optimized_prompt_final, header_message["username"], args.save_images)
             elif args.service == "sdwebui":
+                start_time = time.time()
                 image = generate_sd_webui(mediaid, optimized_prompt_final, args.save_images)
+                end_time = time.time()
+                logger.info(f"Image generation took {end_time - start_time} seconds.")
             elif args.service == "getimgai":
                 image = generate_getimgai(mediaid, args.sdwebui_image_model, optimized_prompt_final)
             else:

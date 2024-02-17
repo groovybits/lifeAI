@@ -48,7 +48,7 @@ def concatenate_files(playlist_path, output_path):
     subprocess.run(cmd, check=True)
 
 def play_audio(file_path):
-    subprocess.run(['mpv', '--volume=70', file_path], check=True)
+    subprocess.run(['mpv', '--volume=50', file_path], check=True)
 
 while True:
     files = get_files_sorted_by_mtime(music_dir)
