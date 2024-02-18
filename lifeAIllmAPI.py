@@ -202,6 +202,15 @@ def send_group(text, zmq_sender, header_message, sentence_count, total_tokens, t
 
 def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_count, stoptokens, args):
     logger.info(f"LLM: Question #{header_message['segment_number']} {header_message['timestamp']} {header_message['md5sum']}: - {header_message['text'][:30]}")
+
+    # Setup Question as the first message
+    header_message["text"] = f"{header_message['username']} asked: {header_message['message'][:300]}...."
+    header_message["timestamp"] = int(round(time.time() * 1000))
+
+    # Send initial question
+    send_data(zmq_sender, header_message.copy())
+
+    # Setup messages so can stream the response in segments of text to the client
     header_message["segment_number"] += 1
     header_message["text"] = ""
     header_message["timestamp"] = int(round(time.time() * 1000))
@@ -245,6 +254,7 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
         # If the AI personality is passthrough, just return the message as is
         if header_message["aipersonality"] == "passthrough":
             header_message["text"] = header_message["message"]
+            header_message["eos"] = True # end of stream marker
             send_data(zmq_sender, header_message.copy())
         else:
             # Start a new thread to stream the API response and send it back to the client
@@ -271,16 +281,16 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
 
         # Send end frame
         # Prepare the message to send to the LLM
-        end_header = header_message.copy()
-        end_header["message"] = "Groovy Life AI: Ask me another question, use !help for instructions..."
-        end_header["username"] = "GAIB"
-        end_header["text"] = f"{args.end_message}"
-        end_header["timestamp"] = int(round(time.time() * 1000))
-        end_header["eos"] = True # end of stream marker
-        send_data(zmq_sender, end_header.copy())
-
-        # Add a delay to prevent a tight loop and rest the LLM
-        time.sleep(0.1)
+        if header_message["ainame"] != "passthrough":
+            end_header = header_message.copy()
+            end_header["message"] = "Groovy Life AI: Ask me another question, use !help for instructions..."
+            end_header["username"] = "GAIB"
+            end_header["text"] = f"{args.end_message}"
+            end_header["timestamp"] = int(round(time.time() * 1000))
+            end_header["eos"] = True # end of stream marker
+            send_data(zmq_sender, end_header.copy())
+            # Add a delay to prevent a tight loop and rest the LLM
+            time.sleep(0.1)
 
     except Exception as e:
         logger.error(f"LLM exception: {e}")
@@ -531,7 +541,7 @@ if __name__ == "__main__":
     parser.add_argument("--output_host", type=str, default="127.0.0.1")
     parser.add_argument("--output_port", type=int, default=2000)
     parser.add_argument("--maxtokens", type=int, default=0)
-    parser.add_argument("--context", type=int, default=32768, help="Size of context for LLM so we can measure history fill.")
+    parser.add_argument("--context", type=int, default=16000, help="Size of context for LLM so we can measure history fill.")
     parser.add_argument("--temperature", type=float, default=1.0)
     parser.add_argument("-d", "--debug", action="store_true", default=False)
     parser.add_argument("--ai_name", type=str, default="GAIB")
@@ -540,9 +550,9 @@ if __name__ == "__main__":
     parser.add_argument("-tp", "--characters_per_line", type=int, default=120, help="Minimum number of characters per buffer, buffer window before output. default 100")
     parser.add_argument("-sc", "--sentence_count", type=int, default=1, help="Number of sentences per line.")
     parser.add_argument("--nopurgehistory", action="store_true", default=False, help="Don't Purge history, may cause context fill issues.")
-    parser.add_argument("--history_keep", type=int, default=2, help="Number of messages to keep for the context.")
+    parser.add_argument("--history_keep", type=int, default=32, help="Number of messages to keep for the context.")
     parser.add_argument("--cache_prompt", action='store_true', help="Flag to enable caching of prompts.")
-    parser.add_argument("--contextpct", type=float, default=0.30, help="Percentage of context to use for history.")
+    parser.add_argument("--contextpct", type=float, default=0.50, help="Percentage of context to use for history.")
     parser.add_argument("-ll", "--loglevel", type=str, default="info", help="Logging level: debug, info...")
     parser.add_argument("--llm_port", type=int, default=8080)
     parser.add_argument("--llm_host", type=str, default="127.0.0.1")

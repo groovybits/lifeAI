@@ -830,6 +830,10 @@ def main():
                 image_latency_delta = int(round(time.time()*1000)) - int(image_timestamp)
             logger.info(f"Sent audio segment #{audio_message['segment_number']} at timestamp {audio_message['timestamp']} with latency delta {audio_latency_delta} ms.")
             logger.info(f"Sent image segment #{image_message['segment_number']} at timestamp {image_message['timestamp']} with latency delta {image_latency_delta} ms.")
+
+            if end_of_stream and image_message['ainame'] == "passthrough":
+                # sleep so image displays for a bit
+                time.sleep(5)
         else:
             # check last sent segments and if it's been more than 5 seconds, send a blank image and audio
             if time.time() - last_sent_segments > 15 and last_image_asset is not None:
