@@ -89,7 +89,7 @@ def stream_api_response(header_message, api_url, completion_params, zmq_sender, 
                     content = message.get('content', '')
 
                     ## check for non-ascii characters and replace them with their ascii equivalent
-                    content = content.encode("ascii", "ignore").decode()
+                    ##content = content.encode("ascii", "ignore").decode()
 
                     if content:  # Only add to accumulated text if there is content
                         print(content, end="")
@@ -241,10 +241,14 @@ def run_llm(header_message, zmq_sender, api_url, characters_per_line, sentence_c
             stoptokens_array.append("</s>")
             stoptokens_array.append("/s>")
             stoptokens_array.append("<|")
+            stoptokens_array.append("----------------")
+            stoptokens_array.append("----------------")
+            stoptokens_array.append("^S")
+            stoptokens_array.append("^T")
             stoptokens_array.append(f"\n{header_message['username']}:")
             completion_params['stop'] = stoptokens_array
         else:
-            completion_params['stop'] = ["</s>", "/s>", "<|"]
+            completion_params['stop'] = ["</s>", "/s>", "<|", "^S", "^T", "----------------"]
 
         if int(maxtokens) > 0:
             completion_params['n_predict'] = int(header_message["maxtokens"])
@@ -523,7 +527,8 @@ if __name__ == "__main__":
     qprompt = "Question"
     aprompt = "Answer"
     oprompt = "response"
-    iprompt = ("Conversate and answer the message whether a question or generic comment, request given. "
+    iprompt = ("Only speak in english, do not speak in any other language, only ascii tokens. Do not code, no code or markdown output, only plain text."
+               "Conversate and answer the message whether a question or generic comment, request given. "
                "Play your Personality role, do not break from it."
                "Do not output run on sentences, make sure they all are less than 120 lines before a period. "
                "Use the the speaker name format of 'speaker_name:' use underscores in place of spaces in the speakers name followed by the speakers speaking lines always starting with your speaker name, colon and then your lines after, "
