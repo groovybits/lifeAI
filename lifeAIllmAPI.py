@@ -465,6 +465,14 @@ def main(args):
                 assistant_prompt_start = "<|im_start|>assistant"
                 assistant_prompt_end = "<|im_end|>"
                 eos_stop_token = ""
+            elif args.chat_format == "google":
+                system_prompt_start = "<start_of_turn>model"
+                system_prompt_end = "<end_of_turn>"
+                user_prompt_start = "<start_of_turn>user"
+                user_prompt_end = "<end_of_turn>"
+                assistant_prompt_start = "<start_of_turn>model"
+                assistant_prompt_end = "<end_of_turn>"
+                eos_stop_token = ""
 
             tmp_history.append(f"{system_prompt_start}\n{current_system_prompt}{system_prompt_end}")
             tmp_history.extend(history) # add the history of the conversation

@@ -599,7 +599,7 @@ def main():
                 logger.info(f"Received {type} segment #{segment_number} {timestamp}: {mediaid} {len(text)} characters: {text[:20]}")
 
                 try:
-                    if args.nosave == False:
+                    if args.save == True:
                         # Save audio asset
                         save_json(header_message, mediaid, type, segment_number)
                         save_asset(music, mediaid, segment_number, type)
@@ -622,7 +622,7 @@ def main():
                 audio_buffer.put((header_message, audio))
 
                 try:
-                    if args.nosave == False:
+                    if args.save == True:
                         save_json(header_message, mediaid, type, segment_number)
                         save_asset(audio, mediaid, segment_number, type)
                 except Exception as e:
@@ -653,7 +653,7 @@ def main():
                     logger.error(f"Error converting image: {e}")
 
                 try:
-                    if args.nosave == False:
+                    if args.save == True:
                         save_json(header_message, mediaid, type, segment_number)
                         save_asset(image, mediaid, segment_number, type)
                 except Exception as e:
@@ -889,7 +889,7 @@ def main():
                         logger.info(f"Sent last image segment #{image_segment_number} at timestamp {timestamp}")
 
         if not music_buffer.empty():
-            if args.nomusic:
+            if not args.music:
                 music_message, music = music_buffer.get()
                 while not music_buffer.empty():
                     music_message, music = music_buffer.get()
@@ -933,8 +933,8 @@ if __name__ == "__main__":
     parser.add_argument("--music_volume", type=float, default=0.50, help="Volume for music audio playback, defualt is 0.55")
     parser.add_argument("--speech_volume", type=float, default=0.75, help="Volume for speech audio playback")
     parser.add_argument("--music_interval", type=float, default=60, help="Interval between music changes")
-    parser.add_argument("--nomusic", action="store_true", default=False, help="Disable music")
-    parser.add_argument("--nosave", action="store_true", default=False, help="Don't save assets to disk")
+    parser.add_argument("--music", action="store_true", default=False, help="Enable music")
+    parser.add_argument("--save", action="store_true", default=False, help="Save assets to disk")
     parser.add_argument("--norender", action="store_true", default=False, help="Disable rendering of images")
     parser.add_argument("--nobuffer", action="store_true", default=False, help="Disable buffering of images")
     parser.add_argument("--title", type=str, default="Groovy Life AI", help="Title for the window")
@@ -945,9 +945,9 @@ if __name__ == "__main__":
     parser.add_argument("--sdl_audiodriver", type=str, default="GroovyLifeAI", help="SDL Audio Driver, default is GroovyLifeAI")
     parser.add_argument("--ndi_display", action="store_true", default=False, help="Send to NDI output")
     parser.add_argument("--ndi_audio", action="store_true", default=False, help="Send audio to NDI output")
-    parser.add_argument("--sdwebui_image_model", type=str, default="sd_xl_turbo", help="Local SD WebUI API Image model to use, default protogenV2")
+    parser.add_argument("--sdwebui_image_model", type=str, default="sd_xl_turbo", help="Local SD WebUI API Image model to use, default sd_xl_turbo")
     parser.add_argument("--negative_prompt", type=str, default="Disfigured, cartoon, blurry, nsfw, naked, porn, violence, gore, racism, black face", help="Negative prompt for the model")
-    parser.add_argument("--slideshow_interval", type=float, default=10.0, help="Interval between images in the slideshow");
+    parser.add_argument("--slideshow_interval", type=float, default=120.0, help="Interval between images in the slideshow");
 
     args = parser.parse_args()
 
